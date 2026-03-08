@@ -543,4 +543,40 @@ test_expect_success FUNNYNAMES '--combined-all-paths and --cc and funny names' '
 	test_cmp expect actual
 '
 
+test_expect_success 'setup for combined diff with pickaxe' '
+	git checkout --orphan pickaxe-base &&
+	git rm -rf . &&
+	echo "common content" >file1 &&
+	echo "common content" >file2 &&
+	git add file1 file2 &&
+	git commit -m "pickaxe base" &&
+
+	git checkout -b pickaxe-side1 &&
+	echo "needle in side1" >file1 &&
+	git add file1 &&
+	git commit -m "side1: add needle to file1" &&
+
+	git checkout pickaxe-base &&
+	git checkout -b pickaxe-side2 &&
+	echo "change in side2" >file1 &&
+	echo "other change" >file2 &&
+	git add file1 file2 &&
+	git commit -m "side2: change file1 and file2" &&
+
+	test_must_fail git merge pickaxe-side1 &&
+	echo "resolved with needle" >file1 &&
+	git add file1 &&
+	git commit -m "merge side1 and side2"
+'
+
+test_expect_success 'combined diff with -S shows diff output' '
+	git diff-tree --cc -p -S needle HEAD >actual &&
+	grep "diff --cc file1" actual
+'
+
+test_expect_success 'combined diff with -G shows diff output' '
+	git diff-tree --cc -p -G needle HEAD >actual &&
+	grep "diff --cc file1" actual
+'
+
 test_done
