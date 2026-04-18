@@ -368,7 +368,6 @@ test_expect_success '-L diff output includes index and new file mode' '
 
 test_expect_success '-L with --word-diff' '
 	cat >expect <<-\EOF &&
-
 	diff --git a/file.c b/file.c
 	--- a/file.c
 	+++ b/file.c
@@ -377,7 +376,6 @@ test_expect_success '-L with --word-diff' '
 	{
 	    return [-F2;-]{+F2 + 2;+}
 	}
-
 	diff --git a/file.c b/file.c
 	new file mode 100644
 	--- /dev/null
@@ -433,7 +431,6 @@ test_expect_success 'show line-log with graph' '
 	null_blob=$(test_oid zero | cut -c1-7) &&
 	qz_to_tab_space >expect <<-EOF &&
 	* $head_oid Modify func2() in file.c
-	|Z
 	| diff --git a/file.c b/file.c
 	| index $head_blob_old..$head_blob_new 100644
 	| --- a/file.c
@@ -445,7 +442,6 @@ test_expect_success 'show line-log with graph' '
 	| +    return F2 + 2;
 	|  }
 	* $root_oid Add func1() and func2() in file.c
-	ZZ
 	  diff --git a/file.c b/file.c
 	  new file mode 100644
 	  index $null_blob..$root_blob
@@ -494,23 +490,17 @@ test_expect_success '-L --find-object does not crash with merge and rename' '
 		--find-object=$(git rev-parse HEAD:file) >actual
 '
 
-# Commit-level filtering with pickaxe does not yet work for -L.
-# show_log() prints the commit header before diffcore_std() runs
-# pickaxe, so commits cannot be suppressed even when no diff pairs
-# survive filtering.  Fixing this would require deferring show_log()
-# until after diffcore_std(), which is a larger restructuring of the
-# log-tree output pipeline.
-test_expect_failure '-L -G should filter commits by pattern' '
+test_expect_success '-L -G should filter commits by pattern' '
 	git log --format="%s" --no-patch -L 1,1:file -G "nomatch" >actual &&
 	test_must_be_empty actual
 '
 
-test_expect_failure '-L -S should filter commits by pattern' '
+test_expect_success '-L -S should filter commits by pattern' '
 	git log --format="%s" --no-patch -L 1,1:file -S "nomatch" >actual &&
 	test_must_be_empty actual
 '
 
-test_expect_failure '-L --find-object should filter commits by object' '
+test_expect_success '-L --find-object should filter commits by object' '
 	git log --format="%s" --no-patch -L 1,1:file \
 		--find-object=$ZERO_OID >actual &&
 	test_must_be_empty actual
@@ -709,6 +699,133 @@ test_expect_success '-L with -G filters to diff-text matches' '
 	# and have "F2 + 2" in their diff.
 	test $(grep -c "^diff --git" actual) = 1 &&
 	grep "F2 + 2" actual
+'
+
+test_expect_success '-L includes leading deletions resolved by in-range line' '
+	git checkout --orphan leading-del &&
+	git reset --hard &&
+	cat >file.c <<-\EOF &&
+	// leading comment
+	void tracked()
+	{
+	    return 1;
+	}
+	EOF
+	git add file.c &&
+	test_tick &&
+	git commit -m "add file with leading comment" &&
+	cat >file.c <<-\EOF &&
+	void tracked()
+	{
+	    return 2;
+	}
+	EOF
+	git commit -a -m "modify tracked and delete leading comment" &&
+	git log -L:tracked:file.c --format= -1 -p >actual &&
+	# The leading comment deletion is resolved by the next
+	# non-removal line (void tracked), which is in range.
+	# Pending removals are attributed to the range they precede.
+	grep "return 2" actual &&
+	grep "leading comment" actual
+'
+
+test_expect_success 'setup for line-range filter edge cases' '
+	git checkout --orphan filter-edge &&
+	git reset --hard &&
+	cat >file.c <<-\EOF &&
+	void before()
+	{
+	    return 0;
+	}
+
+	void tracked()
+	{
+	    int a = 1;
+	    int b = 2;
+	    int c = 3;
+	    return a + b + c;
+	}
+
+	void after()
+	{
+	    return 9;
+	}
+	EOF
+	git add file.c &&
+	test_tick &&
+	git commit -m "initial"
+'
+
+test_expect_success '-L change at exact first line of range' '
+	git checkout filter-edge &&
+	# Change the function signature (first line of range)
+	sed "s/void tracked/int tracked/" file.c >tmp &&
+	mv tmp file.c &&
+	git commit -a -m "change first line" &&
+	git log -L:tracked:file.c -p --format=%s -1 >actual &&
+	grep "change first line" actual &&
+	grep "+int tracked" actual &&
+	grep "\\-void tracked" actual
+'
+
+test_expect_success '-L change at exact last line of range' '
+	git checkout filter-edge &&
+	git reset --hard HEAD~1 &&
+	# Change the closing brace line (last line of range)
+	sed "s/^}$/} \/\/ end tracked/" file.c >tmp &&
+	mv tmp file.c &&
+	git commit -a -m "change last line" &&
+	git log -L:tracked:file.c -p --format=%s -1 >actual &&
+	grep "change last line" actual &&
+	grep "end tracked" actual
+'
+
+test_expect_success '-L pure deletion in range (no additions)' '
+	git checkout filter-edge &&
+	git reset --hard HEAD~1 &&
+	# Delete a line inside tracked() without adding anything
+	sed "/int c/d" file.c >tmp &&
+	mv tmp file.c &&
+	git commit -a -m "pure deletion" &&
+	git log -L:tracked:file.c -p --format=%s -1 >actual &&
+	grep "pure deletion" actual &&
+	grep "\\-.*int c" actual
+'
+
+test_expect_success '-L adjacent change outside range excluded' '
+	git checkout filter-edge &&
+	git reset --hard HEAD~1 &&
+	# Change only before() - adjacent to tracked() but outside range
+	sed "s/return 0/return 42/" file.c >tmp &&
+	mv tmp file.c &&
+	git commit -a -m "change before only" &&
+	# Commit should not appear since tracked() is unchanged
+	git log -L:tracked:file.c --format=%s --no-patch >actual &&
+	! grep "change before only" actual
+'
+
+test_expect_success '-L with --diff-filter=M excludes root commit' '
+	git checkout parent-oids &&
+	git log -L:func2:file.c --diff-filter=M --format=%s --no-patch >actual &&
+	# Root commit is an Add (A), not a Modify (M), so it should
+	# be excluded; only the modification commit remains.
+	echo "Modify func2() in file.c" >expect &&
+	test_cmp expect actual
+'
+
+test_expect_success '-L with --diff-filter=A shows only root commit' '
+	git checkout parent-oids &&
+	git log -L:func2:file.c --diff-filter=A --format=%s --no-patch >actual &&
+	echo "Add func1() and func2() in file.c" >expect &&
+	test_cmp expect actual
+'
+
+test_expect_success '-L with -S suppresses non-matching commits' '
+	git checkout parent-oids &&
+	git log -L:func2:file.c -S "F2 + 2" --format=%s --no-patch >actual &&
+	# Only the commit that changes the count of "F2 + 2" should appear.
+	echo "Modify func2() in file.c" >expect &&
+	test_cmp expect actual
 '
 
 test_done

@@ -14,6 +14,6 @@
 +
 Patch formatting options such as `--word-diff`, `--color-moved`,
 `--no-prefix`, and whitespace options (`-w`, `-b`) are supported,
-as are pickaxe options (`-S`, `-G`).
+as are pickaxe options (`-S`, `-G`) and `--diff-filter`.
 +
 include::line-range-format.adoc[]
