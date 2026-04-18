@@ -155,8 +155,27 @@ test_expect_success '-p shows the default patch output' '
 	test_cmp expect actual
 '
 
-test_expect_success '--raw is forbidden' '
-	test_must_fail git log -L1,24:b.c --raw
+test_expect_success '--raw shows mode, oid, status and path' '
+	git log -L1,24:b.c --raw --format= >actual &&
+	grep "^:100644 100644 .* M	b.c$" actual
+'
+
+test_expect_success '--name-only shows path' '
+	git log -L1,24:b.c --name-only --format= >actual &&
+	grep "^b.c$" actual
+'
+
+test_expect_success '--name-status shows status and path' '
+	git log -L1,24:b.c --name-status --format= >actual &&
+	grep "^M	b.c$" actual
+'
+
+test_expect_success '--stat is not yet supported with -L' '
+	test_must_fail git log -L1,24:b.c --stat
+'
+
+test_expect_success '--full-diff is not supported with -L' '
+	test_must_fail git log -L1,24:b.c --full-diff
 '
 
 test_expect_success 'setup for checking fancy rename following' '
@@ -826,6 +845,51 @@ test_expect_success '-L with -S suppresses non-matching commits' '
 	# Only the commit that changes the count of "F2 + 2" should appear.
 	echo "Modify func2() in file.c" >expect &&
 	test_cmp expect actual
+'
+
+test_expect_success '--summary shows new file on root commit' '
+	git checkout parent-oids &&
+	git log -L:func2:file.c --summary --format= >actual &&
+	grep "create mode 100644 file.c" actual
+'
+
+test_expect_success 'setup for --check test' '
+	git checkout --orphan check-test &&
+	git reset --hard &&
+	cat >check.c <<-\EOF &&
+	void tracked()
+	{
+	    return;
+	}
+
+	void other()
+	{
+	    return;
+	}
+	EOF
+	git add check.c &&
+	test_tick &&
+	git commit -m "add check.c" &&
+	# Introduce trailing whitespace errors in both functions
+	sed "s/return;/return; /" check.c >check.c.tmp &&
+	mv check.c.tmp check.c &&
+	git commit -a -m "introduce trailing whitespace"
+'
+
+test_expect_success '--check reports whitespace errors in tracked range' '
+	test_must_fail git log -L:tracked:check.c --check --format= >actual &&
+	grep "trailing whitespace" actual
+'
+
+# --check currently examines the entire file diff, not just the tracked
+# range.  Scoping --check to line_ranges would require threading range
+# filtering into run_checkdiff(), similar to how builtin_diff() filters
+# patch output.
+test_expect_failure '--check should not report errors outside tracked range' '
+	test_must_fail git log -L:tracked:check.c --check --format= >actual &&
+	# line 3 is inside tracked(), line 8 is inside other()
+	grep "check.c:3" actual &&
+	! grep "check.c:8" actual
 '
 
 test_done
