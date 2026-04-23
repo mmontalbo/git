@@ -176,24 +176,9 @@ test_expect_success '--name-status shows status and path' '
 	! grep "^@@" actual
 '
 
-test_expect_success '--stat is not yet supported with -L' '
-	test_must_fail git log -L1,24:b.c --stat 2>err &&
-	test_grep "does not yet support" err
-'
-
-test_expect_success '--numstat is not yet supported with -L' '
-	test_must_fail git log -L1,24:b.c --numstat 2>err &&
-	test_grep "does not yet support" err
-'
-
-test_expect_success '--shortstat is not yet supported with -L' '
-	test_must_fail git log -L1,24:b.c --shortstat 2>err &&
-	test_grep "does not yet support" err
-'
-
-test_expect_success '--dirstat is not yet supported with -L' '
-	test_must_fail git log -L1,24:b.c --dirstat 2>err &&
-	test_grep "does not yet support" err
+test_expect_success '--stat works with -L' '
+	git log -L1,24:b.c --stat --format= >actual &&
+	grep "b.c" actual
 '
 
 test_expect_success 'setup for checking fancy rename following' '
@@ -908,6 +893,88 @@ test_expect_success '-L --oneline has no extra blank line before diff' '
 	git log --oneline -L:func2:file.c -1 >actual &&
 	# Oneline header on line 1, diff starts immediately on line 2
 	sed -n 2p actual | grep "^diff --git"
+'
+
+test_expect_success 'setup for stat range-scoping tests' '
+	git checkout --orphan stat-scoping &&
+	git reset --hard &&
+	cat >file.c <<-\EOF &&
+	int func1()
+	{
+	    return F1;
+	}
+
+	int func2()
+	{
+	    return F2;
+	}
+	EOF
+	git add file.c &&
+	test_tick &&
+	git commit -m "Add func1() and func2()" &&
+
+	# Modify both functions in a single commit so that
+	# whole-file stats differ from range-scoped stats.
+	sed -e "s/F1/F1 + 1/" -e "s/F2/F2 + 2/" file.c >tmp &&
+	mv tmp file.c &&
+	git commit -a -m "Modify both functions"
+'
+
+test_expect_success '--numstat counts only lines in tracked range' '
+	# "Modify both functions" changes one line in func1 and one in
+	# func2.  Whole-file numstat would show 2 added, 2 deleted.
+	# Range-scoped numstat for func2 should show only 1 and 1.
+	git log -L:func2:file.c --numstat --format=%s -1 >actual &&
+	grep "Modify both functions" actual &&
+	grep "^1	1	file.c$" actual
+'
+
+test_expect_success '--numstat counts only additions for root commit' '
+	# Root commit creates both func1 (4 lines) and func2 (4 lines).
+	# Whole-file numstat would show 9 lines added.  Range-scoped
+	# numstat for func2 should show only 4.
+	git log -L:func2:file.c --numstat --format=%s >actual &&
+	grep "Add func1() and func2()" actual &&
+	grep "^4	0	file.c$" actual
+'
+
+test_expect_success '--stat counts only lines in tracked range' '
+	git log -L:func2:file.c --stat --format=%s -1 >actual &&
+	grep "Modify both functions" actual &&
+	grep "1 insertion" actual &&
+	grep "1 deletion" actual
+'
+
+test_expect_success '--shortstat counts only lines in tracked range' '
+	# Same range-scoped counting as --numstat above.
+	git log -L:func2:file.c --shortstat --format=%s -1 >actual &&
+	grep "Modify both functions" actual &&
+	grep "1 insertion" actual &&
+	grep "1 deletion" actual
+'
+
+test_expect_success '--numstat matches patch line counts' '
+	# Cross-check: count +/- lines in patch output and verify
+	# --numstat reports the same numbers.  Uses the parallel-change
+	# branch which has renames and multiple commits, exercising the
+	# filter across nontrivial history.
+	git checkout parallel-change &&
+	git log -M -L ":f:b.c" --format= -p >patch_out &&
+	adds=$(grep "^+" patch_out | grep -vc "^+++") &&
+	dels=$(grep "^-" patch_out | grep -vc "^---") &&
+	git log -M -L ":f:b.c" --numstat --format= >stat_out &&
+	awk "{a+=\$1; d+=\$2} END {print a, d}" stat_out >stat_counts &&
+	echo "$adds $dels" >patch_counts &&
+	test_cmp patch_counts stat_counts
+'
+
+test_expect_success '-L multiple ranges with --numstat' '
+	git checkout stat-scoping &&
+	# Both func1 and func2 were modified by "Modify both functions".
+	# Track both with separate -L flags; stats should sum.
+	git log -L:func1:file.c -L:func2:file.c --numstat --format=%s -1 >actual &&
+	grep "Modify both functions" actual &&
+	grep "^2	2	file.c$" actual
 '
 
 test_expect_success '--summary shows new file on root commit' '

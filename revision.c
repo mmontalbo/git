@@ -3182,8 +3182,11 @@ int setup_revisions(int argc, const char **argv, struct rev_info *revs, struct s
 	    (revs->diffopt.output_format &
 	     ~(DIFF_FORMAT_PATCH | DIFF_FORMAT_NO_OUTPUT |
 	       DIFF_FORMAT_RAW | DIFF_FORMAT_NAME |
-	       DIFF_FORMAT_NAME_STATUS | DIFF_FORMAT_SUMMARY)))
-		die(_("-L does not yet support the requested diff format"));
+	       DIFF_FORMAT_NAME_STATUS | DIFF_FORMAT_SUMMARY |
+	       DIFF_FORMAT_CHECKDIFF |
+	       DIFF_FORMAT_NUMSTAT | DIFF_FORMAT_DIFFSTAT |
+	       DIFF_FORMAT_SHORTSTAT | DIFF_FORMAT_DIRSTAT)))
+		die(_("-L does not yet support this diff format"));
 	if (revs->line_level_traverse && revs->full_diff)
 		die(_("-L is not compatible with --full-diff"));
 
