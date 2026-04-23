@@ -2553,11 +2553,23 @@ static void flush_rhunk(struct line_range_callback *s)
 	if (!s->rhunk_active || s->ret)
 		return;
 
-	/* Drain any pending removal lines into the range hunk */
+	/*
+	 * Drain pending removal lines into the range hunk only if
+	 * the post-image position is still within the tracked range.
+	 * Removals at the end of a hunk may follow the last in-range
+	 * line; if lno_post has advanced past the range, they belong
+	 * to content after the tracked range and must be discarded.
+	 */
 	if (s->pending_rm_count) {
-		strbuf_addbuf(&s->rhunk, &s->pending_rm);
-		s->rhunk_old_count += s->pending_rm_count;
-		s->rhunk_has_changes = 1;
+		long lno_0 = s->lno_post - 1;
+		int in_range = s->cur_range < s->ranges->nr &&
+			       lno_0 >= s->ranges->ranges[s->cur_range].start &&
+			       lno_0 < s->ranges->ranges[s->cur_range].end;
+		if (in_range) {
+			strbuf_addbuf(&s->rhunk, &s->pending_rm);
+			s->rhunk_old_count += s->pending_rm_count;
+			s->rhunk_has_changes = 1;
+		}
 		discard_pending_rm(s);
 	}
 
