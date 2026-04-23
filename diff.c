@@ -2529,6 +2529,18 @@ static int quick_consume(void *priv, char *line UNUSED, unsigned long len UNUSED
 	return 1;
 }
 
+static void line_range_filter_init(struct line_range_filter *f,
+				   const struct range_set *ranges,
+				   xdiff_emit_line_fn line_fn,
+				   void *cb_data)
+{
+	memset(f, 0, sizeof(*f));
+	f->orig_line_fn = line_fn;
+	f->orig_cb_data = cb_data;
+	f->ranges = ranges;
+	strbuf_init(&f->rhunk, 0);
+}
+
 static void flush_rhunk(struct line_range_filter *s)
 {
 	struct strbuf hdr = STRBUF_INIT;
@@ -2578,6 +2590,16 @@ static void flush_rhunk(struct line_range_filter *s)
 
 	s->rhunk_active = 0;
 	strbuf_reset(&s->rhunk);
+}
+
+static void line_range_filter_flush(struct line_range_filter *f)
+{
+	flush_rhunk(f);
+}
+
+static void line_range_filter_release(struct line_range_filter *f)
+{
+	strbuf_release(&f->rhunk);
 }
 
 static void line_range_hunk_fn(void *data,
@@ -4025,11 +4047,8 @@ static void builtin_diff(const char *name_a,
 			unsigned int i;
 			long max_span = 0;
 
-			memset(&lr_state, 0, sizeof(lr_state));
-			lr_state.orig_line_fn = fn_out_consume;
-			lr_state.orig_cb_data = &ecbdata;
-			lr_state.ranges = line_ranges;
-			strbuf_init(&lr_state.rhunk, 0);
+			line_range_filter_init(&lr_state, line_ranges,
+					       fn_out_consume, &ecbdata);
 
 			/*
 			 * Inflate ctxlen so that all changes within
@@ -4059,11 +4078,11 @@ static void builtin_diff(const char *name_a,
 				die("unable to generate diff for %s",
 				    one->path);
 
-			flush_rhunk(&lr_state);
+			line_range_filter_flush(&lr_state);
 			if (lr_state.ret)
 				die("unable to generate diff for %s",
 				    one->path);
-			strbuf_release(&lr_state.rhunk);
+			line_range_filter_release(&lr_state);
 		} else if (xdi_diff_outf(&mf1, &mf2, NULL, fn_out_consume,
 					 &ecbdata, &xpp, &xecfg))
 			die("unable to generate diff for %s", one->path);
@@ -4180,7 +4199,29 @@ static void builtin_diffstat(const char *name_a, const char *name_b,
 		xecfg.ctxlen = o->context;
 		xecfg.interhunkctxlen = o->interhunkcontext;
 		xecfg.flags = XDL_EMIT_NO_HUNK_HDR;
-		if (xdi_diff_outf(&mf1, &mf2, NULL,
+
+		if (p->line_ranges) {
+			struct line_range_filter lr_filter;
+
+			line_range_filter_init(&lr_filter, p->line_ranges,
+					       diffstat_consume, diffstat);
+
+			/* Need hunk headers for post-image position tracking */
+			xecfg.flags &= ~XDL_EMIT_NO_HUNK_HDR;
+
+			if (xdi_diff_outf(&mf1, &mf2,
+					  line_range_hunk_fn,
+					  line_range_line_fn,
+					  &lr_filter, &xpp, &xecfg))
+				die("unable to generate diffstat for %s",
+				    one->path);
+
+			line_range_filter_flush(&lr_filter);
+			if (lr_filter.ret)
+				die("unable to generate diffstat for %s",
+				    one->path);
+			line_range_filter_release(&lr_filter);
+		} else if (xdi_diff_outf(&mf1, &mf2, NULL,
 				  diffstat_consume, diffstat, &xpp, &xecfg))
 			die("unable to generate diffstat for %s", one->path);
 

@@ -9,10 +9,13 @@
 	_<start>_ and _<end>_ (or _<funcname>_) must exist in the starting revision.
 	You can specify this option more than once. Implies `--patch`.
 	Patch output can be suppressed using `--no-patch`.
-	Non-patch diff formats `--raw`, `--name-only`, `--name-status`,
-	`--summary`, and `--check` are supported; diff stat formats
-	(`--stat`, `--numstat`, `--shortstat`, `--dirstat`) are not
-	currently implemented.
+	Other diff formats are supported, including `--raw`,
+	`--name-only`, `--name-status`, `--summary`, `--check`,
+	`--stat`, `--numstat`, and `--shortstat`.
+	Stat formats show range-scoped counts (only lines within
+	the tracked range are counted).  `--dirstat` is accepted
+	but only the `--dirstat=lines` variant is range-scoped;
+	the default changed-bytes mode shows whole-file statistics.
 +
 Patch formatting options such as `--word-diff`, `--color-moved`,
 `--no-prefix`, and whitespace options (`-w`, `-b`) are supported,
