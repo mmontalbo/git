@@ -616,6 +616,11 @@ test_expect_success 'grep -L -C' '
 	test_cmp expected actual
 '
 
+test_expect_success 'grep -C rejects negative value' '
+	test_must_fail git grep -C -1 foo 2>err &&
+	test_grep "expects a non-negative integer" err
+'
+
 test_expect_success 'grep --files-without-match --quiet' '
 	git grep --files-without-match --quiet nonexistent_string >actual &&
 	test_must_be_empty actual
