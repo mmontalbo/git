@@ -609,15 +609,15 @@ struct emit_callback {
 };
 
 /*
- * State for the line-range callback wrappers that sit between
- * xdi_diff_outf() and fn_out_consume().  xdiff produces a normal,
- * unfiltered diff; the wrappers intercept each hunk header and line,
+ * State for the line-range filter that sits between xdi_diff_outf()
+ * and an output callback such as fn_out_consume().  xdiff produces a
+ * normal, unfiltered diff; the filter intercepts each hunk header and line,
  * track post-image position, and forward only lines that fall within
  * the requested ranges.  Contiguous in-range lines are collected into
  * range hunks and flushed with a synthetic @@ header so that
  * fn_out_consume() sees well-formed unified-diff fragments.
  */
-struct line_range_callback {
+struct line_range_filter {
 	xdiff_emit_line_fn orig_line_fn;
 	void *orig_cb_data;
 	const struct range_set *ranges;	/* 0-based [start, end) */
@@ -2529,7 +2529,7 @@ static int quick_consume(void *priv, char *line UNUSED, unsigned long len UNUSED
 	return 1;
 }
 
-static void flush_rhunk(struct line_range_callback *s)
+static void flush_rhunk(struct line_range_filter *s)
 {
 	struct strbuf hdr = STRBUF_INIT;
 	const char *p, *end;
@@ -2585,7 +2585,7 @@ static void line_range_hunk_fn(void *data,
 			       long new_begin, long new_nr UNUSED,
 			       const char *func, long funclen)
 {
-	struct line_range_callback *s = data;
+	struct line_range_filter *s = data;
 
 	/*
 	 * When count > 0, begin is 1-based.  When count == 0, begin is
@@ -2605,7 +2605,7 @@ static void line_range_hunk_fn(void *data,
 
 static int line_range_line_fn(void *priv, char *line, unsigned long len)
 {
-	struct line_range_callback *s = priv;
+	struct line_range_filter *s = priv;
 	long lno_0;
 	int in_range;
 
@@ -4021,7 +4021,7 @@ static void builtin_diff(const char *name_a,
 			xdi_diff_outf(&mf1, &mf2, NULL, quick_consume,
 				      &ecbdata, &xpp, &xecfg);
 		} else if (line_ranges) {
-			struct line_range_callback lr_state;
+			struct line_range_filter lr_state;
 			unsigned int i;
 			long max_span = 0;
 
