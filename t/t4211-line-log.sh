@@ -983,4 +983,40 @@ test_expect_success '--summary shows new file on root commit' '
 	grep "create mode 100644 file.c" actual
 '
 
+test_expect_success 'setup for --check test' '
+	git checkout --orphan check-test &&
+	git reset --hard &&
+	cat >check.c <<-\EOF &&
+	void tracked()
+	{
+	    return;
+	}
+
+	void other()
+	{
+	    return;
+	}
+	EOF
+	git add check.c &&
+	test_tick &&
+	git commit -m "add check.c" &&
+	# Introduce trailing whitespace errors in both functions
+	sed "s/return;/return; /" check.c >check.c.tmp &&
+	mv check.c.tmp check.c &&
+	git commit -a -m "introduce trailing whitespace"
+'
+
+test_expect_success '--check reports whitespace errors in tracked range' '
+	test_must_fail git log -L:tracked:check.c --check --format= >actual &&
+	grep "trailing whitespace" actual
+'
+
+test_expect_success '--check scoped to tracked range' '
+	test_must_fail git log -L:tracked:check.c --check --format= >actual &&
+	# The error is within tracked(); other() errors are excluded
+	grep "trailing whitespace" actual &&
+	# Only one error reported (tracked function only, not other())
+	test $(grep -c "trailing whitespace" actual) = 1
+'
+
 test_done
