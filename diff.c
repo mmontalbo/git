@@ -4255,7 +4255,8 @@ static void builtin_checkdiff(const char *name_a, const char *name_b,
 			      const char *attr_path,
 			      struct diff_filespec *one,
 			      struct diff_filespec *two,
-			      struct diff_options *o)
+			      struct diff_options *o,
+			      const struct range_set *line_ranges)
 {
 	mmfile_t mf1, mf2;
 	struct checkdiff_t data;
@@ -4295,7 +4296,26 @@ static void builtin_checkdiff(const char *name_a, const char *name_b,
 		memset(&xecfg, 0, sizeof(xecfg));
 		xecfg.ctxlen = 1; /* at least one context line */
 		xpp.flags = 0;
-		if (xdi_diff_outf(&mf1, &mf2, checkdiff_consume_hunk,
+
+		if (line_ranges) {
+			struct line_range_filter lr_filter;
+
+			line_range_filter_init(&lr_filter, line_ranges,
+					       checkdiff_consume, &data);
+
+			if (xdi_diff_outf(&mf1, &mf2,
+					  line_range_hunk_fn,
+					  line_range_line_fn,
+					  &lr_filter, &xpp, &xecfg))
+				die("unable to generate checkdiff for %s",
+				    one->path);
+
+			line_range_filter_flush(&lr_filter);
+			if (lr_filter.ret)
+				die("unable to generate checkdiff for %s",
+				    one->path);
+			line_range_filter_release(&lr_filter);
+		} else if (xdi_diff_outf(&mf1, &mf2, checkdiff_consume_hunk,
 				  checkdiff_consume, &data,
 				  &xpp, &xecfg))
 			die("unable to generate checkdiff for %s", one->path);
@@ -5100,7 +5120,8 @@ static void run_checkdiff(struct diff_filepair *p, struct diff_options *o)
 	diff_fill_oid_info(p->one, o->repo->index);
 	diff_fill_oid_info(p->two, o->repo->index);
 
-	builtin_checkdiff(name, other, attr_path, p->one, p->two, o);
+	builtin_checkdiff(name, other, attr_path, p->one, p->two, o,
+			  p->line_ranges);
 }
 
 void repo_diff_setup(struct repository *r, struct diff_options *options)

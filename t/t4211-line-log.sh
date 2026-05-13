@@ -997,15 +997,12 @@ test_expect_success '--check reports whitespace errors in tracked range' '
 	grep "trailing whitespace" actual
 '
 
-# --check currently examines the entire file diff, not just the tracked
-# range.  Scoping --check to line_ranges would require threading range
-# filtering into run_checkdiff(), similar to how builtin_diff() filters
-# patch output.
-test_expect_failure '--check should not report errors outside tracked range' '
+test_expect_success '--check scoped to tracked range' '
 	test_must_fail git log -L:tracked:check.c --check --format= >actual &&
-	# line 3 is inside tracked(), line 8 is inside other()
-	grep "check.c:3" actual &&
-	! grep "check.c:8" actual
+	# The error is within tracked(); other() errors are excluded
+	grep "trailing whitespace" actual &&
+	# Only one error reported (tracked function only, not other())
+	test $(grep -c "trailing whitespace" actual) = 1
 '
 
 test_done
