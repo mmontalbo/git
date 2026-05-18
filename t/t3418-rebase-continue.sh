@@ -367,4 +367,31 @@ test_orig_head () {
 test_orig_head --apply
 test_orig_head --merge
 
+test_expect_success 'rebase --continue handles missing tree for upcoming pick' '
+	test_when_finished "
+		test_might_fail git rebase --abort &&
+		rm -rf .git/rebase-merge &&
+		git checkout main &&
+		git branch -D mt-target mt-branch
+	" &&
+
+	git checkout -b mt-target commit-new-file-F1 &&
+	test_commit mt-target-change file-mt target &&
+
+	git checkout -b mt-branch commit-new-file-F1 &&
+	test_commit mt-first file-mt branch &&
+	test_commit mt-second mt-unique-file unique &&
+
+	tree=$(git rev-parse mt-second^{tree}) &&
+
+	test_must_fail git rebase mt-target &&
+
+	rm ".git/objects/$(test_oid_to_path "$tree")" &&
+
+	echo resolved >file-mt &&
+	git add file-mt &&
+	test_must_fail git rebase --continue 2>err &&
+	test_grep "Could not read" err
+'
+
 test_done

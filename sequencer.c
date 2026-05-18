@@ -773,7 +773,13 @@ static int do_recursive_merge(struct repository *r,
 	if (!head_tree)
 		return error(_("unable to read tree (%s)"), oid_to_hex(head));
 	next_tree = next ? repo_get_commit_tree(r, next) : empty_tree(r);
+	if (!next_tree)
+		return error(_("unable to read tree for commit %s"),
+			     oid_to_hex(&next->object.oid));
 	base_tree = base ? repo_get_commit_tree(r, base) : empty_tree(r);
+	if (!base_tree)
+		return error(_("unable to read tree for commit %s"),
+			     oid_to_hex(&base->object.oid));
 
 	for (i = 0; i < opts->xopts.nr; i++)
 		parse_merge_opt(&o, opts->xopts.v[i]);
@@ -1594,10 +1600,19 @@ static int try_to_commit(struct repository *r,
 				first_parent = NULL;
 			}
 		}
-		if (oideq(first_parent
-			  ? get_commit_tree_oid(first_parent)
-			  : the_hash_algo->empty_tree,
-			  &tree)) {
+		if (first_parent) {
+			const struct object_id *first_tree_oid =
+				get_commit_tree_oid(first_parent);
+			if (!first_tree_oid) {
+				res = error(_("unable to read tree for commit %s"),
+					    oid_to_hex(&first_parent->object.oid));
+				goto out;
+			}
+			if (oideq(first_tree_oid, &tree)) {
+				res = 1; /* run 'git commit' to display error message */
+				goto out;
+			}
+		} else if (oideq(the_hash_algo->empty_tree, &tree)) {
 			res = 1; /* run 'git commit' to display error message */
 			goto out;
 		}
@@ -1759,7 +1774,7 @@ static int do_commit(struct repository *r,
 
 static int is_original_commit_empty(struct commit *commit)
 {
-	const struct object_id *ptree_oid;
+	const struct object_id *ptree_oid, *ctree_oid;
 
 	if (repo_parse_commit(the_repository, commit))
 		return error(_("could not parse commit %s"),
@@ -1774,7 +1789,11 @@ static int is_original_commit_empty(struct commit *commit)
 		ptree_oid = the_hash_algo->empty_tree; /* commit is root */
 	}
 
-	return oideq(ptree_oid, get_commit_tree_oid(commit));
+	ctree_oid = get_commit_tree_oid(commit);
+	if (!ptree_oid || !ctree_oid)
+		return error(_("unable to read tree for commit %s"),
+			     oid_to_hex(&commit->object.oid));
+	return oideq(ptree_oid, ctree_oid);
 }
 
 /*
