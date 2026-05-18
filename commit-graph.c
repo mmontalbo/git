@@ -1096,6 +1096,7 @@ static struct tree *load_tree_for_commit(struct commit_graph *g,
 {
 	struct object_id oid;
 	const unsigned char *commit_data;
+	struct tree *tree;
 	uint32_t graph_pos = commit_graph_position(c);
 
 	while (graph_pos < g->num_commits_in_base)
@@ -1106,7 +1107,14 @@ static struct tree *load_tree_for_commit(struct commit_graph *g,
 				graph_pos - g->num_commits_in_base);
 
 	oidread(&oid, commit_data, g->hash_algo);
-	set_commit_tree(c, lookup_tree(g->odb_source->odb->repo, &oid));
+
+	tree = lookup_tree(g->odb_source->odb->repo, &oid);
+	if (!tree) {
+		warning(_("commit-graph has invalid tree OID for commit %s"),
+			oid_to_hex(&c->object.oid));
+		return NULL;
+	}
+	set_commit_tree(c, tree);
 
 	return c->maybe_tree;
 }
@@ -2820,6 +2828,7 @@ static int verify_one_commit_graph(struct commit_graph *g,
 	for (i = 0; i < g->num_commits; i++) {
 		struct commit *graph_commit, *odb_commit;
 		struct commit_list *graph_parents, *odb_parents;
+		struct tree *graph_tree;
 		timestamp_t max_generation = 0;
 		timestamp_t generation;
 
@@ -2835,8 +2844,12 @@ static int verify_one_commit_graph(struct commit_graph *g,
 			continue;
 		}
 
-		if (!oideq(&get_commit_tree_in_graph_one(g, graph_commit)->object.oid,
-			   get_commit_tree_oid(odb_commit)))
+		graph_tree = get_commit_tree_in_graph_one(g, graph_commit);
+		if (!graph_tree)
+			graph_report(_("failed to load tree for commit %s from commit-graph"),
+				     oid_to_hex(&cur_oid));
+		else if (!oideq(&graph_tree->object.oid,
+				get_commit_tree_oid(odb_commit)))
 			graph_report(_("root tree OID for commit %s in commit-graph is %s != %s"),
 				     oid_to_hex(&cur_oid),
 				     oid_to_hex(get_commit_tree_oid(graph_commit)),

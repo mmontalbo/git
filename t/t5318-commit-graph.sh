@@ -599,6 +599,36 @@ test_expect_success 'detect incorrect tree OID' '
 		"root tree OID for commit"
 '
 
+test_expect_success PERL_TEST_HELPERS \
+	'do not crash on corrupt commit-graph tree OID' '
+	test_when_finished "rm -rf cg-repo" &&
+
+	git init cg-repo &&
+	test_commit -C cg-repo base &&
+	git -C cg-repo checkout -b cg-target &&
+	test_commit -C cg-repo cg-target-file file-cg target &&
+	git -C cg-repo checkout -b cg-branch HEAD^ &&
+	test_commit -C cg-repo cg-conflict file-cg branch &&
+
+	git -C cg-repo commit-graph write --reachable &&
+
+	# Replace base commit tree OID with cg-conflict commit OID
+	base_oid=$(git -C cg-repo rev-parse base) &&
+	conflict_oid=$(git -C cg-repo rev-parse cg-conflict) &&
+	hash_len=$(test_oid rawsz) &&
+	cdat_entry_width=$((hash_len + 16)) &&
+	base_pos=$(git -C cg-repo rev-list --all | sort |
+		awk -v oid="$base_oid" \
+		"{if(\$0==oid){print NR-1;exit}}") &&
+	chmod u+w cg-repo/$objdir/info/commit-graph &&
+	corrupt_chunk_file cg-repo/$objdir/info/commit-graph \
+		CDAT "$((base_pos * cdat_entry_width))" \
+		"$conflict_oid" &&
+
+	test_must_fail git -C cg-repo rebase cg-target 2>err &&
+	test_grep "invalid tree OID" err
+'
+
 test_expect_success 'detect incorrect parent int-id' '
 	corrupt_graph_and_verify $GRAPH_BYTE_COMMIT_PARENT "\01" \
 		"invalid parent"
