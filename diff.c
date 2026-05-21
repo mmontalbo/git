@@ -4369,7 +4369,10 @@ static int diffstat_from_hunks(struct diff_options *o,
 	/*
 	 * xpparam_t is the diff algorithm's input. Its flags are the key's
 	 * xdl_opts; ignore_regex (-I) and anchors (--anchored) are instead
-	 * excluded by the guard below.
+	 * excluded by the guard below. external_hunks carries a
+	 * caller-supplied answer rather than a setting: the store paths
+	 * build their xpparam_t locally and never populate it, so a
+	 * recorded diff is always xdiff's own.
 	 *
 	 * Adding an xpparam_t field fires this assert (its size no longer
 	 * matches the reference struct). To clear it: (1) add the field to
@@ -4385,6 +4388,8 @@ static int diffstat_from_hunks(struct diff_options *o,
 		size_t ignore_regex_nr;
 		char **anchors;
 		size_t anchors_nr;
+		struct xdl_hunk *external_hunks;
+		size_t external_hunks_nr;
 	}));
 
 	if (!((diff_provider_active(o->repo) || o->hunks_writer) &&
