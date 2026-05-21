@@ -78,6 +78,18 @@ typedef struct s_mmbuffer {
 	long size;
 } mmbuffer_t;
 
+/*
+ * Hunk descriptor for externally computed diffs, in xdiff's own
+ * coordinates: line numbers are 1-based and a hunk's start is the
+ * first line it covers.  A caller translates any external "empty side"
+ * idiom (such as git diff's start-0/count-0) to a 1-based start before
+ * handing hunks over.
+ */
+typedef struct s_xdl_hunk {
+	long old_start, old_count;
+	long new_start, new_count;
+} xdl_hunk_t;
+
 typedef struct s_xpparam {
 	unsigned long flags;
 
@@ -88,6 +100,14 @@ typedef struct s_xpparam {
 	/* See Documentation/diff-options.adoc. */
 	char **anchors;
 	size_t anchors_nr;
+
+	/*
+	 * Externally computed hunks that bypass the diff algorithm.  The caller
+	 * allocates and frees them; xdiff only reads them during the diff.  They
+	 * use xdl_hunk_t's 1-based starts.
+	 */
+	xdl_hunk_t *external_hunks;
+	size_t external_hunks_nr;
 } xpparam_t;
 
 typedef struct s_xdemitcb {
