@@ -198,4 +198,22 @@ else
 	echo >&2 "::warning:: JGit wasn't installed, see above for clues why"
 fi
 
+# Best-effort ccache install; ci/lib.sh will use it if available.
+if ! command -v ccache >/dev/null 2>&1
+then
+	if command -v apt-get >/dev/null 2>&1
+	then
+		sudo apt-get -q -y install ccache 2>/dev/null || true
+	elif command -v dnf >/dev/null 2>&1
+	then
+		dnf -yq install ccache 2>/dev/null || true
+	elif command -v apk >/dev/null 2>&1
+	then
+		apk add ccache 2>/dev/null || true
+	elif command -v brew >/dev/null 2>&1
+	then
+		brew install ccache 2>/dev/null || true
+	fi
+fi
+
 end_group "Install dependencies"

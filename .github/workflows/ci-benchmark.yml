@@ -1,0 +1,200 @@
+name: CI Build Benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      repetitions:
+        description: 'Extra warm-cache repetitions (beyond the initial cold+warm pair)'
+        required: false
+        default: '0'
+
+env:
+  DEVELOPER: 1
+
+jobs:
+  benchmark-linux:
+    name: benchmark (linux-gcc)
+    runs-on: ubuntu-latest
+    container: ubuntu:rolling
+    env:
+      CC: gcc
+      jobname: linux-sha256
+      CI_JOB_IMAGE: ubuntu:rolling
+    steps:
+    - uses: actions/checkout@v6
+
+    - uses: actions/cache@v4
+      with:
+        path: ${{github.workspace}}/.ccache
+        key: bench-ccache-linux-${{github.sha}}
+        restore-keys: bench-ccache-linux-
+
+    - run: ci/install-dependencies.sh
+
+    - name: setup
+      run: |
+        useradd builder --create-home
+        chown -R builder .
+        chmod a+w "$GITHUB_ENV" "$GITHUB_STEP_SUMMARY"
+        mkdir -p "$GITHUB_WORKSPACE/.ccache"
+        chown -R builder "$GITHUB_WORKSPACE/.ccache"
+
+    - name: "baseline: build without ccache"
+      run: |
+        sudo --preserve-env --set-home --user=builder bash -c '
+          start=$(date +%s)
+          make --jobs=$(nproc) DEVELOPER=1
+          elapsed=$(($(date +%s) - start))
+          echo "BASELINE=${elapsed}" >>"$GITHUB_ENV"
+          echo "::notice::Baseline (no ccache): ${elapsed}s"
+        '
+
+    - name: clean
+      run: sudo --preserve-env --set-home --user=builder make clean
+
+    - name: "cold ccache: first build populating cache"
+      run: |
+        sudo --preserve-env --set-home --user=builder bash -c '
+          export CCACHE_DIR="$GITHUB_WORKSPACE/.ccache"
+          export CCACHE_MAXSIZE=256M
+          export PATH="/usr/lib/ccache:$PATH"
+          ccache --zero-stats
+
+          start=$(date +%s)
+          make --jobs=$(nproc) DEVELOPER=1
+          elapsed=$(($(date +%s) - start))
+          echo "COLD=${elapsed}" >>"$GITHUB_ENV"
+          echo "::notice::Cold ccache: ${elapsed}s"
+          ccache --show-stats
+        '
+
+    - name: clean
+      run: sudo --preserve-env --set-home --user=builder make clean
+
+    - name: "warm ccache: rebuild from cache"
+      run: |
+        sudo --preserve-env --set-home --user=builder bash -c '
+          export CCACHE_DIR="$GITHUB_WORKSPACE/.ccache"
+          export CCACHE_MAXSIZE=256M
+          export PATH="/usr/lib/ccache:$PATH"
+          ccache --zero-stats
+
+          start=$(date +%s)
+          make --jobs=$(nproc) DEVELOPER=1
+          elapsed=$(($(date +%s) - start))
+          echo "WARM=${elapsed}" >>"$GITHUB_ENV"
+          echo "::notice::Warm ccache: ${elapsed}s"
+          ccache --show-stats
+        '
+
+    - name: "extra repetitions"
+      if: inputs.repetitions != '0'
+      run: |
+        reps=${{ inputs.repetitions }}
+        i=0
+        while test "$i" -lt "$reps"
+        do
+          i=$((i + 1))
+          sudo --preserve-env --set-home --user=builder make clean
+          sudo --preserve-env --set-home --user=builder bash -c '
+            export CCACHE_DIR="$GITHUB_WORKSPACE/.ccache"
+            export CCACHE_MAXSIZE=256M
+            export PATH="/usr/lib/ccache:$PATH"
+            ccache --zero-stats
+            start=$(date +%s)
+            make --jobs=$(nproc) DEVELOPER=1
+            elapsed=$(($(date +%s) - start))
+            echo "::notice::Warm ccache (rep '"$i"'): ${elapsed}s"
+          '
+        done
+
+    - name: summary
+      if: always()
+      run: |
+        cat >>"$GITHUB_STEP_SUMMARY" <<-EOF
+        ## Build Benchmark: linux-gcc
+
+        | Build | Time (seconds) |
+        |-------|----------------|
+        | Baseline (no ccache) | ${BASELINE:-n/a} |
+        | Cold ccache | ${COLD:-n/a} |
+        | Warm ccache | ${WARM:-n/a} |
+        EOF
+
+  benchmark-macos:
+    name: benchmark (osx-clang)
+    runs-on: macos-14
+    env:
+      CC: clang
+      jobname: osx-clang
+      CI_JOB_IMAGE: macos-14
+    steps:
+    - uses: actions/checkout@v6
+
+    - uses: actions/cache@v4
+      with:
+        path: ${{github.workspace}}/.ccache
+        key: bench-ccache-osx-${{github.sha}}
+        restore-keys: bench-ccache-osx-
+
+    - run: ci/install-dependencies.sh
+
+    - name: setup
+      run: mkdir -p "$GITHUB_WORKSPACE/.ccache"
+
+    - name: "baseline: build without ccache"
+      run: |
+        start=$(date +%s)
+        make --jobs=$(sysctl -n hw.ncpu) DEVELOPER=1
+        elapsed=$(($(date +%s) - start))
+        echo "BASELINE=${elapsed}" >>"$GITHUB_ENV"
+        echo "::notice::Baseline (no ccache): ${elapsed}s"
+
+    - name: clean
+      run: make clean
+
+    - name: "cold ccache: first build populating cache"
+      run: |
+        export CCACHE_DIR="$GITHUB_WORKSPACE/.ccache"
+        export CCACHE_MAXSIZE=256M
+        brew_ccache="$(brew --prefix)/opt/ccache/libexec"
+        export PATH="$brew_ccache:$PATH"
+        ccache --zero-stats
+
+        start=$(date +%s)
+        make --jobs=$(sysctl -n hw.ncpu) DEVELOPER=1
+        elapsed=$(($(date +%s) - start))
+        echo "COLD=${elapsed}" >>"$GITHUB_ENV"
+        echo "::notice::Cold ccache: ${elapsed}s"
+        ccache --show-stats
+
+    - name: clean
+      run: make clean
+
+    - name: "warm ccache: rebuild from cache"
+      run: |
+        export CCACHE_DIR="$GITHUB_WORKSPACE/.ccache"
+        export CCACHE_MAXSIZE=256M
+        brew_ccache="$(brew --prefix)/opt/ccache/libexec"
+        export PATH="$brew_ccache:$PATH"
+        ccache --zero-stats
+
+        start=$(date +%s)
+        make --jobs=$(sysctl -n hw.ncpu) DEVELOPER=1
+        elapsed=$(($(date +%s) - start))
+        echo "WARM=${elapsed}" >>"$GITHUB_ENV"
+        echo "::notice::Warm ccache: ${elapsed}s"
+        ccache --show-stats
+
+    - name: summary
+      if: always()
+      run: |
+        cat >>"$GITHUB_STEP_SUMMARY" <<-EOF
+        ## Build Benchmark: osx-clang
+
+        | Build | Time (seconds) |
+        |-------|----------------|
+        | Baseline (no ccache) | ${BASELINE:-n/a} |
+        | Cold ccache | ${COLD:-n/a} |
+        | Warm ccache | ${WARM:-n/a} |
+        EOF

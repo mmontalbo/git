@@ -388,6 +388,48 @@ windows-*)
 	;;
 esac
 
+# Set up ccache if available. By prepending the ccache symlink directory to
+# PATH, invocations of the compiler (e.g. "gcc") transparently go through
+# ccache without requiring changes to CC or MAKEFLAGS.
+if command -v ccache >/dev/null 2>&1
+then
+	ccache_links_dir=
+	if test -d /usr/lib/ccache/bin
+	then
+		# Alpine
+		ccache_links_dir=/usr/lib/ccache/bin
+	elif test -d /usr/lib/ccache
+	then
+		# Ubuntu, Debian
+		ccache_links_dir=/usr/lib/ccache
+	elif test -d /usr/lib64/ccache
+	then
+		# Fedora, RHEL
+		ccache_links_dir=/usr/lib64/ccache
+	elif command -v brew >/dev/null 2>&1
+	then
+		brew_ccache="$(brew --prefix)/opt/ccache/libexec"
+		if test -d "$brew_ccache"
+		then
+			ccache_links_dir="$brew_ccache"
+		fi
+	fi
+
+	if test -n "$ccache_links_dir"
+	then
+		export PATH="$ccache_links_dir:$PATH"
+		if test true = "$GITHUB_ACTIONS"
+		then
+			CCACHE_DIR="$GITHUB_WORKSPACE/.ccache"
+		else
+			CCACHE_DIR="${CCACHE_DIR:-$HOME/.cache/ccache}"
+		fi
+		export CCACHE_DIR
+		export CCACHE_MAXSIZE=256M
+		ccache --zero-stats 2>/dev/null || :
+	fi
+fi
+
 MAKEFLAGS="$MAKEFLAGS CC=${CC:-cc}"
 
 end_group "CI setup via $(basename $0)"
