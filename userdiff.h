@@ -35,6 +35,7 @@ struct userdiff_driver {
 	const char *process;
 	char *process_owned;
 	struct diff_subprocess *diff_subprocess; /* lazy-started, owned */
+	unsigned diff_process_failed : 1;
 };
 enum userdiff_driver_type {
 	USERDIFF_DRIVER_TYPE_BUILTIN = 1<<0,
