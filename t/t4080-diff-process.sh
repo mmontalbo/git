@@ -333,6 +333,14 @@ test_expect_success PYTHON 'diff process not used by --stat' '
 	test_path_is_missing backend.log
 '
 
+test_expect_success PYTHON 'diff process bypassed by --no-ext-diff' '
+	rm -f backend.log &&
+	git -c diff.cdiff.process="$BACKEND --log=backend.log" \
+		diff --no-ext-diff worddiff.c >actual &&
+	test_grep "return 999" actual &&
+	test_path_is_missing backend.log
+'
+
 test_expect_success PYTHON 'diff process works with git log -p' '
 	cat >logtest.c <<-\EOF &&
 	int logfunc(void) { return 1; }
@@ -352,6 +360,14 @@ test_expect_success PYTHON 'diff process works with git log -p' '
 	test_grep "return 2" actual &&
 	test_grep "command=hunks pathname=logtest.c" backend.log &&
 	test_must_be_empty stderr
+'
+
+test_expect_success PYTHON 'diff process not used by format-patch' '
+	rm -f backend.log &&
+	git -c diff.cdiff.process="$BACKEND --log=backend.log" \
+		format-patch -1 --stdout -- logtest.c >actual &&
+	test_grep "return 2" actual &&
+	test_path_is_missing backend.log
 '
 
 test_expect_success PYTHON 'diff process startup failure only warns once' '
