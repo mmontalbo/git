@@ -1053,7 +1053,8 @@ process" below for the full picture and the reasoning behind it.
 When a "success" response carries no hunk lines, Git treats the two
 blobs as unchanged.  `git diff` then produces no output.  `git diff
 --exit-code` and `--quiet` report success even though the stored blobs
-differ.  The plumbing commands `git diff-tree`, `git
+differ.  `git blame` skips the commit and attributes its lines to
+earlier commits.  The plumbing commands `git diff-tree`, `git
 diff-index`, and `git diff-files` do not consult the process for
 `--quiet` or `--exit-code`, unless `--ext-diff` is given.  By default,
 they compare object ids and report a change without examining content.
@@ -1137,8 +1138,9 @@ it is really asking, and uses the builtin algorithm otherwise:
 |Word diff, `-W`, `--color-moved`, and `@@` headers all operate on the
  emitted patch lines, so they follow the process's hunks.
 
-|`git blame` |no
-|May consult the process in a later change; uses the builtin diff for now.
+|`git blame` |yes
+|A change the process reports as equivalent is skipped; its lines are
+ attributed to an earlier commit.
 
 |`git log -L` |no
 |May consult the process in a later change; uses the builtin diff for now.

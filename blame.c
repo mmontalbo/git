@@ -19,6 +19,8 @@
 #include "tag.h"
 #include "trace2.h"
 #include "blame.h"
+#include "diff-process.h"
+#include "xdiff-interface.h"
 #include "alloc.h"
 #include "commit-slab.h"
 #include "bloom.h"
@@ -1934,6 +1936,30 @@ static int blame_chunk_cb(long start_a, long count_a,
 }
 
 /*
+ * A hunks-by-oid diff process answers about the raw blob pair.  Use the shared
+ * predicate for protocol-visible diff options and textconv on either side.
+ * Also exclude a working-tree or --contents target: its blob is a pretend
+ * object held only in memory (see fake_working_tree_commit()), which a diff
+ * process reading the object store cannot resolve, so blame loads the content
+ * and uses the builtin diff instead.
+ *
+ * diff_process_hunks_by_oid() handles an explicit diff algorithm through
+ * diffopt.ignore_driver_algorithm.  cmd_blame() sets that flag for the
+ * command-line option only, matching "git diff" (diff.algorithm config does
+ * not bypass).
+ */
+static int blame_may_use_diff_process(struct blame_scoreboard *sb,
+				      struct blame_origin *target,
+				      const char *old_path,
+				      const char *new_path)
+{
+	if (is_null_oid(&target->commit->object.oid))
+		return 0;
+	return diff_process_by_oid_eligible(&sb->revs->diffopt,
+					    old_path, new_path, sb->xdl_opts);
+}
+
+/*
  * We are looking at the origin 'target' and aiming to pass blame
  * for the lines it is suspected to its parent.  Run diff to find
  * which lines came from parent and pass blame for them.
@@ -1955,16 +1981,37 @@ static void pass_blame_to_parent(struct blame_scoreboard *sb,
 	d.ignore_diffs = ignore_diffs;
 	d.dstq = &newdest; d.srcq = &target->suspects;
 
-	fill_origin_blob(&sb->revs->diffopt, parent, &file_p,
-			 &sb->num_read_blob, ignore_diffs);
-	fill_origin_blob(&sb->revs->diffopt, target, &file_o,
-			 &sb->num_read_blob, ignore_diffs);
-	sb->num_get_patch++;
+	/*
+	 * When a hunks-by-oid process answers for the (parent, target) blob
+	 * pair, blame_chunk_cb is driven from the returned ranges and neither
+	 * blob is read here.  blame_may_use_diff_process() withholds that path
+	 * when blame diffs something other than the raw blobs; the --ignore-rev
+	 * pass (ignore_diffs) likewise needs the loaded content.
+	 */
+	if (!ignore_diffs &&
+	    blame_may_use_diff_process(sb, target, parent->path, target->path) &&
+	    diff_process_hunks_by_oid(&sb->revs->diffopt, parent->path,
+				      &parent->blob_oid, &target->blob_oid,
+				      blame_chunk_cb, &d) > 0) {
+		/* ranges arrived by object id; no blobs loaded */
+	} else {
+		fill_origin_blob(&sb->revs->diffopt, parent, &file_p,
+				 &sb->num_read_blob, ignore_diffs);
+		fill_origin_blob(&sb->revs->diffopt, target, &file_o,
+				 &sb->num_read_blob, ignore_diffs);
+		sb->num_get_patch++;
 
-	if (diff_hunks(&file_p, &file_o, blame_chunk_cb, &d, sb->xdl_opts))
-		die("unable to generate diff (%s -> %s)",
-		    oid_to_hex(&parent->commit->object.oid),
-		    oid_to_hex(&target->commit->object.oid));
+		/*
+		 * Not answered by object id: load the blobs and derive the
+		 * chunks with the builtin diff.  Header consumers reach the
+		 * process only through the no-load by-oid path, so there is no
+		 * content-mode re-consultation here.
+		 */
+		if (diff_hunks(&file_p, &file_o, blame_chunk_cb, &d, sb->xdl_opts))
+			die("unable to generate diff (%s -> %s)",
+			    oid_to_hex(&parent->commit->object.oid),
+			    oid_to_hex(&target->commit->object.oid));
+	}
 	/* The rest are the same as the parent */
 	blame_chunk(&d.dstq, &d.srcq, INT_MAX, d.offset, INT_MAX, 0,
 		    parent, target, 0);

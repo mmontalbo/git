@@ -827,4 +827,399 @@ test_expect_success 'diff process omits old-oid and new-oid for textconv content
 	test_must_be_empty stderr
 '
 
+#
+# Blame integration.
+#
+
+test_expect_success 'blame uses process-provided hunks' '
+	cat >blame-hunk.c <<-\EOF &&
+	line1
+	line2
+	line3
+	line4
+	original5
+	original6
+	line7
+	line8
+	line9
+	line10
+	EOF
+	git add blame-hunk.c &&
+	git commit -m "add blame-hunk.c" &&
+	ORIG=$(git rev-parse --short HEAD) &&
+
+	cat >blame-hunk.c <<-\EOF &&
+	line1
+	line2
+	line3
+	line4
+	changed5
+	changed6
+	line7
+	line8
+	changed9
+	changed10
+	EOF
+	git add blame-hunk.c &&
+	git commit -m "change blame-hunk.c" &&
+	CHANGE=$(git rev-parse --short HEAD) &&
+
+	# The process answers by object id (no blob loaded) reporting only
+	# lines 5-6 as changed, so blame should attribute lines 9-10 to the
+	# original commit even though the builtin diff would show them as
+	# changed.
+	git -c diff.cdiff.process="$BACKEND --mode=oid-fixed" \
+		blame blame-hunk.c >actual &&
+	sed -n "9p" actual >line9 &&
+	sed -n "10p" actual >line10 &&
+	test_grep "$ORIG" line9 &&
+	test_grep "$ORIG" line10 &&
+	sed -n "5p" actual >line5 &&
+	sed -n "6p" actual >line6 &&
+	test_grep "$CHANGE" line5 &&
+	test_grep "$CHANGE" line6
+'
+
+test_expect_success 'blame skips commits with no hunks from diff process' '
+	cat >blame.c <<-\EOF &&
+	int main(void) {
+	return 0;
+	}
+	EOF
+	git add blame.c &&
+	git commit -m "add blame.c" &&
+	ORIG_COMMIT=$(git rev-parse --short HEAD) &&
+
+	cat >blame.c <<-\EOF &&
+	int main(void)
+	{
+	return 1;
+	}
+	EOF
+	git add blame.c &&
+	git commit -m "change blame.c" &&
+	BLAME_COMMIT=$(git rev-parse --short HEAD) &&
+
+	# Without no-hunks mode, blame attributes the change.
+	git blame blame.c >without &&
+	test_grep "$BLAME_COMMIT" without &&
+
+	# oid-no-hunks reports equal line counts and no hunks.  The process
+	# reports the files equivalent, so blame skips the change commit.
+	git -c diff.cdiff.process="$BACKEND --mode=oid-no-hunks" \
+		blame blame.c >with &&
+	test_grep ! "$BLAME_COMMIT" with &&
+	test_grep "$ORIG_COMMIT" with
+'
+
+test_expect_success 'blame falls back on a by-oid no-hunks reply with unequal line counts' '
+	test_when_finished "rm -f backend.log" &&
+	printf "alpha\nbeta\ngamma\n" >oid_unequal.c &&
+	git add oid_unequal.c &&
+	git commit -m "add oid_unequal.c" &&
+	OID_UNEQUAL_ORIG=$(git rev-parse HEAD) &&
+	printf "alpha\nbeta\nGAMMA\ndelta\n" >oid_unequal.c &&
+	git add oid_unequal.c &&
+	git commit -m "change oid_unequal.c" &&
+
+	git blame --line-porcelain oid_unequal.c >builtin_out &&
+	git -c diff.cdiff.process="$BACKEND --mode=oid-no-hunks-different-lines --log=backend.log" \
+		blame --line-porcelain oid_unequal.c >actual 2>stderr &&
+	test_cmp builtin_out actual &&
+	test_grep ! -E "^\^?$OID_UNEQUAL_ORIG 4 " actual &&
+	test_grep "command=hunks-by-oid pathname=oid_unequal.c" backend.log &&
+	test_grep ! "command=hunks pathname" backend.log &&
+	test_must_be_empty stderr
+'
+
+test_expect_success 'blame reads no parent blob when answered by object id' '
+	test_when_finished "rm -f b.log" &&
+	# by_oid.c is 10 lines; lines 5-6 change across three commits.  With
+	# the process answering by object id, blame reads only the final blob
+	# it displays, not the parent blob of each pair it diffs.
+	printf "a\nb\nc\nd\nA5\nA6\ng\nh\ni\nj\n" >by_oid.c &&
+	git add by_oid.c && git commit -q -m "by_oid v1" &&
+	printf "a\nb\nc\nd\nB5\nB6\ng\nh\ni\nj\n" >by_oid.c &&
+	git commit -q -am "by_oid v2" &&
+	printf "a\nb\nc\nd\nC5\nC6\ng\nh\ni\nj\n" >by_oid.c &&
+	git commit -q -am "by_oid v3" &&
+
+	git blame --show-stats by_oid.c >builtin_out &&
+	git -c diff.cdiff.process="$BACKEND --mode=oid-fixed --log=b.log" \
+		blame --show-stats by_oid.c >by_oid_out &&
+	# Same attribution (drop the trailing "num ..." stat lines).
+	grep -v "^num " builtin_out >builtin_blame &&
+	grep -v "^num " by_oid_out >by_oid_blame &&
+	test_cmp builtin_blame by_oid_blame &&
+	# ...but fewer blob reads, and the process was asked by object id
+	# only, never in content mode.  Content mode would load the blobs.
+	test "$(sed -n "s/num read blob: //p" by_oid_out)" -lt \
+	     "$(sed -n "s/num read blob: //p" builtin_out)" &&
+	test_grep "command=hunks-by-oid pathname=by_oid.c" b.log &&
+	test_grep ! "command=hunks pathname" b.log
+'
+
+test_expect_success 'blame falls back on an out-of-bounds by-oid hunk' '
+	test_when_finished "rm -f backend.log" &&
+	# oid-bad-hunk answers by object id with a hunk past the end of the
+	# blob.  Git validates it against the process-reported line counts,
+	# rejects it, warns, and uses the builtin diff.
+	git blame by_oid.c >builtin_out &&
+	git -c diff.cdiff.process="$BACKEND --mode=oid-bad-hunk --log=backend.log" \
+		blame by_oid.c >actual 2>stderr &&
+	test_cmp builtin_out actual &&
+	test_grep "past the end" stderr &&
+	test_grep "command=hunks-by-oid pathname=by_oid.c" backend.log &&
+	test_grep ! "command=hunks pathname" backend.log
+'
+
+test_expect_success 'blame falls back on a by-oid error status' '
+	test_when_finished "rm -f backend.log requests warnings" &&
+	# oid-error answers by object id with a well-framed reply that ends in
+	# status=error.  blame warns and uses the builtin diff.
+	git blame by_oid.c >builtin_out &&
+	git -c diff.cdiff.process="$BACKEND --mode=oid-error --log=backend.log" \
+		blame by_oid.c >actual 2>stderr &&
+	test_cmp builtin_out actual &&
+	test_grep "failed answering by object id" stderr &&
+	test_grep "command=hunks-by-oid pathname=by_oid.c" backend.log &&
+	grep "command=hunks-by-oid" backend.log >requests &&
+	test_line_count = 1 requests &&
+	grep "failed answering by object id" stderr >warnings &&
+	test_line_count = 1 warnings &&
+	test_grep ! "command=hunks pathname" backend.log
+'
+
+test_expect_success 'blame falls back on a by-oid abort status' '
+	test_when_finished "rm -f backend.log requests warnings" &&
+	git blame by_oid.c >builtin_out &&
+	git -c diff.cdiff.process="$BACKEND --mode=oid-abort --log=backend.log" \
+		blame by_oid.c >actual 2>stderr &&
+	test_cmp builtin_out actual &&
+	test_grep "failed answering by object id" stderr &&
+	test_grep "command=hunks-by-oid pathname=by_oid.c" backend.log &&
+	grep "command=hunks-by-oid" backend.log >requests &&
+	test_line_count = 1 requests &&
+	grep "failed answering by object id" stderr >warnings &&
+	test_line_count = 1 warnings &&
+	test_grep ! "command=hunks pathname" backend.log
+'
+
+test_expect_success 'blame falls back on a by-oid process crash' '
+	test_when_finished "rm -f backend.log requests warnings" &&
+	git blame by_oid.c >builtin_out &&
+	git -c diff.cdiff.process="$BACKEND --mode=oid-crash --log=backend.log" \
+		blame by_oid.c >actual 2>stderr &&
+	test_cmp builtin_out actual &&
+	test_grep "failed answering by object id" stderr &&
+	test_grep "command=hunks-by-oid pathname=by_oid.c" backend.log &&
+	grep "command=hunks-by-oid" backend.log >requests &&
+	test_line_count = 1 requests &&
+	grep "failed answering by object id" stderr >warnings &&
+	test_line_count = 1 warnings &&
+	test_grep ! "command=hunks pathname" backend.log
+'
+
+test_expect_success 'blame falls back on a by-oid line count past the limit' '
+	test_when_finished "rm -f backend.log" &&
+	# oid-huge-lines answers by object id with a line count past
+	# MAX_XDIFF_SIZE.  Git rejects the header before reading any hunk,
+	# warns, and uses the builtin diff.
+	git blame by_oid.c >builtin_out &&
+	git -c diff.cdiff.process="$BACKEND --mode=oid-huge-lines --log=backend.log" \
+		blame by_oid.c >actual 2>stderr &&
+	test_cmp builtin_out actual &&
+	test_grep "failed answering by object id" stderr &&
+	test_grep "command=hunks-by-oid pathname=by_oid.c" backend.log &&
+	test_grep ! "command=hunks pathname" backend.log
+'
+
+test_expect_success 'blame falls back on a missing by-oid lines header' '
+	test_when_finished "rm -f backend.log" &&
+	# oid-bad-lines answers by object id with a hunk line where the
+	# mandatory "lines <old> <new>" header belongs.  Git cannot validate
+	# the response, warns, and uses the builtin diff.
+	git blame by_oid.c >builtin_out &&
+	git -c diff.cdiff.process="$BACKEND --mode=oid-bad-lines --log=backend.log" \
+		blame by_oid.c >actual 2>stderr &&
+	test_cmp builtin_out actual &&
+	test_grep "failed answering by object id" stderr &&
+	test_grep "command=hunks-by-oid pathname=by_oid.c" backend.log &&
+	test_grep ! "command=hunks pathname" backend.log
+'
+
+test_expect_success 'blame withholds by-oid for uncommitted working-tree content' '
+	test_when_finished "rm -f backend.log" &&
+	printf "a\nb\nc\nd\ne\nf\ng\nh\ni\nj\n" >wtblame.c &&
+	git add wtblame.c && git commit -q -m "add wtblame.c" &&
+	printf "a\nb\nC\nd\ne\nf\ng\nh\ni\nj\n" >wtblame.c &&
+	# The working-tree blob is a pretend object, not written to the object
+	# store, so a diff process cannot read it by object id.  blame
+	# withholds the by-oid consult for the working-tree pass and uses the
+	# builtin diff: no request is sent (the process is never launched) and
+	# there is no spurious warning.
+	git -c diff.cdiff.process="$BACKEND --mode=oid-fixed --log=backend.log" \
+		blame wtblame.c >actual 2>stderr &&
+	test_grep "Not Committed Yet" actual &&
+	test_must_be_empty stderr &&
+	test_path_is_missing backend.log
+'
+
+test_expect_success 'process advertising only hunks-by-oid: blame uses it, diff skips it' '
+	test_when_finished "rm -f backend.log diff.log" &&
+	# oid-only advertises hunks-by-oid but not hunks.  blame consults it by
+	# object id; git diff (a content consumer) cannot use it and runs the
+	# builtin without a per-file request.
+	git -c diff.cdiff.process="$BACKEND --mode=oid-only --log=backend.log" \
+		blame by_oid.c >actual &&
+	test_grep "command=hunks-by-oid pathname=by_oid.c" backend.log &&
+	test_when_finished "git checkout -- by_oid.c" &&
+	printf "a\nb\nc\nd\nZ5\nC6\ng\nh\ni\nj\n" >by_oid.c &&
+	git -c diff.cdiff.process="$BACKEND --mode=oid-only --log=diff.log" \
+		diff by_oid.c >dactual &&
+	test_grep "^-C5" dactual &&
+	test_grep ! "command=" diff.log
+'
+
+test_expect_success 'blame --no-ext-diff bypasses diff process' '
+	test_when_finished "rm -f backend.log" &&
+	git -c diff.cdiff.process="$BACKEND --mode=no-hunks --log=backend.log" \
+		blame --no-ext-diff blame.c >actual &&
+	# Without the process, blame attributes the change commit normally.
+	test_grep "$BLAME_COMMIT" actual &&
+	test_path_is_missing backend.log
+'
+
+test_expect_success 'blame --no-ext-diff uses builtin hunks' '
+	# fixed-hunk mode would narrow blame to lines 5-6, but
+	# --no-ext-diff should bypass it and use the builtin diff.
+	test_when_finished "rm -f backend.log" &&
+	git -c diff.cdiff.process="$BACKEND --mode=fixed-hunk --log=backend.log" \
+		blame --no-ext-diff blame-hunk.c >actual &&
+	# Builtin diff attributes lines 9-10 to the change commit.
+	sed -n "9p" actual >line9 &&
+	test_grep "$CHANGE" line9 &&
+	test_path_is_missing backend.log
+'
+
+test_expect_success 'blame -w bypasses diff process' '
+	test_when_finished "rm -f backend.log" &&
+	printf "alpha\nbeta\ngamma\n" >blamew.c &&
+	git add blamew.c &&
+	git commit -m "add blamew.c" &&
+	orig=$(git rev-parse --short HEAD) &&
+	printf "alpha\n   beta   \ngamma\n" >blamew.c &&
+	git commit -am "reindent beta" &&
+	reindent=$(git rev-parse --short HEAD) &&
+	# blame -w must ignore the whitespace-only change and attribute
+	# beta to the original commit, not the reindent commit.  The process
+	# is never told about -w, so blame must bypass it (not let process
+	# hunks override -w).
+	git -c diff.cdiff.process="$BACKEND --mode=whole-file --log=backend.log" \
+		blame -w blamew.c >actual &&
+	sed -n "2p" actual >line2 &&
+	test_grep "$orig" line2 &&
+	test_grep ! "$reindent" line2 &&
+	test_path_is_missing backend.log
+'
+
+test_expect_success 'blame --diff-algorithm bypasses the process' '
+	test_when_finished "rm -f backend.log" &&
+	# An explicit --diff-algorithm overrides the diff process, as it does
+	# for git diff.  The process is not consulted.
+	git -c diff.cdiff.process="$BACKEND --mode=oid-fixed --log=backend.log" \
+		blame --diff-algorithm=histogram by_oid.c >actual &&
+	test_path_is_missing backend.log
+'
+
+test_expect_success 'blame --histogram bypasses the process' '
+	test_when_finished "rm -f backend.log" &&
+	git -c diff.cdiff.process="$BACKEND --mode=oid-fixed --log=backend.log" \
+		blame --histogram blame-hunk.c >actual &&
+	sed -n "9p" actual >line9 &&
+	test_grep "$CHANGE" line9 &&
+	test_path_is_missing backend.log
+'
+
+test_expect_success 'blame --patience bypasses the process' '
+	test_when_finished "rm -f backend.log" &&
+	git -c diff.cdiff.process="$BACKEND --mode=oid-fixed --log=backend.log" \
+		blame --patience blame-hunk.c >actual &&
+	sed -n "9p" actual >line9 &&
+	test_grep "$CHANGE" line9 &&
+	test_path_is_missing backend.log
+'
+
+test_expect_success 'blame consults the process under diff.algorithm config' '
+	test_when_finished "rm -f backend.log" &&
+	# diff.algorithm config (unlike the --diff-algorithm option) must not
+	# bypass the process, matching git diff.
+	git -c diff.algorithm=histogram \
+	    -c diff.cdiff.process="$BACKEND --mode=oid-fixed --log=backend.log" \
+		blame by_oid.c >actual &&
+	test_grep "command=hunks-by-oid pathname=by_oid.c" backend.log
+'
+
+test_expect_success 'blame withholds by-oid when renamed target has textconv' '
+	test_when_finished "rm -f backend.log tc-filter" &&
+	write_script tc-filter <<-\EOF &&
+	cat "$1"
+	EOF
+	echo "*.tc diff=tcdiff" >>.gitattributes &&
+	git add .gitattributes &&
+	cat >rename-old.c <<-\EOF &&
+	a
+	b
+	c
+	d
+	e5
+	f6
+	g
+	h
+	i
+	j
+	EOF
+	git add rename-old.c &&
+	git commit -q -m "add rename-old.c" &&
+	orig=$(git rev-parse --short HEAD) &&
+	git mv rename-old.c rename-new.tc &&
+	cat >rename-new.tc <<-\EOF &&
+	a
+	b
+	c
+	d
+	E5
+	F6
+	g
+	h
+	i
+	j
+	EOF
+	git add rename-new.tc &&
+	git commit -q -m "rename to textconv path" &&
+	git -c diff.cdiff.process="$BACKEND --mode=oid-fixed --log=backend.log" \
+	    -c diff.tcdiff.textconv="./tc-filter" \
+		blame rename-new.tc >actual 2>stderr &&
+	sed -n "1p" actual >line1 &&
+	test_grep "$orig" line1 &&
+	test_must_be_empty stderr &&
+	test_path_is_missing backend.log
+'
+
+test_expect_success 'blame falls back when the process lacks hunks-by-oid' '
+	test_when_finished "rm -f backend.log" &&
+	printf "1\n2\n3\n4\n5\n" >skip.c &&
+	git add skip.c && git commit -q -m "skip v1" &&
+	printf "1\n2\nX\n4\n5\n" >skip.c &&
+	git commit -q -am "skip v2" &&
+	# fixed-hunk advertises hunks (content) but not hunks-by-oid.  blame
+	# cannot ask by object id, so it uses the builtin diff.
+	git blame skip.c >builtin_out &&
+	git -c diff.cdiff.process="$BACKEND --mode=fixed-hunk --log=backend.log" \
+		blame skip.c >actual &&
+	test_cmp builtin_out actual &&
+	# blame sent no per-file request: not by object id, not content.
+	test_grep ! "command=" backend.log
+'
+
 test_done

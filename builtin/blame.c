@@ -62,6 +62,8 @@ static int reverse;
 static int blank_boundary;
 static int incremental;
 static int xdl_opts;
+/* Set when a diff algorithm is chosen on the command line, not by config. */
+static int diff_algorithm_explicit;
 static int abbrev = -1;
 static int no_whole_file_rename;
 static int show_progress;
@@ -850,8 +852,10 @@ static int blame_diff_algorithm_minimal(const struct option *option,
 	BUG_ON_OPT_ARG(arg);
 
 	*opt &= ~XDF_DIFF_ALGORITHM_MASK;
-	if (!unset)
+	if (!unset) {
 		*opt |= XDF_NEED_MINIMAL;
+		diff_algorithm_explicit = 1;
+	}
 
 	return 0;
 }
@@ -870,6 +874,7 @@ static int blame_diff_algorithm_callback(const struct option *option,
 
 	*opt &= ~XDF_DIFF_ALGORITHM_MASK;
 	*opt |= value;
+	diff_algorithm_explicit = 1;
 
 	return 0;
 }
@@ -1250,6 +1255,13 @@ parse_done:
 
 	sb.show_root = show_root;
 	sb.xdl_opts = xdl_opts;
+	/*
+	 * An explicit command-line diff algorithm, spelled as --diff-algorithm,
+	 * --minimal, --histogram, or --patience, overrides a driver's diff
+	 * process.
+	 * Match "git diff" for those options.  diff.algorithm config does not.
+	 */
+	revs.diffopt.ignore_driver_algorithm |= diff_algorithm_explicit;
 	sb.no_whole_file_rename = no_whole_file_rename;
 
 	read_mailmap(the_repository, &mailmap);
