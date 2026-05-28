@@ -5,6 +5,8 @@
 #include "xdiff-interface.h"
 #include "prio-queue.h"
 
+struct diff_hunks_cache;
+
 #define PICKAXE_BLAME_MOVE		01
 #define PICKAXE_BLAME_COPY		02
 #define PICKAXE_BLAME_COPY_HARDER	04
@@ -128,10 +130,15 @@ struct blame_scoreboard {
 	int num_lines;
 	int *lineno;
 
+	/* precomputed diff hunks (optional, for skipping xdiff) */
+	struct diff_hunks_cache *diff_hunks_cache;
+
 	/* stats */
 	int num_read_blob;
 	int num_get_patch;
 	int num_commits;
+	int num_precomputed_hits;
+	int num_precomputed_misses;
 
 	/*
 	 * blame for a blame_entry with score lower than these thresholds
@@ -180,6 +187,7 @@ void init_scoreboard(struct blame_scoreboard *sb);
 void setup_scoreboard(struct blame_scoreboard *sb,
 		      struct blame_origin **orig);
 void setup_blame_bloom_data(struct blame_scoreboard *sb);
+void setup_blame_diff_hunks(struct blame_scoreboard *sb, int xdl_opts);
 void cleanup_scoreboard(struct blame_scoreboard *sb);
 
 struct blame_entry *blame_entry_prepend(struct blame_entry *head,

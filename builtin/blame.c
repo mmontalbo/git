@@ -1194,6 +1194,9 @@ parse_done:
 	if (!(opt & PICKAXE_BLAME_COPY))
 		setup_blame_bloom_data(&sb);
 
+	if (!reverse && !(opt & PICKAXE_BLAME_COPY))
+		setup_blame_diff_hunks(&sb, xdl_opts);
+
 	lno = sb.num_lines;
 
 	if (lno && !range_list.nr)
@@ -1294,6 +1297,8 @@ parse_done:
 		printf("num read blob: %d\n", sb.num_read_blob);
 		printf("num get patch: %d\n", sb.num_get_patch);
 		printf("num commits: %d\n", sb.num_commits);
+		printf("num precomputed hits: %d\n", sb.num_precomputed_hits);
+		printf("num precomputed misses: %d\n", sb.num_precomputed_misses);
 	}
 
 cleanup:

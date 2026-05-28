@@ -23,6 +23,9 @@
 #include "commit-slab.h"
 #include "bloom.h"
 #include "commit-graph.h"
+#include "diff-hunks.h"
+#include "strmap.h"
+#include "tree-walk.h"
 
 define_commit_slab(blame_suspects, struct blame_origin *);
 static struct blame_suspects blame_suspects;
@@ -314,8 +317,8 @@ static struct commit *fake_working_tree_commit(struct repository *r,
 
 
 
-static int diff_hunks(mmfile_t *file_a, mmfile_t *file_b,
-		      xdl_emit_hunk_consume_func_t hunk_func, void *cb_data, int xdl_opts)
+static int xdiff_hunks(mmfile_t *file_a, mmfile_t *file_b,
+		       xdl_emit_hunk_consume_func_t hunk_func, void *cb_data, int xdl_opts)
 {
 	xpparam_t xpp = {0};
 	xdemitconf_t xecfg = {0};
@@ -1934,6 +1937,65 @@ static int blame_chunk_cb(long start_a, long count_a,
 }
 
 /*
+ * Try to use precomputed diff hunks instead of running xdiff.
+ * Returns 1 if successful (blame fully passed to parent), 0 on miss.
+ */
+static int try_precomputed_hunks(struct blame_scoreboard *sb,
+				 struct blame_origin *target,
+				 struct blame_origin *parent,
+				 int ignore_diffs)
+{
+	struct precomputed_entry entry = { 0 };
+	struct blame_chunk_cb_data d;
+	struct blame_entry *newdest = NULL;
+	uint32_t i;
+	int found;
+
+	if (!sb->diff_hunks_cache)
+		return 0;
+	if (!target->suspects)
+		return 0;
+	if (sb->reverse)
+		return 0;
+	if (ignore_diffs)
+		return 0;
+
+	found = diff_hunks_get(sb->diff_hunks_cache,
+			       &target->commit->object.oid,
+			       &parent->commit->object.oid,
+			       target->path,
+			       &entry);
+
+	if (!found)
+		return 0;
+
+	d.parent = parent;
+	d.target = target;
+	d.offset = 0;
+	d.ignore_diffs = 0;
+	d.dstq = &newdest;
+	d.srcq = &target->suspects;
+
+	sb->num_precomputed_hits++;
+
+	/* Replay cached hunks through the normal blame_chunk_cb path */
+	for (i = 0; i < entry.num_hunks; i++) {
+		struct precomputed_hunk h;
+		decode_precomputed_hunk(entry.hunk_data + i * DIFF_HUNKS_ENTRY_SIZE, &h);
+		blame_chunk_cb((long)h.old_start, h.old_count,
+			       (long)h.new_start, h.new_count, &d);
+	}
+
+	/* Terminal chunk: flush remaining lines to parent */
+	blame_chunk(&d.dstq, &d.srcq, INT_MAX, d.offset, INT_MAX, 0,
+		    parent, target, 0);
+	*d.dstq = NULL;
+	queue_blames(sb, parent, newdest);
+
+	return 1;
+}
+
+/*
  * We are looking at the origin 'target' and aiming to pass blame
  * for the lines it is suspected to its parent.  Run diff to find
  * which lines came from parent and pass blame for them.
@@ -1949,6 +2011,12 @@ static void pass_blame_to_parent(struct blame_scoreboard *sb,
 	if (!target->suspects)
 		return; /* nothing remains for this target */
 
+	/* Fast path: precomputed hunks */
+	if (try_precomputed_hunks(sb, target, parent, ignore_diffs))
+		return;
+	if (sb->diff_hunks_cache)
+		sb->num_precomputed_misses++;
+
 	d.parent = parent;
 	d.target = target;
 	d.offset = 0;
@@ -1961,7 +2029,7 @@ static void pass_blame_to_parent(struct blame_scoreboard *sb,
 			 &sb->num_read_blob, ignore_diffs);
 	sb->num_get_patch++;
 
-	if (diff_hunks(&file_p, &file_o, blame_chunk_cb, &d, sb->xdl_opts))
+	if (xdiff_hunks(&file_p, &file_o, blame_chunk_cb, &d, sb->xdl_opts))
 		die("unable to generate diff (%s -> %s)",
 		    oid_to_hex(&parent->commit->object.oid),
 		    oid_to_hex(&target->commit->object.oid));
@@ -2114,7 +2182,7 @@ static void find_copy_in_blob(struct blame_scoreboard *sb,
 	 * file_p partially may match that image.
 	 */
 	memset(split, 0, sizeof(struct blame_entry [3]));
-	if (diff_hunks(file_p, &file_o, handle_split_cb, &d, sb->xdl_opts))
+	if (xdiff_hunks(file_p, &file_o, handle_split_cb, &d, sb->xdl_opts))
 		die("unable to generate diff (%s)",
 		    oid_to_hex(&parent->commit->object.oid));
 	/* remainder, if any, all match the preimage */
@@ -2926,6 +2994,11 @@ void setup_blame_bloom_data(struct blame_scoreboard *sb)
 	sb->bloom_data = bd;
 }
 
+void setup_blame_diff_hunks(struct blame_scoreboard *sb, int xdl_opts)
+{
+	sb->diff_hunks_cache = diff_hunks_cache_init(sb->repo, xdl_opts);
+}
+
 void cleanup_scoreboard(struct blame_scoreboard *sb)
 {
 	free(sb->lineno);
@@ -2946,5 +3019,17 @@ void cleanup_scoreboard(struct blame_scoreboard *sb)
 				   "bloom/queries", bloom_count_queries);
 		trace2_data_intmax("blame", sb->repo,
 				   "bloom/response-no", bloom_count_no);
+	}
+
+	if (sb->diff_hunks_cache) {
+		diff_hunks_cache_free(sb->diff_hunks_cache);
+		sb->diff_hunks_cache = NULL;
+
+		trace2_data_intmax("blame", sb->repo,
+				   "precomputed/hits",
+				   sb->num_precomputed_hits);
+		trace2_data_intmax("blame", sb->repo,
+				   "precomputed/misses",
+				   sb->num_precomputed_misses);
 	}
 }
