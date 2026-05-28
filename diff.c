@@ -16,6 +16,7 @@
 #include "revision.h"
 #include "quote.h"
 #include "diff.h"
+#include "diff-hunks.h"
 #include "diffcore.h"
 #include "delta.h"
 #include "hex.h"
@@ -4229,27 +4230,54 @@ static void builtin_diffstat(const char *name_a, const char *name_b,
 	}
 
 	else if (may_differ) {
-		/* Crazy xdl interfaces.. */
-		xpparam_t xpp;
-		xdemitconf_t xecfg;
+		struct precomputed_entry hunks_entry;
+		int used_cached = 0;
 
-		if (fill_mmfile(o->repo, &mf1, one) < 0 ||
-		    fill_mmfile(o->repo, &mf2, two) < 0)
-			die("unable to read files to diff");
+		/*
+		 * Try precomputed hunks first: sum hunk counts directly
+		 * without decompressing blobs or running xdiff.
+		 */
+		if (o->hunks_cache &&
+		    diff_hunks_get(o->hunks_cache,
+				   &o->hunks_commit_oid,
+				   &o->hunks_parent_oid,
+				   two->path,
+				   &hunks_entry)) {
+			uint32_t k;
+			for (k = 0; k < hunks_entry.num_hunks; k++) {
+				struct precomputed_hunk h;
+				decode_precomputed_hunk(
+					hunks_entry.hunk_data +
+					k * DIFF_HUNKS_ENTRY_SIZE, &h);
+				data->added += h.new_count;
+				data->deleted += h.old_count;
+			}
+			used_cached = 1;
+		}
 
-		memset(&xpp, 0, sizeof(xpp));
-		memset(&xecfg, 0, sizeof(xecfg));
-		xpp.flags = o->xdl_opts;
-		xpp.ignore_regex = o->ignore_regex;
-		xpp.ignore_regex_nr = o->ignore_regex_nr;
-		xpp.anchors = o->anchors;
-		xpp.anchors_nr = o->anchors_nr;
-		xecfg.ctxlen = o->context;
-		xecfg.interhunkctxlen = o->interhunkcontext;
-		xecfg.flags = XDL_EMIT_NO_HUNK_HDR;
-		if (xdi_diff_outf(&mf1, &mf2, NULL,
-				  diffstat_consume, diffstat, &xpp, &xecfg))
-			die("unable to generate diffstat for %s", one->path);
+		if (!used_cached) {
+			/* Crazy xdl interfaces.. */
+			xpparam_t xpp;
+			xdemitconf_t xecfg;
+
+			if (fill_mmfile(o->repo, &mf1, one) < 0 ||
+			    fill_mmfile(o->repo, &mf2, two) < 0)
+				die("unable to read files to diff");
+
+			memset(&xpp, 0, sizeof(xpp));
+			memset(&xecfg, 0, sizeof(xecfg));
+			xpp.flags = o->xdl_opts;
+			xpp.ignore_regex = o->ignore_regex;
+			xpp.ignore_regex_nr = o->ignore_regex_nr;
+			xpp.anchors = o->anchors;
+			xpp.anchors_nr = o->anchors_nr;
+			xecfg.ctxlen = o->context;
+			xecfg.interhunkctxlen = o->interhunkcontext;
+			xecfg.flags = XDL_EMIT_NO_HUNK_HDR;
+			if (xdi_diff_outf(&mf1, &mf2, NULL,
+					  diffstat_consume, diffstat, &xpp, &xecfg))
+				die("unable to generate diffstat for %s", one->path);
+		}
 
 		if (DIFF_FILE_VALID(one) && DIFF_FILE_VALID(two)) {
 			struct diffstat_file *file =

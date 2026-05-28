@@ -10,6 +10,7 @@
 #include "builtin.h"
 #include "abspath.h"
 #include "config.h"
+#include "diff-hunks.h"
 #include "environment.h"
 #include "gettext.h"
 #include "hex.h"
@@ -846,8 +847,14 @@ int cmd_log(int argc,
 	opt.tweak = log_setup_revisions_tweak;
 	cmd_log_init(argc, argv, prefix, &rev, &opt, &cfg);
 
+	if (rev.diffopt.output_format &
+	    (DIFF_FORMAT_DIFFSTAT | DIFF_FORMAT_SHORTSTAT | DIFF_FORMAT_NUMSTAT))
+		rev.diffopt.hunks_cache = diff_hunks_cache_init(
+			the_repository, rev.diffopt.xdl_opts);
+
 	ret = cmd_log_walk(&rev);
 
+	diff_hunks_cache_free(rev.diffopt.hunks_cache);
 	release_revisions(&rev);
 	log_config_release(&cfg);
 	return ret;

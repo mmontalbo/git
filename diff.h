@@ -420,6 +420,17 @@ struct diff_options {
 	 */
 	int max_depth;
 	int max_depth_valid;
+
+	/*
+	 * Optional precomputed diff hunks cache. When set, diffstat
+	 * and other hunk-coordinate consumers check this before
+	 * decompressing blobs and running xdiff. The caller must set
+	 * hunks_commit_oid and hunks_parent_oid before each diff_tree
+	 * call to identify the commit pair for cache lookups.
+	 */
+	struct diff_hunks_cache *hunks_cache;
+	struct object_id hunks_commit_oid;
+	struct object_id hunks_parent_oid;
 };
 
 unsigned diff_filter_bit(char status);

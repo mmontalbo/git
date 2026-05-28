@@ -1151,6 +1151,12 @@ static int log_tree_diff(struct rev_info *opt, struct commit *commit, struct log
 		struct commit *parent = parents->item;
 
 		parse_commit_or_die(parent);
+		if (opt->diffopt.hunks_cache) {
+			oidcpy(&opt->diffopt.hunks_commit_oid,
+			       &commit->object.oid);
+			oidcpy(&opt->diffopt.hunks_parent_oid,
+			       &parent->object.oid);
+		}
 		diff_tree_oid(get_commit_tree_oid(parent),
 			      oid, "", &opt->diffopt);
 		log_tree_diff_flush(opt);
