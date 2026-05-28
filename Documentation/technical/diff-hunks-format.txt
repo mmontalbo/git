@@ -1,0 +1,135 @@
+Precomputed diff hunks file format
+===================================
+
+Per-path cache files in `.git/objects/diff-hunks/` store precomputed
+hunk positions for accelerating blame, diffstat, and other operations
+that need hunk coordinates. Each file covers a single source path and
+contains hunks for all parents (not just first parent), so merge
+commits get cache hits too.
+
+The files are optional. When absent or corrupt, consumers degrade
+gracefully to the standard xdiff code path. The files are not
+transferred by fetch or push.
+
+== Directory structure
+
+Files are sharded into 256 subdirectories to avoid filesystem
+performance problems with large numbers of files in a single
+directory. The shard is the low byte of `strhash(path)`:
+
+  .git/objects/diff-hunks/<shard>/<encoded-path>
+
+For example, `src/diff.c` might be stored at:
+
+  .git/objects/diff-hunks/a3/src%2Fdiff.c
+
+== File naming
+
+Each per-path file is named by percent-encoding the source path
+(the same encoding used for URLs). Slashes and special characters
+are encoded as `%HH` hex pairs.
+
+== File layout
+
+Per-path files use git's chunk-format infrastructure (see
+`Documentation/gitformat-chunk.adoc`), the same format used by
+commit-graph and multi-pack-index. All multi-byte integers are
+stored in network byte order (big-endian).
+
+  Header (8 bytes)
+  Table of contents (chunk-format)
+  DHMF chunk: metadata
+  DHIX chunk: sorted index
+  DHDT chunk: hunk data
+  Trailing checksum (hash_algo->rawsz bytes)
+
+== Header
+
+  4 bytes: Signature {'D', 'H', 'P', 'F'} (0x44485046)
+  1 byte:  Version number (currently 1)
+  1 byte:  Hash algorithm version (1 = SHA-1, 2 = SHA-256)
+  1 byte:  Number of chunks
+  1 byte:  Padding (reserved, must be 0)
+
+== Chunks
+
+=== DHMF (metadata)
+
+  4 bytes: xdl_opts used during generation
+
+The xdl_opts field records the xdiff flags (e.g., XDF_INDENT_HEURISTIC)
+used when computing hunks. Blame compares this against its own xdl_opts
+and falls back on mismatch. Future versions may add additional metadata
+fields to this chunk without requiring a format version bump.
+
+=== DHIX (index)
+
+The index enables O(log n) lookup by (commit OID, parent OID). It
+consists of entries sorted by (commit_oid, parent_oid) in ascending
+order.
+
+Each entry is:
+
+  hash_algo->rawsz bytes: Commit OID
+  hash_algo->rawsz bytes: Parent OID
+  4 bytes:                 Byte offset into DHDT chunk
+
+Keying by parent OID (rather than a parent index) makes the data
+self-describing and usable by any tool that knows two commit OIDs,
+without requiring knowledge of the commit's parent ordering.
+
+=== DHDT (hunk data)
+
+The hunk data chunk contains variable-length blocks, one per
+(commit, parent) pair. Each block starts at the offset stored in
+the corresponding DHIX entry.
+
+Per-entry block:
+
+  4 bytes: Number of hunks
+  <num_hunks> * 12 bytes: Hunk data
+
+Each hunk is 12 bytes:
+
+  4 bytes: old_start (0-based line number in parent)
+  2 bytes: old_count (number of lines removed)
+  4 bytes: new_start (0-based line number in child)
+  2 bytes: new_count (number of lines added)
+
+Coordinates are 0-based, matching the convention used by xdiff's
+hunk_func callback and blame_chunk_cb.
+
+== Trailing checksum
+
+The file ends with a hash checksum (SHA-1 or SHA-256, matching the
+hash algorithm version) computed over all preceding bytes. The checksum
+is not verified on load (matching commit-graph precedent); bounds
+checking in the reader prevents crashes from corrupt data.
+
+== Generation
+
+`git diff-hunks write --path <file>` generates a per-path file for a
+single file by walking `rev-list --all --topo-order -- <file>` and
+diffing each commit against all its parents.
+
+`git diff-hunks write --reachable` collects all modified paths from
+reachable commits, then generates a per-path file for each.
+
+== Extensibility
+
+Using chunk-format means new chunks can be added to future versions
+without breaking existing readers: unknown chunks are silently
+skipped, and missing optional chunks are handled gracefully. This
+allows the format to evolve (e.g., adding a fanout table, path
+dictionary, or statistics chunk) without version bumps.
+
+== Limitations
+
+- The uint16 line counts limit individual hunks to 65535 lines per
+  side. Commits with larger hunks cause cache misses.
+- A single xdl_opts value is stored per file. Blame invocations with
+  different options (e.g., `-w`) fall back to xdiff.
+- Rename detection is disabled in the writer. Blame handles renames
+  by lazily loading per-path files for old names as it encounters
+  them during traversal.
+- No incremental generation. The writer recomputes from scratch.
