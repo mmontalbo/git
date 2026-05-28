@@ -53,6 +53,11 @@ int diff_hunks_get(struct diff_hunks_cache *c,
 		   const char *path,
 		   struct precomputed_entry *out);
 
+/* Writer functions */
+int write_path_hunks_file(struct repository *r,
+			  const char *path,
+			  int xdl_opts);
+int write_diff_hunks(struct repository *r, int xdl_opts);
 
 /*
  * Decode a single hunk from the raw on-disk format.
