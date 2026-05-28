@@ -263,6 +263,7 @@ enum maintenance_task_label {
 	TASK_REFLOG_EXPIRE,
 	TASK_WORKTREE_PRUNE,
 	TASK_RERERE_GC,
+	TASK_DIFF_HUNKS,
 
 	/* Leave as final value */
 	TASK__COUNT
@@ -1213,6 +1214,19 @@ static int maintenance_task_commit_graph(struct maintenance_run_opts *opts,
 	return 0;
 }
 
+static int maintenance_task_diff_hunks(struct maintenance_run_opts *opts UNUSED,
+				       struct gc_config *cfg UNUSED)
+{
+	struct child_process child = CHILD_PROCESS_INIT;
+
+	child.git_cmd = 1;
+	child.odb_to_close = the_repository->objects;
+	strvec_pushl(&child.args, "diff-hunks", "write",
+		     "--reachable", NULL);
+
+	return !!run_command(&child);
+}
+
 static int fetch_remote(struct remote *remote, void *cbdata)
 {
 	struct maintenance_run_opts *opts = cbdata;
@@ -1747,6 +1761,10 @@ static const struct maintenance_task tasks[] = {
 		.name = "rerere-gc",
 		.background = maintenance_task_rerere_gc,
 		.auto_condition = rerere_gc_condition,
+	},
+	[TASK_DIFF_HUNKS] = {
+		.name = "diff-hunks",
+		.background = maintenance_task_diff_hunks,
 	},
 };
 
