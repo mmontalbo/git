@@ -1158,6 +1158,10 @@ it is really asking, and uses the builtin algorithm otherwise:
 |Must hash a patch identically everywhere; a configured process would
  make equal patches hash differently across machines.
 
+|`git format-patch` |no
+|A mailed patch must apply for recipients that have no process
+ configured, so format-patch always uses the builtin diff.
+
 |`git merge-tree`, `rerere` |no
 |Compute merge content and conflict signatures, not display output.
 
@@ -1177,9 +1181,12 @@ it is really asking, and uses the builtin algorithm otherwise:
  later change.
 |===
 
-`--diff-algorithm` bypasses the process entirely, for every feature
-listed above.  The whitespace-ignoring options (`-w`,
-`--ignore-space-change`, `--ignore-blank-lines`, and the like),
+`--no-ext-diff` and any explicit diff-algorithm option bypass the
+process entirely, for every feature listed above.  This includes
+`--diff-algorithm` and its shorthands `--minimal`, `--patience`, and
+`--histogram`; the `diff.algorithm` config does not bypass (only an
+option on the command line does).  The whitespace-ignoring options
+(`-w`, `--ignore-space-change`, `--ignore-blank-lines`, and the like),
 `-I<regex>`, and `--anchored` also bypass it for the affected files.
 Git never tells the process about these options, so the process could
 not honor them.  For patch output and `--stat`, Git falls back to the

@@ -521,6 +521,22 @@ test_expect_success 'diff process honors hunks under diff.algorithm=histogram' '
 	test_grep "pathname=boundary.c" backend.log
 '
 
+test_expect_success 'diff process bypassed by --no-ext-diff' '
+	test_when_finished "rm -f backend.log" &&
+	git -c diff.cdiff.process="$BACKEND --log=backend.log" \
+		diff --no-ext-diff worddiff.c >actual &&
+	test_grep "return 999" actual &&
+	test_path_is_missing backend.log
+'
+
+test_expect_success 'diff process not used by format-patch' '
+	test_when_finished "rm -f backend.log" &&
+	git -c diff.cdiff.process="$BACKEND --log=backend.log" \
+		format-patch -1 --stdout -- logtest.c >actual &&
+	test_grep "return 2" actual &&
+	test_path_is_missing backend.log
+'
+
 test_expect_success 'diff process bypassed under whitespace-ignoring flags' '
 	test_when_finished "rm -f backend.log" &&
 	printf "a\nb\nc\n" >wsbypass.c &&

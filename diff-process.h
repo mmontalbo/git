@@ -38,7 +38,7 @@ enum diff_process_result {
  * xpp->external_hunks exclusively and overwrites any prior value.
  *
  * Handles driver lookup, the flag checks that suppress the process
- * (--diff-algorithm), subprocess management,
+ * (--no-ext-diff, format-patch, --diff-algorithm), subprocess management,
  * and error reporting.
  *
  * Returns DIFF_PROCESS_DIFFED when the caller should render the diff:
