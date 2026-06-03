@@ -1118,10 +1118,22 @@ test_start_ () {
 	test_count=$(($test_count+1))
 	maybe_setup_verbose
 	maybe_setup_valgrind
+	if test -n "$GIT_TEST_BLOCK_TIMING"
+	then
+		test_block_start_ms_=$(($(date +%s%N)/1000000))
+	fi
 	start_test_case_output "$@"
 }
 
 test_finish_ () {
+	if test -n "$GIT_TEST_BLOCK_TIMING"
+	then
+		test_block_end_ms_=$(($(date +%s%N)/1000000))
+		test_block_elapsed_ms_=$(( test_block_end_ms_ - test_block_start_ms_ ))
+		printf >&2 "timing: %s.%d %dms\n" \
+			"$this_test" "$test_count" \
+			"$test_block_elapsed_ms_"
+	fi
 	echo >&3 ""
 	maybe_teardown_valgrind
 	maybe_teardown_verbose
