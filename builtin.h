@@ -4,6 +4,16 @@
 #include "git-compat-util.h"
 #include "repository.h"
 
+struct cmd_struct {
+	const char *cmd;
+	int (*fn)(int, const char **, const char *, struct repository *);
+	unsigned int option;
+};
+
+struct cmd_struct *get_builtin(const char *s);
+int run_builtin(struct cmd_struct *p, int argc, const char **argv,
+		struct repository *repo);
+
 /*
  * builtin API
  * ===========
@@ -145,6 +155,7 @@ int cmd_annotate(int argc, const char **argv, const char *prefix, struct reposit
 int cmd_apply(int argc, const char **argv, const char *prefix, struct repository *repo);
 int cmd_archive(int argc, const char **argv, const char *prefix, struct repository *repo);
 int cmd_backfill(int argc, const char **argv, const char *prefix, struct repository *repo);
+int cmd_batch(int argc, const char **argv, const char *prefix, struct repository *repo);
 int cmd_bisect(int argc, const char **argv, const char *prefix, struct repository *repo);
 int cmd_blame(int argc, const char **argv, const char *prefix, struct repository *repo);
 int cmd_branch(int argc, const char **argv, const char *prefix, struct repository *repo);

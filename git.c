@@ -30,11 +30,7 @@
 #define NO_PARSEOPT		(1<<5) /* parse-options is not used */
 #define DEPRECATED		(1<<6)
 
-struct cmd_struct {
-	const char *cmd;
-	int (*fn)(int, const char **, const char *, struct repository *);
-	unsigned int option;
-};
+/* struct cmd_struct is defined in builtin.h */
 
 const char git_usage_string[] =
 	N_("git [-v | --version] [-h | --help] [-C <path>] [-c <name>=<value>]\n"
@@ -463,7 +459,7 @@ static int handle_alias(struct strvec *args, struct string_list *expanded_aliase
 	return ret;
 }
 
-static int run_builtin(struct cmd_struct *p, int argc, const char **argv, struct repository *repo)
+int run_builtin(struct cmd_struct *p, int argc, const char **argv, struct repository *repo)
 {
 	int status, help;
 	int no_repo = 1;
@@ -533,6 +529,7 @@ static struct cmd_struct commands[] = {
 	{ "apply", cmd_apply, RUN_SETUP_GENTLY },
 	{ "archive", cmd_archive, RUN_SETUP_GENTLY },
 	{ "backfill", cmd_backfill, RUN_SETUP },
+	{ "batch", cmd_batch, RUN_SETUP_GENTLY },
 	{ "bisect", cmd_bisect, RUN_SETUP },
 	{ "blame", cmd_blame, RUN_SETUP },
 	{ "branch", cmd_branch, RUN_SETUP | DELAY_PAGER_CONFIG },
@@ -684,7 +681,7 @@ static struct cmd_struct commands[] = {
 	{ "write-tree", cmd_write_tree, RUN_SETUP },
 };
 
-static struct cmd_struct *get_builtin(const char *s)
+struct cmd_struct *get_builtin(const char *s)
 {
 	for (size_t i = 0; i < ARRAY_SIZE(commands); i++) {
 		struct cmd_struct *p = commands + i;

@@ -1651,6 +1651,29 @@ fi
 
 start_test_output "$0"
 
+# Batch mode: run git builtins in a single persistent process
+# to avoid per-command process spawn overhead.  Started after
+# repo init so the batch process can find the repository.
+if test -n "$GIT_TEST_BATCH"
+then
+	coproc GIT_BATCH { "$GIT_BUILD_DIR/git" batch 2>&3; } 3>&2
+	git () {
+		printf '%s\0' "CWD=$(pwd)" "$@" >&${GIT_BATCH[1]}
+		printf '\n' >&${GIT_BATCH[1]}
+		while IFS= read -r line <&${GIT_BATCH[0]}; do
+			case "$line" in
+			"EXIT "*)
+				return ${line#EXIT }
+				;;
+			*)
+				printf '%s\n' "$line"
+				;;
+			esac
+		done
+		return 1
+	}
+fi
+
 # Convenience
 # A regexp to match 5 and 35 hexdigits
 _x05='[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]'
