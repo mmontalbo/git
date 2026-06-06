@@ -1241,9 +1241,11 @@ check_test_results_san_file_ () {
 }
 
 test_done () {
-	# Shut down the batch/pool coproc before cleanup so idle
-	# workers release their handles on the trash directory.
-	if test -n "$GIT_BATCH_WR"; then
+	# Shut down the batch daemon before cleanup.
+	if test -n "$GIT_BATCH_PID"; then
+		kill "$GIT_BATCH_PID" 2>/dev/null
+		wait "$GIT_BATCH_PID" 2>/dev/null
+	elif test -n "$GIT_BATCH_WR"; then
 		exec {GIT_BATCH_WR}>&- {GIT_BATCH_RD}<&-
 		wait 2>/dev/null
 	fi
@@ -1678,39 +1680,30 @@ fi
 # GIT_TEST_BATCH uses a single persistent "git batch" daemon
 # (faster but risks stale state between commands).
 # Both use the same shell protocol; only start_batch_daemon differs.
-if test -n "$GIT_TEST_POOL" || test -n "$GIT_TEST_BATCH"
+if test -n "$GIT_TEST_BATCH"
 then
 	GIT_BATCH_TMPDIR="${TMPDIR:-/tmp}/git-batch-$$"
 	mkdir -p "$GIT_BATCH_TMPDIR"
-	if test -n "$GIT_TEST_POOL"
-	then
-		start_batch_daemon () {
-			coproc _BATCH_TMP {
-				"$GIT_BUILD_DIR/t/helper/test-tool" \
-					pool-manager \
-					--git="$GIT_BUILD_DIR/git" \
-					--size="${GIT_TEST_POOL_SIZE:-3}" \
-					${GIT_TEST_POOL_TRACE:+--trace}
-			}
-			exec {GIT_BATCH_RD}<&${_BATCH_TMP[0]} {GIT_BATCH_WR}>&${_BATCH_TMP[1]}
-			disown $!
-		}
-	else
-		start_batch_daemon () {
-			coproc _BATCH_TMP { "$GIT_BUILD_DIR/git" batch --all; }
-			exec {GIT_BATCH_RD}<&${_BATCH_TMP[0]} {GIT_BATCH_WR}>&${_BATCH_TMP[1]}
-			disown $!
-		}
-	fi
-	start_batch_daemon
-
-	# Export config for the compiled batch client
-	export GIT_BATCH_RD GIT_BATCH_WR GIT_BATCH_TMPDIR
+	export GIT_BATCH_TMPDIR
 	export GIT_BATCH_GIT="$GIT_BUILD_DIR/git"
+
 	if type cygpath >/dev/null 2>&1; then
 		GIT_BATCH_CYGROOT="$(cygpath -m /)"
 		export GIT_BATCH_CYGROOT="${GIT_BATCH_CYGROOT%/}"
 	fi
+
+	GIT_BATCH_IPC="$GIT_BATCH_TMPDIR/batch.sock"
+	export GIT_BATCH_IPC
+
+	# Start daemon in background
+	"$GIT_BUILD_DIR/git" batch --ipc="$GIT_BATCH_IPC" &
+	GIT_BATCH_PID=$!
+
+	# Wait for server to start listening
+	for _batch_wait in 1 2 3 4 5 6 7 8 9 10; do
+		"$GIT_BUILD_DIR/t/helper/test-tool" batch-client --ping 2>/dev/null && break
+		sleep 0.1 2>/dev/null || sleep 1
+	done
 
 	git () {
 		"$GIT_BUILD_DIR/t/helper/test-tool" batch-client "$@"

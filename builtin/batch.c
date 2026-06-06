@@ -31,6 +31,8 @@
 #include "strvec.h"
 #include "chdir-notify.h"
 #include "convert.h"
+#include "simple-ipc.h"
+#include "pkt-line.h"
 #include "trace.h"
 
 #include <setjmp.h>
@@ -342,6 +344,52 @@ static int read_command(struct strvec *args, struct strbuf *errpath,
 }
 
 /*
+ * Parse a command from a buffer (for IPC mode).  Same protocol as
+ * read_command() but from an in-memory buffer instead of stdin.
+ */
+static int parse_command_from_buf(const char *buf, size_t len,
+				  struct strvec *args, struct strbuf *errpath,
+				  struct strbuf *stdinpath, struct strbuf *cwdpath,
+				  struct strvec *env_vars)
+{
+	struct strbuf tok = STRBUF_INIT;
+	size_t i;
+
+	strvec_clear(args);
+	strbuf_reset(errpath);
+	strbuf_reset(stdinpath);
+	strbuf_reset(cwdpath);
+	strvec_clear(env_vars);
+
+	for (i = 0; i < len; i++) {
+		char ch = buf[i];
+		if (ch == '\n')
+			break;
+		strbuf_addch(&tok, ch);
+		if (ch == '\0') {
+			if (tok.len > 1) {
+				if (starts_with(tok.buf, "STDERR="))
+					strbuf_addstr(errpath, tok.buf + 7);
+				else if (starts_with(tok.buf, "STDIN="))
+					strbuf_addstr(stdinpath, tok.buf + 6);
+				else if (starts_with(tok.buf, "CWD="))
+					strbuf_addstr(cwdpath, tok.buf + 4);
+				else if (starts_with(tok.buf, "ENV="))
+					strvec_push(env_vars, tok.buf + 4);
+				else
+					strvec_push(args, tok.buf);
+			}
+			strbuf_reset(&tok);
+		}
+	}
+	if (tok.len)
+		strvec_push(args, tok.buf);
+
+	strbuf_release(&tok);
+	return args->nr ? 0 : -1;
+}
+
+/*
  * Apply environment variables from the protocol and track them
  * so they can be cleared before the next command.
  */
@@ -408,6 +456,179 @@ static void batch_clear_repo(struct repository *r)
 	reset_parsed_attributes();
 }
 
+/*
+ * IPC mode: handle one command per client connection.
+ * The request is the same NUL-delimited protocol as stdin mode.
+ * The response is stdout output + "EXIT <code>\n", sent via reply_cb.
+ */
+#ifdef SUPPORTS_SIMPLE_IPC
+struct batch_ipc_data {
+	struct process_snapshot *snap;
+	int accept_all;
+};
+
+static int batch_ipc_handler(void *data, const char *request,
+			     size_t request_len,
+			     ipc_server_reply_cb *reply_cb,
+			     struct ipc_server_reply_data *reply_data)
+{
+	struct batch_ipc_data *d = data;
+	struct strvec args = STRVEC_INIT;
+	struct strbuf errpath = STRBUF_INIT;
+	struct strbuf stdinpath = STRBUF_INIT;
+	struct strbuf cwdpath = STRBUF_INIT;
+	struct strvec env_vars = STRVEC_INIT;
+	struct strvec prev_env_keys = STRVEC_INIT;
+	struct cmd_struct *builtin;
+	const char **argv_copy;
+	int ret, saved_stdout = -1, saved_err = -1, saved_in = -1;
+	struct strbuf output = STRBUF_INIT;
+	char exit_buf[32];
+	int tmpfd;
+	char tmpfile_path[PATH_MAX];
+	extern const char *tmp_original_cwd;
+
+	/* Handle control commands (before any state modification) */
+	if (request_len == 5 && !memcmp(request, "quit\n", 5)) {
+		set_die_routine(NULL);
+		set_exit_intercept(NULL);
+		return SIMPLE_IPC_QUIT;
+	}
+	if (request_len == 5 && !memcmp(request, "ping\n", 5)) {
+		reply_cb(reply_data, "pong", 4);
+		return 0;
+	}
+
+	/* Parse protocol from buffer */
+	if (parse_command_from_buf(request, request_len,
+				   &args, &errpath, &stdinpath, &cwdpath,
+				   &env_vars) < 0 || !args.nr)
+		goto done;
+
+	/* Restore process state */
+	restore_process_state(d->snap);
+	tmp_original_cwd = NULL;
+	if (chdir("/"))
+		; /* best-effort */
+	set_die_routine(batch_die_handler);
+	set_die_is_recursing_routine(batch_die_is_recursing);
+	set_exit_intercept(NULL);
+	run_builtin_keep_stdout = 1;
+
+	apply_env(&env_vars, &prev_env_keys);
+	if (cwdpath.len && chdir(cwdpath.buf))
+		warning("batch: chdir(%s) failed", cwdpath.buf);
+
+	builtin = get_builtin(args.v[0]);
+	if (!builtin || (!d->accept_all && !is_readonly(args.v[0]))) {
+		snprintf(exit_buf, sizeof(exit_buf), "EXIT -1\n");
+		reply_cb(reply_data, exit_buf, strlen(exit_buf));
+		goto done;
+	}
+
+	/* Redirect stderr to file */
+	if (errpath.len) {
+		int fd = open(errpath.buf, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+		if (fd >= 0) {
+			saved_err = dup(STDERR_FILENO);
+			dup2(fd, STDERR_FILENO);
+			close(fd);
+		}
+	}
+
+	/* Redirect stdin from file */
+	if (stdinpath.len) {
+		int fd = open(stdinpath.buf, O_RDONLY);
+		if (fd >= 0) {
+			saved_in = dup(STDIN_FILENO);
+			dup2(fd, STDIN_FILENO);
+			close(fd);
+		}
+	}
+
+	/* Capture stdout to a tmpfile */
+	{
+		const char *tmp = getenv("TMPDIR");
+		if (!tmp) tmp = "/tmp";
+		snprintf(tmpfile_path, sizeof(tmpfile_path),
+			 "%s/batch-stdout-XXXXXX", tmp);
+	}
+	tmpfd = xmkstemp(tmpfile_path);
+	saved_stdout = dup(STDOUT_FILENO);
+	dup2(tmpfd, STDOUT_FILENO);
+	close(tmpfd);
+
+	/* Run the builtin */
+	DUP_ARRAY(argv_copy, args.v, args.nr + 1);
+	batch_dying = 0;
+#ifdef GIT_WINDOWS_NATIVE
+	if (setjmp(batch_jmp)) {
+#else
+	if (sigsetjmp(batch_jmp, 1)) {
+#endif
+		ret = batch_exit_code;
+	} else {
+		set_exit_intercept(batch_exit_intercept);
+		ret = run_builtin(builtin, args.nr, argv_copy, the_repository);
+		set_exit_intercept(NULL);
+	}
+	free(argv_copy);
+
+	/* Flush and capture stdout */
+	fflush(stdout);
+	dup2(saved_stdout, STDOUT_FILENO);
+	close(saved_stdout);
+	saved_stdout = -1;
+
+	{
+		int rfd = open(tmpfile_path, O_RDONLY);
+		if (rfd >= 0) {
+			strbuf_read(&output, rfd, 0);
+			close(rfd);
+		}
+	}
+	unlink(tmpfile_path);
+
+	/* Restore stderr */
+	if (saved_err >= 0) {
+		fflush(stderr);
+		dup2(saved_err, STDERR_FILENO);
+		close(saved_err);
+	}
+
+	/* Restore stdin */
+	if (saved_in >= 0) {
+		dup2(saved_in, STDIN_FILENO);
+		close(saved_in);
+	}
+
+	if (ret == 129)
+		ret = -1;
+	if (chdir("/"))
+		; /* best-effort */
+
+	/* Send response: output + EXIT line */
+	if (output.len)
+		reply_cb(reply_data, output.buf, output.len);
+	snprintf(exit_buf, sizeof(exit_buf), "EXIT %d\n", ret);
+	reply_cb(reply_data, exit_buf, strlen(exit_buf));
+
+done:
+	/* Reset handlers so IPC server shutdown doesn't hit stale longjmp */
+	set_die_routine(NULL);
+	set_exit_intercept(NULL);
+
+	strvec_clear(&args);
+	strvec_clear(&env_vars);
+	strvec_clear(&prev_env_keys);
+	strbuf_release(&errpath);
+	strbuf_release(&stdinpath);
+	strbuf_release(&cwdpath);
+	strbuf_release(&output);
+	return 0;
+}
+#endif /* SUPPORTS_SIMPLE_IPC */
+
 int cmd_batch(int argc, const char **argv, const char *prefix,
 	      struct repository *repo)
 {
@@ -418,6 +639,7 @@ int cmd_batch(int argc, const char **argv, const char *prefix,
 	struct strvec env_vars = STRVEC_INIT;
 	struct strvec prev_env_keys = STRVEC_INIT;
 	int accept_all = 0, single_shot = 0;
+	const char *ipc_path = NULL;
 	struct process_snapshot snap;
 
 	/*
@@ -429,7 +651,9 @@ int cmd_batch(int argc, const char **argv, const char *prefix,
 		repo = the_repository;
 
 	for (int i = 1; i < argc; i++) {
-		if (!strcmp(argv[i], "--all"))
+		if (skip_prefix(argv[i], "--ipc=", &ipc_path))
+			accept_all = 1;
+		else if (!strcmp(argv[i], "--all"))
 			accept_all = 1;
 		else if (!strcmp(argv[i], "--single"))
 			single_shot = 1;
@@ -450,6 +674,18 @@ int cmd_batch(int argc, const char **argv, const char *prefix,
 	 */
 	if (!single_shot)
 		snapshot_process_state(&snap);
+
+#ifdef SUPPORTS_SIMPLE_IPC
+	if (ipc_path) {
+		struct ipc_server_opts ipc_opts = { .nr_threads = 1 };
+		struct batch_ipc_data ipc_data = {
+			.snap = &snap,
+			.accept_all = accept_all,
+		};
+		return ipc_server_run(ipc_path, &ipc_opts,
+				      batch_ipc_handler, &ipc_data);
+	}
+#endif
 
 	/*
 	 * In persistent mode, catch die()/exit() via longjmp so the
