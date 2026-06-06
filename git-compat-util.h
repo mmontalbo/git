@@ -1074,6 +1074,14 @@ int common_exit(const char *file, int line, int code);
 #define exit(code) exit(common_exit(__FILE__, __LINE__, (code)))
 
 /*
+ * Register a callback that common_exit() invokes before the real
+ * exit().  The callback is expected to not return (e.g. siglongjmp).
+ * Used by git-batch to recover from builtins that call exit().
+ */
+typedef NORETURN_PTR void (*common_exit_intercept_fn)(int code);
+void set_exit_intercept(common_exit_intercept_fn fn);
+
+/*
  * This include must come after system headers, since it introduces macros that
  * replace system names.
  */

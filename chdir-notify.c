@@ -43,6 +43,18 @@ void chdir_notify_unregister(const char *name, chdir_notify_callback cb,
 	}
 }
 
+void chdir_notify_clear(void)
+{
+	struct list_head *pos, *p;
+
+	list_for_each_safe(pos, p, &chdir_notify_entries) {
+		struct chdir_notify_entry *e =
+			list_entry(pos, struct chdir_notify_entry, list);
+		list_del(pos);
+		free(e);
+	}
+}
+
 static void reparent_cb(const char *name,
 			const char *old_cwd,
 			const char *new_cwd,

@@ -13,6 +13,7 @@ struct cmd_struct {
 struct cmd_struct *get_builtin(const char *s);
 int run_builtin(struct cmd_struct *p, int argc, const char **argv,
 		struct repository *repo);
+extern int run_builtin_keep_stdout;
 
 /*
  * builtin API

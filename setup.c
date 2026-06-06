@@ -1914,11 +1914,6 @@ const char *setup_git_directory_gently(struct repository *repo, int *nongit_ok)
 	 */
 	repo_config_clear(repo);
 
-	/*
-	 * Let's assume that we are in a git repository.
-	 * If it turns out later that we are somewhere else, the value will be
-	 * updated accordingly.
-	 */
 	if (nongit_ok)
 		*nongit_ok = 0;
 

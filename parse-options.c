@@ -10,6 +10,14 @@
 
 static int disallow_abbreviated_options;
 
+/*
+ * When set, parse_options() zeros out all option target variables
+ * before processing.  This is needed by "git batch" where builtins
+ * run repeatedly in the same process and static option variables
+ * would otherwise retain values from previous invocations.
+ */
+int parse_options_batch_mode;
+
 enum opt_parsed {
 	OPT_LONG  = 0,
 	OPT_SHORT = 1<<0,
@@ -1178,6 +1186,42 @@ int parse_options_end(struct parse_opt_ctx_t *ctx)
 	return ctx->cpidx + ctx->argc;
 }
 
+static void reset_option_values(const struct option *options)
+{
+	const struct option *o;
+
+	for (o = options; o->type != OPTION_END; o++) {
+		if (!o->value)
+			continue;
+		switch (o->type) {
+		case OPTION_BIT:
+		case OPTION_NEGBIT:
+		case OPTION_COUNTUP:
+		case OPTION_SET_INT:
+			*(int *)o->value = 0;
+			break;
+		case OPTION_BITOP:
+			break; /* bitops have complex semantics, skip */
+		case OPTION_STRING:
+		case OPTION_FILENAME:
+			*(const char **)o->value = NULL;
+			break;
+		case OPTION_INTEGER:
+		case OPTION_UNSIGNED:
+			memset(o->value, 0, o->precision);
+			break;
+		case OPTION_CALLBACK:
+		case OPTION_LOWLEVEL_CALLBACK:
+		case OPTION_SUBCOMMAND:
+		case OPTION_GROUP:
+		case OPTION_NUMBER:
+		case OPTION_ALIAS:
+		case OPTION_END:
+			break;
+		}
+	}
+}
+
 int parse_options(int argc, const char **argv,
 		  const char *prefix,
 		  const struct option *options,
@@ -1186,6 +1230,9 @@ int parse_options(int argc, const char **argv,
 {
 	struct parse_opt_ctx_t ctx;
 	struct option *real_options;
+
+	if (parse_options_batch_mode)
+		reset_option_values(options);
 
 	disallow_abbreviated_options =
 		git_env_bool("GIT_TEST_DISALLOW_ABBREVIATED_OPTIONS", 0);

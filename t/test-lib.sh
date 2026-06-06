@@ -1241,6 +1241,13 @@ check_test_results_san_file_ () {
 }
 
 test_done () {
+	# Shut down the batch/pool coproc before cleanup so idle
+	# workers release their handles on the trash directory.
+	if test -n "$GIT_BATCH_WR"; then
+		exec {GIT_BATCH_WR}>&- {GIT_BATCH_RD}<&-
+		wait 2>/dev/null
+	fi
+
 	# Run the atexit commands _before_ the trash directory is
 	# removed, so the commands can access pidfiles and socket files.
 	test_atexit_handler
@@ -1651,26 +1658,62 @@ fi
 
 start_test_output "$0"
 
-# Batch mode: run git builtins in a single persistent process
-# to avoid per-command process spawn overhead.  Started after
-# repo init so the batch process can find the repository.
-if test -n "$GIT_TEST_BATCH"
+# Dispatch mode: bash loadable builtin that runs git builtins
+# in-process via fork (Unix) or direct call (Windows).
+# No IPC protocol -- fork inherits stdin/env/cwd automatically.
+if test -n "$GIT_TEST_DISPATCH"
 then
-	coproc GIT_BATCH { "$GIT_BUILD_DIR/git" batch 2>&3; } 3>&2
+	if enable -f "$GIT_BUILD_DIR/libgit-dispatch.so" git 2>/dev/null
+	then
+		: # git is now a bash builtin
+	else
+		echo "warning: failed to load libgit-dispatch.so, falling back" >&2
+		unset GIT_TEST_DISPATCH
+	fi
+fi
+
+# Batch/pool mode: avoid per-command spawn overhead.
+# GIT_TEST_POOL uses a pool of single-shot "git batch" workers
+# (process isolation, no state corruption risk).
+# GIT_TEST_BATCH uses a single persistent "git batch" daemon
+# (faster but risks stale state between commands).
+# Both use the same shell protocol; only start_batch_daemon differs.
+if test -n "$GIT_TEST_POOL" || test -n "$GIT_TEST_BATCH"
+then
+	GIT_BATCH_TMPDIR="${TMPDIR:-/tmp}/git-batch-$$"
+	mkdir -p "$GIT_BATCH_TMPDIR"
+	if test -n "$GIT_TEST_POOL"
+	then
+		start_batch_daemon () {
+			coproc _BATCH_TMP {
+				"$GIT_BUILD_DIR/t/helper/test-tool" \
+					pool-manager \
+					--git="$GIT_BUILD_DIR/git" \
+					--size="${GIT_TEST_POOL_SIZE:-3}" \
+					${GIT_TEST_POOL_TRACE:+--trace}
+			}
+			exec {GIT_BATCH_RD}<&${_BATCH_TMP[0]} {GIT_BATCH_WR}>&${_BATCH_TMP[1]}
+			disown $!
+		}
+	else
+		start_batch_daemon () {
+			coproc _BATCH_TMP { "$GIT_BUILD_DIR/git" batch --all; }
+			exec {GIT_BATCH_RD}<&${_BATCH_TMP[0]} {GIT_BATCH_WR}>&${_BATCH_TMP[1]}
+			disown $!
+		}
+	fi
+	start_batch_daemon
+
+	# Export config for the compiled batch client
+	export GIT_BATCH_RD GIT_BATCH_WR GIT_BATCH_TMPDIR
+	export GIT_BATCH_GIT="$GIT_BUILD_DIR/git"
+	if type cygpath >/dev/null 2>&1; then
+		GIT_BATCH_CYGROOT="$(cygpath -m /)"
+		export GIT_BATCH_CYGROOT="${GIT_BATCH_CYGROOT%/}"
+	fi
+
 	git () {
-		printf '%s\0' "CWD=$(pwd)" "$@" >&${GIT_BATCH[1]}
-		printf '\n' >&${GIT_BATCH[1]}
-		while IFS= read -r line <&${GIT_BATCH[0]}; do
-			case "$line" in
-			"EXIT "*)
-				return ${line#EXIT }
-				;;
-			*)
-				printf '%s\n' "$line"
-				;;
-			esac
-		done
-		return 1
+		"$GIT_BUILD_DIR/t/helper/test-tool" batch-client "$@"
 	}
 fi
 

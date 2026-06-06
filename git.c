@@ -459,6 +459,8 @@ static int handle_alias(struct strvec *args, struct string_list *expanded_aliase
 	return ret;
 }
 
+int run_builtin_keep_stdout;
+
 int run_builtin(struct cmd_struct *p, int argc, const char **argv, struct repository *repo)
 {
 	int status, help;
@@ -488,7 +490,6 @@ int run_builtin(struct cmd_struct *p, int argc, const char **argv, struct reposi
 	if (use_pager == -1 && p->option & USE_PAGER)
 		use_pager = 1;
 	if (run_setup && startup_info->have_repository)
-		/* get_git_dir() may set up repo, avoid that */
 		trace_repo_setup(repo);
 	commit_pager_choice();
 
@@ -504,6 +505,16 @@ int run_builtin(struct cmd_struct *p, int argc, const char **argv, struct reposi
 
 	if (status)
 		return status;
+
+	/*
+	 * In batch mode, the caller owns stdout lifetime and uses
+	 * raw write() for protocol messages.  Skip the CRT
+	 * fstat/fflush/fclose dance which damages the CRT FILE*
+	 * state on Windows pipes (S_ISFIFO not set, fflush/ferror
+	 * corrupt internal state).
+	 */
+	if (run_builtin_keep_stdout)
+		return 0;
 
 	/* Somebody closed stdout? */
 	if (fstat(fileno(stdout), &st))
@@ -529,7 +540,7 @@ static struct cmd_struct commands[] = {
 	{ "apply", cmd_apply, RUN_SETUP_GENTLY },
 	{ "archive", cmd_archive, RUN_SETUP_GENTLY },
 	{ "backfill", cmd_backfill, RUN_SETUP },
-	{ "batch", cmd_batch, RUN_SETUP_GENTLY },
+	{ "batch", cmd_batch, 0 },
 	{ "bisect", cmd_bisect, RUN_SETUP },
 	{ "blame", cmd_blame, RUN_SETUP },
 	{ "branch", cmd_branch, RUN_SETUP | DELAY_PAGER_CONFIG },

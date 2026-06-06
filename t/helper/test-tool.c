@@ -11,6 +11,7 @@ static const char * const test_tool_usage[] = {
 
 static struct test_cmd cmds[] = {
 	{ "advise", cmd__advise_if_enabled },
+	{ "batch-client", cmd__batch_client },
 	{ "bitmap", cmd__bitmap },
 	{ "bloom", cmd__bloom },
 	{ "bundle-uri", cmd__bundle_uri },
@@ -57,6 +58,7 @@ static struct test_cmd cmds[] = {
 	{ "path-walk", cmd__path_walk },
 	{ "pcre2-config", cmd__pcre2_config },
 	{ "pkt-line", cmd__pkt_line },
+	{ "pool-manager", cmd__pool_manager },
 	{ "proc-receive", cmd__proc_receive },
 	{ "progress", cmd__progress },
 	{ "reach", cmd__reach },

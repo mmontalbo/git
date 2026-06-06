@@ -722,6 +722,17 @@ int cmd_rev_parse(int argc,
 
 	show_usage_if_asked(argc, argv, builtin_rev_parse_usage);
 
+#ifdef GIT_WINDOWS_NATIVE
+	{
+		int _lfd = open("C:/msys64/tmp/revparse_log.txt",
+				O_WRONLY|O_CREAT|O_APPEND, 0644);
+		if (_lfd >= 0) {
+			write(_lfd, "RP:enter\n", 9);
+			close(_lfd);
+		}
+	}
+#endif
+
 	if (argc > 1 && !strcmp("--parseopt", argv[1]))
 		return cmd_parseopt(argc - 1, argv + 1, prefix);
 
@@ -775,7 +786,15 @@ int cmd_rev_parse(int argc,
 
 		/* The rest of the options require a git repository. */
 		if (!did_repo_setup) {
+#ifdef GIT_WINDOWS_NATIVE
+			{ int _l=open("C:/msys64/tmp/revparse_log.txt",O_WRONLY|O_CREAT|O_APPEND,0644);
+			  if(_l>=0){write(_l,"RP:pre-setup\n",13);close(_l);} }
+#endif
 			prefix = setup_git_directory(the_repository);
+#ifdef GIT_WINDOWS_NATIVE
+			{ int _l=open("C:/msys64/tmp/revparse_log.txt",O_WRONLY|O_CREAT|O_APPEND,0644);
+			  if(_l>=0){write(_l,"RP:post-setup\n",14);close(_l);} }
+#endif
 			repo_config(the_repository, git_default_config, NULL);
 			did_repo_setup = 1;
 
@@ -1189,7 +1208,15 @@ int cmd_rev_parse(int argc,
 	strbuf_release(&buf);
 	if (verify) {
 		if (revs_count == 1) {
+#ifdef GIT_WINDOWS_NATIVE
+			{ int _l=open("C:/msys64/tmp/revparse_log.txt",O_WRONLY|O_CREAT|O_APPEND,0644);
+			  if(_l>=0){write(_l,"RP:show_rev\n",12);close(_l);} }
+#endif
 			show_rev(type, &oid, name);
+#ifdef GIT_WINDOWS_NATIVE
+			{ int _l=open("C:/msys64/tmp/revparse_log.txt",O_WRONLY|O_CREAT|O_APPEND,0644);
+			  if(_l>=0){write(_l,"RP:done\n",8);close(_l);} }
+#endif
 			return 0;
 		} else if (revs_count == 0 && show_default())
 			return 0;

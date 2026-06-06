@@ -45,6 +45,7 @@ test_tool_sources = [
   'test-path-walk.c',
   'test-pcre2-config.c',
   'test-pkt-line.c',
+  'test-pool-manager.c',
   'test-proc-receive.c',
   'test-progress.c',
   'test-reach.c',

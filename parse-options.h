@@ -414,6 +414,13 @@ int parse_options(int argc, const char **argv, const char *prefix,
 		  const char * const usagestr[],
 		  enum parse_opt_flags flags);
 
+/*
+ * When non-zero, parse_options() zeroes all option target variables
+ * before processing.  Set by "git batch" to prevent stale static
+ * state from leaking between commands in a persistent process.
+ */
+extern int parse_options_batch_mode;
+
 NORETURN void usage_with_options(const char * const *usagestr,
 				 const struct option *options);
 

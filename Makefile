@@ -800,6 +800,7 @@ X =
 PROGRAMS += $(patsubst %.o,git-%$X,$(PROGRAM_OBJS))
 
 TEST_BUILTINS_OBJS += test-advise.o
+TEST_BUILTINS_OBJS += test-batch-client.o
 TEST_BUILTINS_OBJS += test-bitmap.o
 TEST_BUILTINS_OBJS += test-bloom.o
 TEST_BUILTINS_OBJS += test-bundle-uri.o
@@ -844,6 +845,7 @@ TEST_BUILTINS_OBJS += test-path-utils.o
 TEST_BUILTINS_OBJS += test-path-walk.o
 TEST_BUILTINS_OBJS += test-pcre2-config.o
 TEST_BUILTINS_OBJS += test-pkt-line.o
+TEST_BUILTINS_OBJS += test-pool-manager.o
 TEST_BUILTINS_OBJS += test-proc-receive.o
 TEST_BUILTINS_OBJS += test-progress.o
 TEST_BUILTINS_OBJS += test-reach.o
@@ -2664,6 +2666,21 @@ git.sp git.s git.o: EXTRA_CPPFLAGS = \
 git$X: git.o GIT-LDFLAGS $(BUILTIN_OBJS) $(GITLIBS)
 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) -o $@ $(ALL_LDFLAGS) \
 		$(filter %.o,$^) $(LIBS)
+
+## Bash loadable builtin for in-process git dispatch (test suite optimization)
+DISPATCH_OBJ = contrib/bash-loadable/git-dispatch.o
+contrib/bash-loadable/git-dispatch.o: contrib/bash-loadable/git-dispatch.c GIT-CFLAGS
+	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $(EXTRA_CPPFLAGS) $<
+
+ifeq ($(uname_S),MINGW)
+DISPATCH_LDFLAGS = -shared -mconsole
+DISPATCH_TARGET = libgit-dispatch.dll
+else
+DISPATCH_LDFLAGS = -shared -Wl,-Bsymbolic
+DISPATCH_TARGET = libgit-dispatch.so
+endif
+$(DISPATCH_TARGET): $(DISPATCH_OBJ) git.o $(BUILTIN_OBJS) common-init.o common-exit.o $(LIB_FILE)
+	$(QUIET_LINK)$(CC) $(DISPATCH_LDFLAGS) -o $@ $(filter %.o,$^) $(LIB_FILE) $(EXTLIBS)
 
 help.sp help.s help.o: command-list.h
 builtin/bugreport.sp builtin/bugreport.s builtin/bugreport.o: hook-list.h
