@@ -5,10 +5,6 @@ struct strvec;
 
 void git_set_exec_path(const char *exec_path);
 void git_resolve_executable_dir(const char *path);
-#ifdef RUNTIME_PREFIX
-const char *git_get_executable_dirname(void);
-void git_set_executable_dirname(const char *dir);
-#endif
 const char *git_exec_path(void);
 void setup_path(void);
 const char **prepare_git_cmd(struct strvec *out, const char **argv);

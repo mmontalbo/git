@@ -287,18 +287,6 @@ void git_resolve_executable_dir(const char *argv0 UNUSED)
 
 #endif /* RUNTIME_PREFIX */
 
-#ifdef RUNTIME_PREFIX
-const char *git_get_executable_dirname(void)
-{
-	return executable_dirname;
-}
-
-void git_set_executable_dirname(const char *dir)
-{
-	executable_dirname = dir;
-}
-#endif
-
 char *system_path(const char *path)
 {
 	struct strbuf d = STRBUF_INIT;

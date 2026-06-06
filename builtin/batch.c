@@ -136,61 +136,6 @@ static void snapshot_process_state(struct process_snapshot *snap)
 	snap->env_copy[snap->env_count] = NULL;
 }
 
-/*
- * Memory diff engine for batch instrumentation.
- *
- * Compares current .data/.bss against the startup snapshot and emits
- * a TSV report of changed byte ranges.  The output is correlated with
- * the symbol map (from gen-symmap.sh) offline.
- *
- * Activated by GIT_BATCH_INSTRUMENT_OUT=<path> environment variable.
- * Output format: section \t offset \t length \t first_8_snap \t first_8_cur
- */
-static void instrument_diff_section(FILE *out, const char *section,
-				     const char *current, const char *snapshot,
-				     size_t size, const char *cmd, int seq)
-{
-	size_t i = 0;
-
-	while (i < size) {
-		/* Fast skip: compare 8 bytes at a time */
-		if (i + 8 <= size &&
-		    !memcmp(current + i, snapshot + i, 8)) {
-			i += 8;
-			continue;
-		}
-
-		/* Find the start of a changed region */
-		while (i < size && current[i] == snapshot[i])
-			i++;
-		if (i >= size)
-			break;
-
-		/* Find the end of the changed region */
-		{
-			size_t start = i;
-			while (i < size && current[i] != snapshot[i])
-				i++;
-			/* Also consume trailing unchanged bytes within
-			 * the same 8-byte word to coalesce small diffs */
-			fprintf(out, "%d\t%s\t%s\t%zu\t%zu\n",
-				seq, cmd, section, start, i - start);
-		}
-	}
-}
-
-static void instrument_diff(const struct process_snapshot *snap,
-			     const char *cmd, int seq, FILE *out)
-{
-	instrument_diff_section(out, "data", snap->data_start,
-				snap->data_copy, snap->data_size, cmd, seq);
-	if (snap->bss_size)
-		instrument_diff_section(out, "bss", snap->bss_start,
-					snap->bss_copy, snap->bss_size,
-					cmd, seq);
-	fflush(out);
-}
-
 static void restore_process_state(const struct process_snapshot *snap)
 {
 	int i;
@@ -474,8 +419,6 @@ int cmd_batch(int argc, const char **argv, const char *prefix,
 	struct strvec prev_env_keys = STRVEC_INIT;
 	int accept_all = 0, single_shot = 0;
 	struct process_snapshot snap;
-	FILE *instrument_out = NULL;
-	int cmd_seq = 0;
 
 	/*
 	 * With flags=0 in the command table, run_builtin() passes
@@ -508,20 +451,6 @@ int cmd_batch(int argc, const char **argv, const char *prefix,
 	if (!single_shot)
 		snapshot_process_state(&snap);
 
-	/* Instrumentation: open output file for memory diffs */
-	{
-		const char *inst_path = getenv("GIT_BATCH_INSTRUMENT_OUT");
-		if (inst_path) {
-			if (!strcmp(inst_path, "-"))
-				instrument_out = stderr;
-			else
-				instrument_out = fopen(inst_path, "w");
-			if (instrument_out)
-				fprintf(instrument_out,
-					"# seq\tcmd\tsection\toffset\tlength\n");
-		}
-	}
-
 	/*
 	 * In persistent mode, catch die()/exit() via longjmp so the
 	 * process survives.  In single-shot mode (pool workers), use
@@ -536,35 +465,15 @@ int cmd_batch(int argc, const char **argv, const char *prefix,
 	set_die_is_recursing_routine(batch_die_is_recursing);
 	run_builtin_keep_stdout = 1;
 
-	/* Persistent debug log fd (survives dup2/restore, not in .bss) */
-	{
-	int dbg = -1;
-#ifdef GIT_WINDOWS_NATIVE
-	dbg = open("C:/msys64/tmp/batch_dbg.log",
-		   O_WRONLY | O_CREAT | O_TRUNC, 0644);
-#endif
-
-#define DBG(msg) do { if (dbg >= 0) write(dbg, msg, sizeof(msg)-1); } while(0)
-#define DBGF(fmt, ...) do { if (dbg >= 0) { \
-	char _b[256]; int _n = snprintf(_b, sizeof(_b), fmt, __VA_ARGS__); \
-	if (_n > 0) write(dbg, _b, _n); } } while(0)
-
-	DBG("loop-start\n");
-
 	while (read_command(&args, &errpath, &stdinpath, &cwdpath,
 			    &env_vars) == 0) {
 		struct cmd_struct *builtin;
 		const char **argv_copy;
 		int ret, saved_stdout, saved_err = -1, saved_in = -1;
 
-		DBGF("cmd:%s env=%d err=%s\n",
-		     args.nr ? args.v[0] : "?",
-		     (int)env_vars.nr, errpath.buf);
-
 		if (!single_shot) {
 			extern const char *tmp_original_cwd;
 
-			DBG(" restore\n");
 			restore_process_state(&snap);
 			/*
 			 * tmp_original_cwd is set once during startup and
@@ -601,7 +510,6 @@ int cmd_batch(int argc, const char **argv, const char *prefix,
 			strbuf_release(&cmd);
 		}
 
-		DBG(" env\n");
 		apply_env(&env_vars, &prev_env_keys);
 
 		if (cwdpath.len && chdir(cwdpath.buf))
@@ -649,7 +557,6 @@ int cmd_batch(int argc, const char **argv, const char *prefix,
 
 		DUP_ARRAY(argv_copy, args.v, args.nr + 1);
 
-		DBG(" run\n");
 		if (single_shot) {
 			set_exit_intercept(single_exit_intercept);
 			ret = run_builtin(builtin, args.nr, argv_copy, repo);
@@ -668,21 +575,18 @@ int cmd_batch(int argc, const char **argv, const char *prefix,
 				set_exit_intercept(NULL);
 			}
 		}
-		DBGF(" ret=%d\n", ret);
 
 		if (single_shot)
 			single_shot_stdout_fd = -1;
 
 		free(argv_copy);
 
-		DBG(" flush\n");
 		fflush(stdout);
 
 		/* Restore stdout fd */
 		restore_stdout_fd(saved_stdout);
 		close(saved_stdout);
 
-		DBG(" rstdout\n");
 		/* Restore stderr */
 		if (saved_err >= 0) {
 			fflush(stderr);
@@ -694,13 +598,6 @@ int cmd_batch(int argc, const char **argv, const char *prefix,
 		if (saved_in >= 0) {
 			dup2(saved_in, STDIN_FILENO);
 			close(saved_in);
-		}
-
-		/* Instrumentation: diff memory before restore */
-		if (instrument_out) {
-			instrument_diff(&snap, args.v[0], cmd_seq,
-					instrument_out);
-			cmd_seq++;
 		}
 
 		/*
@@ -733,18 +630,10 @@ int cmd_batch(int argc, const char **argv, const char *prefix,
 			char exit_buf[32];
 			int len = snprintf(exit_buf, sizeof(exit_buf),
 					   "EXIT %d\n", ret);
-			DBG(" exit-write\n");
 			if (write(STDOUT_FILENO, exit_buf, len) < 0)
 				; /* best-effort */
 		}
-		DBG(" done\n");
 	}
-
-	DBG("loop-end\n");
-	if (dbg >= 0) close(dbg);
-	}
-#undef DBG
-#undef DBGF
 
 	if (!single_shot)
 		set_exit_intercept(NULL);
