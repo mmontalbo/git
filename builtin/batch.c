@@ -33,9 +33,13 @@
 #include "convert.h"
 #include "simple-ipc.h"
 #include "pkt-line.h"
+#include "unix-socket.h"
 #include "trace.h"
 
 #include <setjmp.h>
+#ifndef GIT_WINDOWS_NATIVE
+#include <poll.h>
+#endif
 
 static struct trace_key trace_batch = TRACE_KEY_INIT(BATCH);
 
@@ -640,6 +644,7 @@ int cmd_batch(int argc, const char **argv, const char *prefix,
 	struct strvec prev_env_keys = STRVEC_INIT;
 	int accept_all = 0, single_shot = 0;
 	const char *ipc_path = NULL;
+	const char *listen_path = NULL;
 	struct process_snapshot snap;
 
 	/*
@@ -652,6 +657,8 @@ int cmd_batch(int argc, const char **argv, const char *prefix,
 
 	for (int i = 1; i < argc; i++) {
 		if (skip_prefix(argv[i], "--ipc=", &ipc_path))
+			accept_all = 1;
+		else if (skip_prefix(argv[i], "--listen=", &listen_path))
 			accept_all = 1;
 		else if (!strcmp(argv[i], "--all"))
 			accept_all = 1;
@@ -674,6 +681,61 @@ int cmd_batch(int argc, const char **argv, const char *prefix,
 	 */
 	if (!single_shot)
 		snapshot_process_state(&snap);
+
+	/*
+	 * --listen mode: create a Unix socket, accept one persistent
+	 * connection, and run the command loop on it.  The relay
+	 * connects once and keeps the connection open, VS Code style.
+	 */
+#ifndef NO_UNIX_SOCKETS
+	if (listen_path) {
+		struct unix_stream_listen_opts listen_opts =
+			UNIX_STREAM_LISTEN_OPTS_INIT;
+		int server_fd, conn_fd;
+		const char *logdir = getenv("GIT_BATCH_TMPDIR");
+		int logfd = -1;
+
+		if (logdir) {
+			struct strbuf lp = STRBUF_INIT;
+			strbuf_addf(&lp, "%s/daemon.log", logdir);
+			logfd = open(lp.buf, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+			strbuf_release(&lp);
+		}
+#define DLOG(msg) do { if (logfd >= 0) write(logfd, msg, strlen(msg)); } while(0)
+
+		DLOG("listen: creating socket\n");
+		server_fd = unix_stream_listen(listen_path, &listen_opts);
+		if (server_fd < 0)
+			die("batch: cannot listen on '%s'", listen_path);
+
+		DLOG("listen: socket created, waiting for connection\n");
+		/*
+		 * Use poll() with a timeout so we don't hang forever
+		 * if the relay never connects.
+		 */
+		{
+#ifndef GIT_WINDOWS_NATIVE
+			struct pollfd pfd = { .fd = server_fd, .events = POLLIN };
+			if (poll(&pfd, 1, 30000) <= 0)
+				die("batch: timed out waiting for relay connection");
+#endif
+		}
+		conn_fd = accept(server_fd, NULL, NULL);
+		if (conn_fd < 0)
+			die_errno("batch: accept failed");
+
+		DLOG("listen: connection accepted\n");
+		close(server_fd);
+		unlink(listen_path);
+
+		dup2(conn_fd, STDIN_FILENO);
+		dup2(conn_fd, STDOUT_FILENO);
+		close(conn_fd);
+		DLOG("listen: dup2 done, entering command loop\n");
+#undef DLOG
+		if (logfd >= 0) close(logfd);
+	}
+#endif
 
 #ifdef SUPPORTS_SIMPLE_IPC
 	if (ipc_path) {

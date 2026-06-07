@@ -1700,39 +1700,20 @@ then
 		_batch_path () { printf '%s' "$1"; }
 	fi
 
-	# Start IPC daemon in background
-	GIT_BATCH_IPC="$GIT_BATCH_TMPDIR/batch.sock"
-	GIT_BATCH_LOG="$GIT_BATCH_TMPDIR/startup.log"
-	echo "batch: starting daemon ipc=$GIT_BATCH_IPC" >"$GIT_BATCH_LOG"
-	"$GIT_BUILD_DIR/git" batch --ipc="$GIT_BATCH_IPC" 2>>"$GIT_BATCH_LOG" &
+	# Start daemon with --listen (persistent Unix socket connection).
+	# The daemon creates the socket, accepts ONE connection (the relay),
+	# and runs the command loop on it.
+	GIT_BATCH_SOCK="$GIT_BATCH_TMPDIR/batch.sock"
+	"$GIT_BUILD_DIR/git" batch --listen="$GIT_BATCH_SOCK" &
 	GIT_BATCH_PID=$!
-	echo "batch: daemon pid=$GIT_BATCH_PID" >>"$GIT_BATCH_LOG"
 
-	# Wait for daemon socket to appear
-	for _batch_wait in 1 2 3 4 5; do
-		if test -S "$GIT_BATCH_IPC"; then
-			echo "batch: socket ready after ${_batch_wait}s" >>"$GIT_BATCH_LOG"
-			break
-		fi
-		echo "batch: waiting for socket (attempt $_batch_wait)..." >>"$GIT_BATCH_LOG"
-		sleep 1
-	done
-
-	if ! test -S "$GIT_BATCH_IPC"; then
-		echo "batch: FAILED - socket never appeared" >>"$GIT_BATCH_LOG"
-		cat "$GIT_BATCH_LOG" >&2
-		unset GIT_TEST_BATCH
-	else
-		# Start relay as coproc (fds 0-1 always inherited)
-		echo "batch: starting relay" >>"$GIT_BATCH_LOG"
-		coproc _BATCH_TMP {
-			"$GIT_BUILD_DIR/t/helper/test-tool" \
-				batch-relay --ipc="$GIT_BATCH_IPC"
-		}
-		exec {GIT_BATCH_RD}<&${_BATCH_TMP[0]} {GIT_BATCH_WR}>&${_BATCH_TMP[1]}
-		disown $!
-		echo "batch: relay started, RD=$GIT_BATCH_RD WR=$GIT_BATCH_WR" >>"$GIT_BATCH_LOG"
-	fi
+	# Start relay as coproc - it retries connection internally
+	coproc _BATCH_TMP {
+		"$GIT_BUILD_DIR/t/helper/test-tool" \
+			batch-relay --sock="$GIT_BATCH_SOCK"
+	}
+	exec {GIT_BATCH_RD}<&${_BATCH_TMP[0]} {GIT_BATCH_WR}>&${_BATCH_TMP[1]}
+	disown $!
 
 	git () {
 		# Whitelist: only send known-safe builtins to the daemon.
