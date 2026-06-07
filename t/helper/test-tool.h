@@ -5,6 +5,7 @@
 
 int cmd__advise_if_enabled(int argc, const char **argv);
 int cmd__batch_client(int argc, const char **argv);
+int cmd__batch_relay(int argc, const char **argv);
 int cmd__bitmap(int argc, const char **argv);
 int cmd__bloom(int argc, const char **argv);
 int cmd__bundle_uri(int argc, const char **argv);

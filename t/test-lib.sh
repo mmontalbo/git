@@ -1241,13 +1241,14 @@ check_test_results_san_file_ () {
 }
 
 test_done () {
-	# Shut down the batch daemon before cleanup.
+	# Shut down the batch relay and daemon before cleanup.
+	if test -n "$GIT_BATCH_WR"; then
+		exec {GIT_BATCH_WR}>&- {GIT_BATCH_RD}<&-
+		wait 2>/dev/null
+	fi
 	if test -n "$GIT_BATCH_PID"; then
 		kill "$GIT_BATCH_PID" 2>/dev/null
 		wait "$GIT_BATCH_PID" 2>/dev/null
-	elif test -n "$GIT_BATCH_WR"; then
-		exec {GIT_BATCH_WR}>&- {GIT_BATCH_RD}<&-
-		wait 2>/dev/null
 	fi
 
 	# Run the atexit commands _before_ the trash directory is
@@ -1684,29 +1685,105 @@ if test -n "$GIT_TEST_BATCH"
 then
 	GIT_BATCH_TMPDIR="${TMPDIR:-/tmp}/git-batch-$$"
 	mkdir -p "$GIT_BATCH_TMPDIR"
-	export GIT_BATCH_TMPDIR
-	export GIT_BATCH_GIT="$GIT_BUILD_DIR/git"
 
 	if type cygpath >/dev/null 2>&1; then
-		GIT_BATCH_CYGROOT="$(cygpath -m /)"
-		export GIT_BATCH_CYGROOT="${GIT_BATCH_CYGROOT%/}"
+		_BATCH_CYGROOT="$(cygpath -m /)"
+		_BATCH_CYGROOT="${_BATCH_CYGROOT%/}"
+		_batch_path () {
+			case "$1" in
+			/[a-zA-Z]/*) printf '%s' "${1:1:1}:${1:2}" ;;
+			/*) printf '%s' "${_BATCH_CYGROOT}${1}" ;;
+			*) printf '%s' "$1" ;;
+			esac
+		}
+	else
+		_batch_path () { printf '%s' "$1"; }
 	fi
 
+	# Start IPC daemon in background
 	GIT_BATCH_IPC="$GIT_BATCH_TMPDIR/batch.sock"
-	export GIT_BATCH_IPC
-
-	# Start daemon in background
-	"$GIT_BUILD_DIR/git" batch --ipc="$GIT_BATCH_IPC" &
+	GIT_BATCH_LOG="$GIT_BATCH_TMPDIR/startup.log"
+	echo "batch: starting daemon ipc=$GIT_BATCH_IPC" >"$GIT_BATCH_LOG"
+	"$GIT_BUILD_DIR/git" batch --ipc="$GIT_BATCH_IPC" 2>>"$GIT_BATCH_LOG" &
 	GIT_BATCH_PID=$!
+	echo "batch: daemon pid=$GIT_BATCH_PID" >>"$GIT_BATCH_LOG"
 
-	# Wait for server to start listening
-	for _batch_wait in 1 2 3 4 5 6 7 8 9 10; do
-		"$GIT_BUILD_DIR/t/helper/test-tool" batch-client --ping 2>/dev/null && break
-		sleep 0.1 2>/dev/null || sleep 1
+	# Wait for daemon socket to appear
+	for _batch_wait in 1 2 3 4 5; do
+		if test -S "$GIT_BATCH_IPC"; then
+			echo "batch: socket ready after ${_batch_wait}s" >>"$GIT_BATCH_LOG"
+			break
+		fi
+		echo "batch: waiting for socket (attempt $_batch_wait)..." >>"$GIT_BATCH_LOG"
+		sleep 1
 	done
 
+	if ! test -S "$GIT_BATCH_IPC"; then
+		echo "batch: FAILED - socket never appeared" >>"$GIT_BATCH_LOG"
+		cat "$GIT_BATCH_LOG" >&2
+		unset GIT_TEST_BATCH
+	else
+		# Start relay as coproc (fds 0-1 always inherited)
+		echo "batch: starting relay" >>"$GIT_BATCH_LOG"
+		coproc _BATCH_TMP {
+			"$GIT_BUILD_DIR/t/helper/test-tool" \
+				batch-relay --ipc="$GIT_BATCH_IPC"
+		}
+		exec {GIT_BATCH_RD}<&${_BATCH_TMP[0]} {GIT_BATCH_WR}>&${_BATCH_TMP[1]}
+		disown $!
+		echo "batch: relay started, RD=$GIT_BATCH_RD WR=$GIT_BATCH_WR" >>"$GIT_BATCH_LOG"
+	fi
+
 	git () {
-		"$GIT_BUILD_DIR/t/helper/test-tool" batch-client "$@"
+		# Whitelist: only send known-safe builtins to the daemon.
+		case "$1" in
+		add|blame|branch|cat-file|check-attr|check-ignore|\
+		checkout|commit|commit-tree|config|describe|diff|\
+		diff-files|diff-index|diff-tree|for-each-ref|grep|\
+		hash-object|log|ls-files|ls-tree|merge-base|mktag|\
+		mktree|name-rev|notes|read-tree|reset|rev-list|\
+		rev-parse|rm|shortlog|show|show-ref|status|switch|\
+		symbolic-ref|tag|update-index|var|verify-commit|\
+		verify-tag|version|write-tree)
+			;;
+		*)
+			"$GIT_BUILD_DIR/git" "$@"
+			return $?
+			;;
+		esac
+
+		local errfile="$GIT_BATCH_TMPDIR/e.$$.$RANDOM"
+		{
+			local var
+			for var in ${!GIT_*} HOME EDITOR VISUAL FAKE_LINES TERM; do
+				printf '%s\0' "ENV=${var}=${!var}"
+			done
+			printf '%s\0' "STDERR=$(_batch_path "$errfile")"
+			printf '%s\0' "CWD=$(_batch_path "$PWD")" "$@"
+			printf '\n'
+		} >&$GIT_BATCH_WR
+		while IFS= read -t 60 -r line <&$GIT_BATCH_RD; do
+			case "$line" in
+			"EXIT -1")
+				"$GIT_BUILD_DIR/git" "$@"
+				local ret=$?
+				rm -f "$errfile"
+				return $ret
+				;;
+			"EXIT "*)
+				test -s "$errfile" && cat "$errfile" >&2
+				rm -f "$errfile"
+				return ${line#EXIT }
+				;;
+			*)
+				printf '%s\n' "$line"
+				;;
+			esac
+		done
+		"$GIT_BUILD_DIR/git" "$@"
+		local ret=$?
+		rm -f "$errfile"
+		return $ret
 	}
 fi
 
