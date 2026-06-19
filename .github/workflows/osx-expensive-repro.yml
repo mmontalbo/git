@@ -30,6 +30,7 @@ env:
 jobs:
   cluster:
     name: "cluster jobs=${{ matrix.jobs }}"
+    if: github.event_name == 'workflow_dispatch'   # control matrix; a push runs wedge-capture below
     strategy:
       fail-fast: false
       matrix:
@@ -87,6 +88,90 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: diag-jobs-${{ matrix.jobs }}
+          path: ${{ runner.temp }}/diag
+          if-no-files-found: warn
+
+  # DECISIVE on-runner capture (push-triggered). Reproduces the wedge with the proven
+  # cluster at jobs=10, then captures the WHOLE chain -- server (upload-pack +
+  # git-http-backend + apache) AND client (git-remote-http(s) + the local git fetch /
+  # index-pack consumer) -- with `sample` (user stacks) + `lsof` (which pipe/socket each
+  # fd maps to) + the full process tree. It re-captures every ~5 min and logs CPU idle,
+  # so once the EXPENSIVE giants finish (~18 min) the artifact shows the http chain STILL
+  # wedged with CPU idle (the "free CPU, still hung" proof, captured cleanly in one job).
+  # Local Linux (apache 2.4.66) could not latch this; h2 behaved like h1 and always
+  # recovered, so the latch is macOS-specific -- this nails down where. Also records the
+  # system apache version + socket-buffer sysctls (the macOS 16K vs Linux 64K pipe angle).
+  wedge-capture:
+    name: "wedge capture (full chain + free-CPU persistence)"
+    runs-on: macos-14
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v6
+      - name: install dependencies
+        run: ci/install-dependencies.sh
+      - name: build
+        run: make -j"$(sysctl -n hw.ncpu)"
+      - name: environment (apache version + buffer sizes)
+        run: |
+          set +e
+          echo "=== system httpd (what lib-httpd uses) ==="; /usr/sbin/httpd -v 2>&1 | head -3
+          echo "=== ncpu / mem ==="; sysctl -n hw.ncpu hw.memsize
+          echo "=== buffer sysctls (2015 'exceed pipe/socket buffer' knob) ==="
+          sysctl net.inet.tcp.sendspace net.inet.tcp.recvspace \
+                 net.local.stream.sendspace net.local.stream.recvspace kern.ipc.maxsockbuf 2>&1
+          echo "(macOS pipe buffers start at 16K and grow to 64K; Linux is 64K flat)"
+      - name: "cluster jobs=10 + full-chain wedge capture"
+        run: |
+          set +e
+          export GIT_TEST_HTTPD=true
+          export GIT_TRACE2_PERF="$RUNNER_TEMP/trace2"; mkdir -p "$GIT_TRACE2_PERF"
+          export GIT_TRACE_CURL="$RUNNER_TEMP/curl.log" GIT_TRACE_CURL_NO_DATA=1
+          D="$RUNNER_TEMP/diag"; mkdir -p "$D"
+          GITSIDE='git-remote-https|git-remote-http|git-http-backend|[ /]upload-pack|[ /]pack-objects|[ /]index-pack|[ /]unpack-objects|[ /]git-upload-pack'
+          capture_chain () {
+            tag=$1; cdir="$D/chain.$tag"; mkdir -p "$cdir"
+            top -l 1 -n 0 2>/dev/null | grep -i "CPU usage" > "$cdir/cpu.txt"
+            ps -axo pid,ppid,pgid,stat,%cpu,etime,command 2>/dev/null > "$cdir/ps.txt"
+            pids=$(ps -axo pid=,command= 2>/dev/null | grep -E "$GITSIDE|/usr/sbin/httpd" | grep -v grep | awk '{print $1}' | head -16)
+            for pid in $pids; do
+              comm=$(ps -o comm= -p "$pid" 2>/dev/null | sed 's#.*/##')
+              sample "$pid" 2 -file "$cdir/sample.$comm.$pid.txt" 2>/dev/null
+              lsof -p "$pid" > "$cdir/lsof.$comm.$pid.txt" 2>/dev/null
+            done
+            echo "  [capture $tag] $(cat "$cdir/cpu.txt" 2>/dev/null); procs=$(echo "$pids" | wc -w | tr -d ' ')"
+          }
+          ( make -C t prove \
+              T='t4141-apply-too-large.sh t4205-log-pretty-formats.sh t5004-archive-corner-cases.sh t5608-clone-2gb.sh t5551-http-fetch-smart.sh t5559-http-fetch-smart-http2.sh t5541-http-push-smart.sh t5561-http-backend.sh t7508-status.sh t7900-maintenance.sh t1092-sparse-checkout-compatibility.sh t3302-notes-index-expensive.sh' \
+              UNIT_TESTS= TEST_LINT= GIT_PROVE_OPTS="--timer --jobs 10"; echo "PROVE_DONE rc=$?" >"$RUNNER_TEMP/prove.done" ) &
+          PROVE=$!; ncap=0; t0=$(date +%s); wedge_since=""
+          while kill -0 "$PROVE" 2>/dev/null; do
+            now=$(date +%s)
+            idle=$(top -l 1 -n 0 2>/dev/null | sed -n 's/.*CPU usage:.*, \([0-9.]*\)% idle.*/\1/p')
+            echo "===MON +$((now-t0))s cpu_idle=${idle:-?}%  $(date -u +%H:%M:%S)"
+            ps -axo pid,stat,%cpu,etime,command 2>/dev/null | grep -E "$GITSIDE|/usr/sbin/httpd" | grep -v grep | head -20
+            cand=$(ps -axo pid=,etime=,command= 2>/dev/null | grep -E "$GITSIDE" | grep -v grep \
+                   | awk '{n=split($2,a,/[-:]/); s=(n>=3?99999:a[1]*60+a[2]); if(s>=150) print $1}' | head -1)
+            if [ -n "$cand" ]; then
+              [ -z "$wedge_since" ] && wedge_since=$now
+              if [ "$ncap" -eq 0 ] || { [ $((now % 300)) -lt 25 ] && [ "$ncap" -lt 5 ]; }; then
+                ncap=$((ncap+1))
+                echo ">>> WEDGE (held $((now-wedge_since))s, cpu_idle=${idle:-?}%) -> capturing full chain #$ncap"
+                capture_chain "$ncap.t$((now-t0))"
+              fi
+            fi
+            sleep 20
+          done
+          cp -R "$GIT_TRACE2_PERF" "$D/trace2" 2>/dev/null; cp "$GIT_TRACE_CURL" "$D/" 2>/dev/null
+          find t -path '*trash directory*/httpd/*.log' 2>/dev/null | while IFS= read -r f; do
+            mkdir -p "$D/logs/$(dirname "$f")"; cp "$f" "$D/logs/$f" 2>/dev/null
+          done
+          echo "prove: $(cat "$RUNNER_TEMP/prove.done" 2>/dev/null)"
+          echo "captures=$ncap diag_files=$(find "$D" -type f | wc -l | tr -d ' ')"
+      - name: upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: wedge-capture
           path: ${{ runner.temp }}/diag
           if-no-files-found: warn
 
