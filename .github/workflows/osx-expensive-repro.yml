@@ -1,0 +1,89 @@
+# Throwaway experiment to diagnose + validate a fix for the macOS 6h CI hangs.
+#
+# Background: since a6876b2068 (js/objects-larger-than-4gb, 2026-05-20) enabled
+# GIT_TEST_LONG on push builds, the macOS jobs run ~dozens of multi-GB EXPENSIVE
+# tests 10-wide (prove --jobs 10) on a macos-14 runner (3 vCPU / 7 GB RAM /
+# small disk).  When several giants overlap the runner thrashes and the job is
+# killed at the 6h wall.  ~2 of 4 osx jobs hang per push; osx-reftable never does.
+#
+# This workflow (a) reproduces the thrash fast on the heavy cluster across a
+# prove --jobs matrix, with a live df / swap monitor so we can SEE whether RAM
+# or disk runs out, and (b) on manual dispatch, validates the candidate fix
+# (macOS JOBS=nproc, applied in ci/lib.sh) against the full suite.
+#
+# EXPENSIVE is forced on here regardless of branch name, to avoid the confound
+# where a non-integration branch silently disables it and "passes" in 30 min.
+
+name: osx-expensive-repro
+
+on:
+  push:
+    branches: [mm/osx-expensive-repro]
+  workflow_dispatch:
+
+env:
+  DEVELOPER: 1
+  GIT_TEST_LONG: YesPlease       # force the EXPENSIVE prereq on
+  GIT_TEST_CLONE_2GB: "true"     # required or t5608 skip_all's the whole file
+  jobname: osx-clang
+  CC: clang
+  CI_JOB_IMAGE: macos-14
+
+jobs:
+  # Tier 1: fast, instrumented A/B of the heavy cluster across parallelism.
+  cluster:
+    name: "cluster prove --jobs ${{ matrix.jobs }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { jobs: 10, tmo: 45 }   # expected to thrash; confirms well before the cap
+          - { jobs: 3,  tmo: 75 }   # the nproc candidate fix
+          - { jobs: 1,  tmo: 90 }   # serial: one giant at a time (slow, but should not thrash)
+    runs-on: macos-14
+    timeout-minutes: ${{ matrix.tmo }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: install dependencies
+        run: ci/install-dependencies.sh
+      - name: build
+        run: make -j"$(sysctl -n hw.ncpu)"
+      - name: "heavy EXPENSIVE cluster (prove --jobs ${{ matrix.jobs }})"
+        run: |
+          # Stream a resource monitor into THIS step's log so the last samples
+          # before a freeze survive even when the job is killed at the timeout.
+          ( while :; do
+              echo "===MON $(date -u +%H:%M:%S)  (df / swap / vm_stat)"
+              df -h /Users/runner/work 2>/dev/null | tail -1
+              echo -n "swap: "; sysctl -n vm.swapusage
+              vm_stat | sed -n '1,4p'
+              sleep 15
+            done ) &
+          MON=$!
+          trap 'kill "$MON" 2>/dev/null || true' EXIT
+          make -C t prove \
+            T='t4141-apply-too-large.sh t4205-log-pretty-formats.sh t5004-archive-corner-cases.sh t5608-clone-2gb.sh t5551-http-fetch-smart.sh t5559-http-fetch-smart-http2.sh t7508-status.sh t7900-maintenance.sh t1092-sparse-checkout-compatibility.sh t3302-notes-index-expensive.sh' \
+            UNIT_TESTS= TEST_LINT= \
+            GIT_PROVE_OPTS="--timer --jobs ${{ matrix.jobs }}"
+
+  # Tier 2: faithful validation of the candidate fix (macOS JOBS=nproc in
+  # ci/lib.sh) against the FULL suite, via the real CI entry point.
+  # Manual-only so it doesn't burn ~1-2h on every push.
+  fullsuite-fix:
+    name: "full suite, fixed ci/lib.sh (JOBS=nproc)"
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: macos-14
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v6
+      - name: install dependencies
+        run: ci/install-dependencies.sh
+      - name: build + full test through the real CI script (uses fixed lib.sh)
+        run: |
+          ( while :; do
+              echo "===MON $(date -u +%H:%M:%S)"
+              df -h /Users/runner/work 2>/dev/null | tail -1
+              echo -n "swap: "; sysctl -n vm.swapusage
+              sleep 30
+            done ) &
+          ci/run-build-and-tests.sh

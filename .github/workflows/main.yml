@@ -1,6 +1,10 @@
 name: CI
 
-on: [push, pull_request]
+# Neutered on the osx-expensive-repro throwaway branch: the full matrix is the
+# thing that 6h-hangs on macOS, so do not auto-run it here.  The experiment
+# lives in osx-expensive-repro.yml.  Restore "on: [push, pull_request]" to
+# re-enable normal CI.
+on: [workflow_dispatch]
 
 env:
   DEVELOPER: 1

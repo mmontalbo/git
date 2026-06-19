@@ -227,6 +227,14 @@ then
 
 	GIT_TEST_OPTS="--github-workflow-markup"
 	JOBS=10
+	# GitHub's macOS runners (macos-14: 3 vCPU / 7 GB RAM / small disk) cannot
+	# absorb 10 parallel EXPENSIVE tests that each materialize multi-GB objects
+	# (t4141, t4205, t5004, t5608, ...); they thrash and get killed at the 6h
+	# wall.  Match the per-core parallelism the GitLab path below already uses
+	# for macOS so the giants do not pile up.
+	case "$RUNNER_OS" in
+	macOS) JOBS=$(sysctl -n hw.ncpu) ;;
+	esac
 
 	distro=$(echo "$CI_JOB_IMAGE" | tr : -)
 elif test true = "$GITLAB_CI"
