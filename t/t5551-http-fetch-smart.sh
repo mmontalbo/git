@@ -393,7 +393,13 @@ create_tags () {
 	tag=$(perl -e "print \"bla\" x 30") &&
 	sed -e "s|^:\([^ ]*\) \(.*\)$|create refs/tags/$tag-\1 \2|" <marks >input &&
 	git update-ref --stdin <input &&
-	rm input
+	rm input &&
+
+	# Pack the refs so the ref advertisement stays cheap to generate.
+	# 100k loose refs are pathologically slow to enumerate on macOS,
+	# which widens the window in which the smart-http ref negotiation
+	# can wedge under load.
+	git pack-refs --all
 }
 
 test_expect_success 'create 2,000 tags in the repo' '
