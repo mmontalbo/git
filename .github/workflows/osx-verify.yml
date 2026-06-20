@@ -1,0 +1,40 @@
+# Throwaway verification workflow (NOT for upstream). Runs ONLY the two macOS
+# jobs that hang (osx-clang, osx-gcc), several times each, with EXPENSIVE forced
+# on, through the real CI script so it picks up the fixed ci/lib.sh (JOBS=nproc)
+# and the packed-refs change in t5551. A wedge is capped at 60min (a healthy run
+# is ~33min), so a hang shows up as a 60min cancel rather than a 6h burn.
+name: osx-verify
+
+on:
+  push:
+    branches: [mm/macos-ci-verify]
+  workflow_dispatch:
+
+env:
+  DEVELOPER: 1
+  GIT_TEST_LONG: YesPlease   # force EXPENSIVE regardless of branch name
+
+jobs:
+  osx:
+    name: "${{ matrix.jobname }} rep${{ matrix.rep }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        jobname: [osx-clang, osx-gcc]
+        rep: [1, 2, 3]
+        include:
+          - jobname: osx-clang
+            cc: clang
+          - jobname: osx-gcc
+            cc: gcc-13
+    env:
+      jobname: ${{ matrix.jobname }}
+      CC: ${{ matrix.cc }}
+    runs-on: macos-14
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+      - name: install dependencies
+        run: ci/install-dependencies.sh
+      - name: build and test (real CI script, fixed lib.sh)
+        run: ci/run-build-and-tests.sh
