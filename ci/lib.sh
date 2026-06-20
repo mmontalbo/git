@@ -228,6 +228,13 @@ then
 	GIT_TEST_OPTS="--github-workflow-markup"
 	JOBS=10
 
+	# The macOS runners only have a few cores, so prove --jobs=10
+	# oversubscribes them.  Together with the EXPENSIVE tests this can
+	# wedge the smart-http tests for the whole 6h job timeout.  Use the
+	# core count there instead, like the GitLab path below and the meson
+	# job already do.
+	test "$CI_OS_NAME" != osx || JOBS=$(sysctl -n hw.ncpu)
+
 	distro=$(echo "$CI_JOB_IMAGE" | tr : -)
 elif test true = "$GITLAB_CI"
 then
