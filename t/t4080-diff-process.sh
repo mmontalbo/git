@@ -1456,4 +1456,129 @@ test_expect_success 'blame falls back when the process lacks hunks-by-oid' '
 	test_grep ! "command=" backend.log
 '
 
+#
+# Line-log (git log -L) range tracking.
+#
+
+test_expect_success 'diff process drops equivalent commit from log -L' '
+	test_when_finished "rm -f backend.log" &&
+	cat >linelog.c <<-\EOF &&
+	int tracked(void) { return 1; }
+	EOF
+	git add linelog.c &&
+	git commit -m "add linelog.c" &&
+
+	cat >linelog.c <<-\EOF &&
+	int tracked(void) { return 2; }
+	EOF
+	git commit -am "change tracked line" &&
+
+	# Builtin line tracking selects the change commit.
+	git log --no-ext-diff -L1,1:linelog.c --format="%s" >builtin &&
+	test_grep "change tracked line" builtin &&
+
+	# Answering by object id with no hunks, the process reports the change
+	# as equivalent, so tracking drops the commit (the range maps across
+	# unchanged) instead of selecting it and rendering an empty diff.
+	git -c diff.cdiff.process="$BACKEND --mode=oid-no-hunks --log=backend.log" \
+		log -L1,1:linelog.c --format="%s" >actual &&
+	test_grep ! "change tracked line" actual &&
+	# The creating commit still appears, so the change commit was
+	# selectively dropped rather than the whole log going empty.
+	test_grep "add linelog.c" actual &&
+	test_grep "command=hunks-by-oid pathname=linelog.c" backend.log
+'
+
+test_expect_success 'log -L keeps a commit when a by-oid no-hunks reply has unequal line counts' '
+	test_when_finished "rm -f backend.log" &&
+	git log --no-ext-diff -L3,3:oid_unequal.c --format="%s" >builtin &&
+	test_grep "change oid_unequal.c" builtin &&
+
+	git -c diff.cdiff.process="$BACKEND --mode=oid-no-hunks-different-lines --log=backend.log" \
+		log -L3,3:oid_unequal.c --format="%s" >actual &&
+	test_grep "change oid_unequal.c" actual &&
+	test_grep "command=hunks-by-oid pathname=oid_unequal.c" backend.log
+'
+
+test_expect_success 'diff process tracks a by-oid hunk under log -L' '
+	test_when_finished "rm -f backend.log" &&
+	printf "a\nb\nc\nd\ne5\nf6\ng\nh\ni\nj\n" >linelog2.c &&
+	git add linelog2.c && git commit -q -m "add linelog2.c" &&
+	printf "a\nb\nc\nd\nE5\nF6\ng\nh\ni\nj\n" >linelog2.c &&
+	git commit -q -am "change lines 5-6" &&
+
+	# Builtin tracking of lines 5-6 selects the change commit.
+	git log --no-ext-diff -L5,6:linelog2.c --format="%s" >builtin &&
+
+	# The process answers by object id that lines 5-6 changed, matching the
+	# real change, so by-oid tracking selects the same commits.
+	git -c diff.cdiff.process="$BACKEND --mode=oid-fixed --log=backend.log" \
+		log -L5,6:linelog2.c --format="%s" >actual &&
+	test_cmp builtin actual &&
+	test_grep "command=hunks-by-oid pathname=linelog2.c" backend.log
+'
+
+test_expect_success 'diff process narrows log -L selection by object id' '
+	test_when_finished "rm -f backend.log" &&
+	# linelog3.c really changes lines 5-6 and 9-10, but oid-fixed reports
+	# only 5-6.  Tracking lines 9-10 by object id therefore sees no change
+	# and drops the commit, while the builtin diff would keep it.  Tracking
+	# the whole range 1-10 still keeps it, since 5-6 did change.  If the
+	# by-oid answer were silently ignored, the narrow range would keep the
+	# commit too and this test would fail.
+	printf "a\nb\nc\nd\ne5\nf6\ng\nh\ni9\nj10\n" >linelog3.c &&
+	git add linelog3.c && git commit -q -m "add linelog3.c" &&
+	printf "a\nb\nc\nd\nE5\nF6\ng\nh\nI9\nJ10\n" >linelog3.c &&
+	git commit -q -am "change lines 5-6 and 9-10" &&
+
+	# Builtin tracking of lines 9-10 selects the change commit.
+	git log --no-ext-diff -L9,10:linelog3.c --format="%s" >builtin &&
+	test_grep "change lines 5-6 and 9-10" builtin &&
+
+	# By object id the process reports only 5-6, so tracking 9-10 drops it.
+	git -c diff.cdiff.process="$BACKEND --mode=oid-fixed --log=backend.log" \
+		log -L9,10:linelog3.c --format="%s" >narrow &&
+	test_grep ! "change lines 5-6 and 9-10" narrow &&
+	# Tracking the whole range keeps it.
+	git -c diff.cdiff.process="$BACKEND --mode=oid-fixed" \
+		log -L1,10:linelog3.c --format="%s" >wide &&
+	test_grep "change lines 5-6 and 9-10" wide &&
+	test_grep "command=hunks-by-oid pathname=linelog3.c" backend.log
+'
+
+test_expect_success 'log -w -L withholds the by-oid consult' '
+	test_when_finished "rm -f backend.log" &&
+	# Builtin tracking keeps the real 9-10 change.  oid-fixed would report
+	# only 5-6, so a by-oid request would drop this commit.
+	git log --no-ext-diff -w -L9,10:linelog3.c --format="%s" >builtin &&
+	test_grep "change lines 5-6 and 9-10" builtin &&
+	: >backend.log &&
+	git -c diff.cdiff.process="$BACKEND --mode=oid-fixed --log=backend.log" \
+		log -w -L9,10:linelog3.c --format="%s" >actual &&
+	test_cmp builtin actual &&
+	test_grep ! "command=hunks-by-oid" backend.log
+'
+
+test_expect_success 'log -L with textconv withholds the by-oid consult' '
+	test_when_finished "rm -f backend.log" &&
+	write_script lc-filter <<-\EOF &&
+	tr "A-Z" "a-z" <"$1"
+	EOF
+	printf "a\nb\nc\nd\nE5\nF6\ng\nh\ni\nj\n" >lctc.c &&
+	git add lctc.c && git commit -q -m "add lctc.c" &&
+	printf "a\nb\nc\nd\nX5\nY6\ng\nh\ni\nj\n" >lctc.c &&
+	git commit -q -am "change lctc.c" &&
+	# oid-fixed advertises hunks-by-oid, so without a textconv gate git log
+	# -L would consult by object id.  With textconv configured, the -L body
+	# renders from transformed content, so the by-oid tracking is withheld
+	# to stay consistent with the display; tracking uses the builtin diff,
+	# and the process is consulted only for the body (content mode).
+	git -c diff.cdiff.textconv="./lc-filter" \
+	    -c diff.cdiff.process="$BACKEND --mode=oid-fixed --log=backend.log" \
+		log -L5,6:lctc.c --format="%s" >actual &&
+	test_grep "change lctc.c" actual &&
+	test_grep ! "command=hunks-by-oid" backend.log &&
+	test_grep "command=hunks pathname=lctc.c" backend.log
+'
+
 test_done

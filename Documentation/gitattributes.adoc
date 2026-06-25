@@ -845,8 +845,9 @@ Documentation/technical/long-running-process-protocol.adoc).
 Unlike `diff.<name>.command`, which replaces Git's output entirely,
 the diff process feeds results back into the standard pipeline.  If
 both are configured for a path, `diff.<name>.command` takes precedence
-for the patch output it replaces.  The summary formats, `git blame`,
-and `git log -L` never run the command.
+for the patch output it replaces.  `--stat`, `--numstat`,
+`--shortstat`, and `--dirstat=lines` never run the command and still
+consult the process.  `git blame` and `git log -L` do the same.
 
 First, in `.gitattributes`, assign the `diff` attribute for paths.
 
@@ -1148,8 +1149,10 @@ it is really asking, and uses the builtin algorithm otherwise:
 |A change the process reports as equivalent is skipped; its lines are
  attributed to an earlier commit.
 
-|`git log -L` |no
-|May consult the process in a later change; uses the builtin diff for now.
+|`git log -L` |yes
+|Both the line-range display and the range tracking consult the process,
+ so an equivalent commit is dropped rather than shown with an empty
+ diff.
 
 |`--stat`, `--numstat`, `--shortstat`, `--dirstat=lines` |yes
 |Counts come from the process's hunks, so an equivalent file contributes

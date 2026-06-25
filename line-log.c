@@ -7,11 +7,12 @@
 #include "tag.h"
 #include "tree.h"
 #include "diff.h"
+#include "diff-process.h"
+#include "xdiff-interface.h"
 #include "commit.h"
 #include "decorate.h"
 #include "repository.h"
 #include "revision.h"
-#include "xdiff-interface.h"
 #include "strbuf.h"
 #include "line-log.h"
 #include "setup.h"
@@ -330,7 +331,12 @@ static int collect_diff_cb(long start_a, long count_a,
 	return 0;
 }
 
-static int collect_diff(mmfile_t *parent, mmfile_t *target, struct diff_ranges *out)
+/*
+ * Builtin range tracking, used when the diff process did not answer by
+ * object id (see process_diff_filepair()).
+ */
+static int collect_diff(mmfile_t *parent, mmfile_t *target,
+			struct diff_ranges *out)
 {
 	struct collect_diff_cbdata cbdata = {NULL};
 	xpparam_t xpp;
@@ -885,6 +891,19 @@ static void queue_diffs(struct line_log_data *range,
 }
 
 /*
+ * A hunks-by-oid diff process answers about the raw blob pair.  Use the shared
+ * predicate for protocol-visible diff options and textconv on either side.
+ * The fallback tracker runs the builtin diff without loading the process.
+ */
+static int linelog_may_use_diff_process(struct rev_info *rev,
+					const char *old_path,
+					const char *new_path)
+{
+	return diff_process_by_oid_eligible(&rev->diffopt, old_path, new_path,
+					    rev->diffopt.xdl_opts);
+}
+
+/*
  * Unlike most other functions, this destructively operates on
  * 'range'.
  */
@@ -913,10 +932,33 @@ static int process_diff_filepair(struct rev_info *rev,
 		return 0;
 
 	assert(pair->two->oid_valid);
+
+	diff_ranges_init(&diff);
+	/*
+	 * Select the driver by the old (parent) path, as builtin_diff() does
+	 * with name_a, so a renamed file resolves to the same driver for
+	 * range tracking as for the diff that is shown.
+	 *
+	 * Try the no-load by-oid path first when both sides are stored
+	 * blobs: the process delivers the ranges and neither blob is read.
+	 * Otherwise load the blobs and track ranges with the builtin diff.
+	 */
+	if (pair->one->oid_valid &&
+	    linelog_may_use_diff_process(rev, pair->one->path,
+					 pair->two->path)) {
+		struct collect_diff_cbdata cbdata = { &diff };
+		int r = diff_process_hunks_by_oid(&rev->diffopt, pair->one->path,
+						  &pair->one->oid, &pair->two->oid,
+						  collect_diff_cb, &cbdata);
+		if (r < 0)
+			die("unable to generate diff for %s", pair->one->path);
+		if (r > 0)
+			goto ranges_collected;
+	}
+
 	diff_populate_filespec(rev->diffopt.repo, pair->two, NULL);
 	file_target.ptr = pair->two->data;
 	file_target.size = pair->two->size;
-
 	if (pair->one->oid_valid) {
 		diff_populate_filespec(rev->diffopt.repo, pair->one, NULL);
 		file_parent.ptr = pair->one->data;
@@ -925,11 +967,10 @@ static int process_diff_filepair(struct rev_info *rev,
 		file_parent.ptr = parent_data_to_free = xstrdup("");
 		file_parent.size = 0;
 	}
-
-	diff_ranges_init(&diff);
 	if (collect_diff(&file_parent, &file_target, &diff))
 		die("unable to generate diff for %s", pair->one->path);
 
+ranges_collected:
 	/* NEEDSWORK should apply some heuristics to prevent mismatches */
 	free(rg->path);
 	rg->path = xstrdup(pair->one->path);
