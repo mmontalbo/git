@@ -890,11 +890,17 @@ packet:          git< 0000
 -----------------------
 
 For each file, Git sends a list of "key=value" pairs terminated with
-a flush packet, followed by the old and new file content as packetized
-data, each terminated with a flush packet.  The pathname is relative
-to the repository root.  When `diff.<name>.textconv` is also set,
-the process receives the textconv-transformed content rather than the
-raw blob.  Git does not send binary files to the diff process.
+a flush packet.  Git then sends the old and new file content as
+packetized data, each terminated with a flush packet.  The pathname is
+relative to the repository root.  With an enabled textconv driver, the
+process receives the textconv-transformed content rather than the raw
+blob, matching what the consuming feature itself diffs.  Patch output
+is textconv'd, and `git blame` applies textconv by default unless
+disabled with `--no-textconv`; when blame applies it, Git withholds the
+hunks-by-oid request and uses the builtin diff.  The line-count summary
+formats (noted below) are not textconv'd.  Under normal binary
+detection, Git does not send binary files to the diff process.  With
+`--text`, Git can still send binary bytes.
 
 -----------------------
 packet:          git> command=hunks
@@ -1046,8 +1052,8 @@ Git may still slide or regroup those changes against matching context,
 exactly as it compacts its own diffs.  The process therefore controls
 which lines are reported as changed, not the precise hunk boundaries.
 Patch output features (word diff, function context, color) work
-normally.  Summary formats such as `--stat` still compute their counts
-with the builtin diff for now; see "Which features consult the diff
+normally, as do summary formats like `--stat`.  Not every feature
+consults the process, though; see "Which features consult the diff
 process" below for the full picture and the reasoning behind it.
 
 When a "success" response carries no hunk lines, Git treats the two
@@ -1061,8 +1067,8 @@ they compare object ids and report a change without examining content.
 This matches how they already treat `diff.<name>.command`, `textconv`,
 and `-w`.
 
-One exception applies to the content request (patch output): a change
-that only adds or removes the file's trailing
+One exception applies to the content request (patch output and
+`--stat`): a change that only adds or removes the file's trailing
 newline.  Line hunks cannot express it.  When the line content otherwise
 matches, Git keeps the builtin diff for that file, preserving the `\ No
 newline at end of file` marker instead of treating the two sides as
@@ -1145,8 +1151,10 @@ it is really asking, and uses the builtin algorithm otherwise:
 |`git log -L` |no
 |May consult the process in a later change; uses the builtin diff for now.
 
-|`--stat`, `--numstat`, `--dirstat=lines` |no
-|May consult the process in a later change; uses the builtin counts for now.
+|`--stat`, `--numstat`, `--shortstat`, `--dirstat=lines` |yes
+|Counts come from the process's hunks, so an equivalent file contributes
+ no stat line.  Summary formats do not apply textconv, so the process
+ sees the raw blob content (see below).
 
 |default `--dirstat` (byte-weighted) |no
 |Weighs byte changes; computed independently.
@@ -1182,6 +1190,15 @@ it is really asking, and uses the builtin algorithm otherwise:
 |Would need one comparison per merge parent; may consult the process in a
  later change.
 |===
+
+The summary formats do not apply textconv.  Patch output and the
+`--stat` counts can therefore differ for a file with a configured
+`textconv`: the patch reflects the transformed view, while the counts
+reflect the raw blob.  This mirrors how the builtin `--stat` already
+counts raw lines.  A `--stat` request therefore sends the raw blob's
+`old-oid` and `new-oid`, which key a cache entry for the raw content.
+The textconv'd patch path omits those keys, so a process never shares a
+raw-content cache entry with a transformed one.
 
 `--no-ext-diff` and any explicit diff-algorithm option bypass the
 process entirely, for every feature listed above.  This includes
