@@ -5,18 +5,17 @@
 # We run the proven wedge config (EXPENSIVE cluster at prove --jobs 10 on
 # macos-14) with a matrix over Apache Timeout:
 #
-#   * timeout=60   (control)   -> AH01220 can fire ~60s into a stall, which is
-#                                 the trigger for the mod_http2 reset bug (the
-#                                 hang). Confirms the batch still reproduces.
-#   * timeout=3600 (treatment) -> AH01220 CANNOT fire inside the 45-min job. So:
+#   * timeout=60   (control)   -> AH01220 can fire ~60s into a stall, the
+#                                 trigger for the mod_http2 reset bug (the hang).
+#   * timeout=3600 (treatment) -> AH01220 CANNOT fire inside the job. So:
 #       - if it COMPLETES -> the stall was bounded; raising the Timeout fixes it.
-#       - if it STILL WEDGES at 0% CPU with NO AH01220 in the apache log -> the
-#         hang is an HTTP/2 flow-control deadlock independent of the Timeout,
-#         i.e. NOT the timeout-triggered mod_http2 path -> a second mechanism.
+#       - if it STILL WEDGES at 0% CPU with NO AH01220 -> an HTTP/2 flow-control
+#         deadlock independent of the Timeout -> a second mechanism.
 #
-# The job streams a monitor to stdout (survives the timeout kill), declares a
-# WEDGED_NONRECOVER verdict once a git-side proc sits >150s while the CPU is
-# idle (giants done), samples its stack, and records whether AH01220 fired.
+# Batch 2: batch 1 was 0/4 (the racy wedge didn't fire). To force it we add a
+# BURST of CPU hogs (ncpu of them) for the first 600s to deepen the contention
+# that latches the stall, then kill them so the CPU frees and a non-recovering
+# wedge becomes readable (a stuck git-side proc while CPU is idle). More reps.
 name: osx-timeout-expt
 
 on:
@@ -40,27 +39,38 @@ jobs:
       matrix:
         include:
           - { timeout: 60,   rep: 1 }   # control
+          - { timeout: 60,   rep: 2 }   # control
           - { timeout: 3600, rep: 1 }   # treatment
-          - { timeout: 3600, rep: 2 }   # treatment (racy, repeat)
-          - { timeout: 3600, rep: 3 }   # treatment (racy, repeat)
+          - { timeout: 3600, rep: 2 }   # treatment
+          - { timeout: 3600, rep: 3 }   # treatment
+          - { timeout: 3600, rep: 4 }   # treatment
     runs-on: macos-14
-    timeout-minutes: 45
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v6
       - name: "set Apache Timeout=${{ matrix.timeout }}"
         run: |
           printf '\n# experiment: explicit Timeout\nTimeout %s\n' "${{ matrix.timeout }}" >> t/lib-httpd/apache.conf
           echo "--- apache.conf tail ---"; tail -4 t/lib-httpd/apache.conf
+          echo "--- env: system httpd + ncpu (did the image change?) ---"
+          /usr/sbin/httpd -v 2>&1 | head -2; echo "ncpu=$(sysctl -n hw.ncpu)"
       - name: install dependencies
         run: ci/install-dependencies.sh
       - name: build
         run: make -j"$(sysctl -n hw.ncpu)"
-      - name: "cluster jobs=10, verdict (Timeout=${{ matrix.timeout }}s)"
+      - name: "cluster jobs=10 + hog burst, verdict (Timeout=${{ matrix.timeout }}s)"
         run: |
           set +e
           export GIT_TEST_HTTPD=true
           D="$RUNNER_TEMP/diag"; mkdir -p "$D"
           GITSIDE='git-remote-https|git-remote-http|git-http-backend|[ /]upload-pack|[ /]pack-objects|[ /]index-pack|[ /]git-upload-pack'
+          # BURST of CPU hogs to deepen early contention, then free the CPU at 600s
+          NHOG=$(sysctl -n hw.ncpu); HOGPIDS=""
+          for i in $(seq 1 "$NHOG"); do yes > /dev/null & HOGPIDS="$HOGPIDS $!"; done
+          echo "spawned $NHOG cpu hogs:$HOGPIDS (killed at +600s)"
+          ( sleep 600; kill -9 $HOGPIDS 2>/dev/null; echo "===HOGS KILLED at +600s ($(date -u +%H:%M:%S))" ) &
+          KILLER=$!
+          trap 'kill -9 $HOGPIDS $KILLER 2>/dev/null' EXIT
           ( make -C t prove \
               T='t4141-apply-too-large.sh t4205-log-pretty-formats.sh t5004-archive-corner-cases.sh t5608-clone-2gb.sh t5551-http-fetch-smart.sh t5559-http-fetch-smart-http2.sh t5541-http-push-smart.sh t5561-http-backend.sh t7508-status.sh t7900-maintenance.sh t1092-sparse-checkout-compatibility.sh t3302-notes-index-expensive.sh' \
               UNIT_TESTS= TEST_LINT= GIT_PROVE_OPTS="--timer --jobs 10" 2>&1 | tee "$RUNNER_TEMP/prove.log"
@@ -77,12 +87,13 @@ jobs:
             if [ -n "$cand" ] && [ "$idle_int" -ge 50 ]; then
               [ -z "$wedge_since" ] && wedge_since=$now
               held=$((now-wedge_since))
-              if [ "$held" -ge 480 ]; then
+              if [ "$held" -ge 300 ]; then
                 verdict="WEDGED_NONRECOVER held=${held}s idle=${idle}%"
                 echo ">>> $verdict -> sampling chain + killing prove"
                 for pid in $(ps -axo pid=,command= | grep -E "$GITSIDE|/usr/sbin/httpd" | grep -v grep | awk '{print $1}' | head -12); do
                   comm=$(ps -o comm= -p "$pid" 2>/dev/null | sed 's#.*/##')
                   sample "$pid" 2 -file "$D/sample.$comm.$pid.txt" 2>/dev/null
+                  lsof -p "$pid" > "$D/lsof.$comm.$pid.txt" 2>/dev/null
                 done
                 kill "$PROVE" 2>/dev/null; break
               fi
@@ -92,7 +103,6 @@ jobs:
             sleep 20
           done
           [ "$verdict" = UNKNOWN ] && verdict="COMPLETED $(cat "$RUNNER_TEMP/prove.done" 2>/dev/null)"
-          # did Apache's CGI timeout fire? (the trigger for the mod_http2 path)
           ah=$(find t -path '*trash directory*/httpd/error.log' -exec grep -h AH01220 {} \; 2>/dev/null | wc -l | tr -d ' ')
           find t -path '*trash directory*/httpd/*.log' 2>/dev/null | while IFS= read -r f; do
             mkdir -p "$D/logs/$(dirname "$f")"; cp "$f" "$D/logs/$f" 2>/dev/null; done
