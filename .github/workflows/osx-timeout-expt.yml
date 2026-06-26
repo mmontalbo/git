@@ -1,0 +1,110 @@
+# Experiment (DO NOT MERGE): does raising Apache's `Timeout` prevent the macOS
+# smart-http wedge, or just delay it?
+#
+# git's t/lib-httpd/apache.conf sets no explicit Timeout (Apache default 60s).
+# We run the proven wedge config (EXPENSIVE cluster at prove --jobs 10 on
+# macos-14) with a matrix over Apache Timeout:
+#
+#   * timeout=60   (control)   -> AH01220 can fire ~60s into a stall, which is
+#                                 the trigger for the mod_http2 reset bug (the
+#                                 hang). Confirms the batch still reproduces.
+#   * timeout=3600 (treatment) -> AH01220 CANNOT fire inside the 45-min job. So:
+#       - if it COMPLETES -> the stall was bounded; raising the Timeout fixes it.
+#       - if it STILL WEDGES at 0% CPU with NO AH01220 in the apache log -> the
+#         hang is an HTTP/2 flow-control deadlock independent of the Timeout,
+#         i.e. NOT the timeout-triggered mod_http2 path -> a second mechanism.
+#
+# The job streams a monitor to stdout (survives the timeout kill), declares a
+# WEDGED_NONRECOVER verdict once a git-side proc sits >150s while the CPU is
+# idle (giants done), samples its stack, and records whether AH01220 fired.
+name: osx-timeout-expt
+
+on:
+  push:
+    branches: [mm/osx-timeout-expt]
+  workflow_dispatch:
+
+env:
+  DEVELOPER: 1
+  GIT_TEST_LONG: YesPlease        # force EXPENSIVE (the enormous-ref test)
+  GIT_TEST_CLONE_2GB: "true"
+  jobname: osx-clang
+  CC: clang
+  CI_JOB_IMAGE: macos-14
+
+jobs:
+  timeout-expt:
+    name: "Timeout=${{ matrix.timeout }}s rep${{ matrix.rep }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { timeout: 60,   rep: 1 }   # control
+          - { timeout: 3600, rep: 1 }   # treatment
+          - { timeout: 3600, rep: 2 }   # treatment (racy, repeat)
+          - { timeout: 3600, rep: 3 }   # treatment (racy, repeat)
+    runs-on: macos-14
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+      - name: "set Apache Timeout=${{ matrix.timeout }}"
+        run: |
+          printf '\n# experiment: explicit Timeout\nTimeout %s\n' "${{ matrix.timeout }}" >> t/lib-httpd/apache.conf
+          echo "--- apache.conf tail ---"; tail -4 t/lib-httpd/apache.conf
+      - name: install dependencies
+        run: ci/install-dependencies.sh
+      - name: build
+        run: make -j"$(sysctl -n hw.ncpu)"
+      - name: "cluster jobs=10, verdict (Timeout=${{ matrix.timeout }}s)"
+        run: |
+          set +e
+          export GIT_TEST_HTTPD=true
+          D="$RUNNER_TEMP/diag"; mkdir -p "$D"
+          GITSIDE='git-remote-https|git-remote-http|git-http-backend|[ /]upload-pack|[ /]pack-objects|[ /]index-pack|[ /]git-upload-pack'
+          ( make -C t prove \
+              T='t4141-apply-too-large.sh t4205-log-pretty-formats.sh t5004-archive-corner-cases.sh t5608-clone-2gb.sh t5551-http-fetch-smart.sh t5559-http-fetch-smart-http2.sh t5541-http-push-smart.sh t5561-http-backend.sh t7508-status.sh t7900-maintenance.sh t1092-sparse-checkout-compatibility.sh t3302-notes-index-expensive.sh' \
+              UNIT_TESTS= TEST_LINT= GIT_PROVE_OPTS="--timer --jobs 10" 2>&1 | tee "$RUNNER_TEMP/prove.log"
+            echo "PROVE_DONE rc=${PIPESTATUS[0]}" >"$RUNNER_TEMP/prove.done" ) &
+          PROVE=$!; t0=$(date +%s); wedge_since=""; verdict="UNKNOWN"
+          while kill -0 "$PROVE" 2>/dev/null; do
+            now=$(date +%s); el=$((now-t0))
+            idle=$(top -l 1 -n 0 2>/dev/null | sed -n 's/.*CPU usage:.*, \([0-9.]*\)% idle.*/\1/p')
+            idle_int=${idle%.*}; idle_int=${idle_int:-0}
+            echo "===MON +${el}s cpu_idle=${idle:-?}% wedge_since=${wedge_since:-none} $(date -u +%H:%M:%S)"
+            ps -axo pid,stat,%cpu,etime,command 2>/dev/null | grep -E "$GITSIDE|/usr/sbin/httpd" | grep -v grep | head -12
+            cand=$(ps -axo pid=,etime=,command= 2>/dev/null | grep -E "$GITSIDE" | grep -v grep \
+                   | awk '{n=split($2,a,/[-:]/); s=(n>=3?99999:a[1]*60+a[2]); if(s>=150) print $1}' | head -1)
+            if [ -n "$cand" ] && [ "$idle_int" -ge 50 ]; then
+              [ -z "$wedge_since" ] && wedge_since=$now
+              held=$((now-wedge_since))
+              if [ "$held" -ge 480 ]; then
+                verdict="WEDGED_NONRECOVER held=${held}s idle=${idle}%"
+                echo ">>> $verdict -> sampling chain + killing prove"
+                for pid in $(ps -axo pid=,command= | grep -E "$GITSIDE|/usr/sbin/httpd" | grep -v grep | awk '{print $1}' | head -12); do
+                  comm=$(ps -o comm= -p "$pid" 2>/dev/null | sed 's#.*/##')
+                  sample "$pid" 2 -file "$D/sample.$comm.$pid.txt" 2>/dev/null
+                done
+                kill "$PROVE" 2>/dev/null; break
+              fi
+            else
+              wedge_since=""
+            fi
+            sleep 20
+          done
+          [ "$verdict" = UNKNOWN ] && verdict="COMPLETED $(cat "$RUNNER_TEMP/prove.done" 2>/dev/null)"
+          # did Apache's CGI timeout fire? (the trigger for the mod_http2 path)
+          ah=$(find t -path '*trash directory*/httpd/error.log' -exec grep -h AH01220 {} \; 2>/dev/null | wc -l | tr -d ' ')
+          find t -path '*trash directory*/httpd/*.log' 2>/dev/null | while IFS= read -r f; do
+            mkdir -p "$D/logs/$(dirname "$f")"; cp "$f" "$D/logs/$f" 2>/dev/null; done
+          cp "$RUNNER_TEMP/prove.log" "$D/" 2>/dev/null
+          echo "================ RESULT ================"
+          echo "Timeout=${{ matrix.timeout }}s  VERDICT=$verdict  AH01220_count=$ah"
+          echo "t5551/t5559 in prove output:"; grep -E 't555[19]' "$RUNNER_TEMP/prove.log" | tail -6
+          printf 'timeout=%s\nverdict=%s\nAH01220=%s\n' "${{ matrix.timeout }}" "$verdict" "$ah" > "$D/verdict.txt"
+      - name: upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: expt-timeout-${{ matrix.timeout }}-rep${{ matrix.rep }}
+          path: ${{ runner.temp }}/diag
+          if-no-files-found: warn
