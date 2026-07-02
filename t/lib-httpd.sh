@@ -238,12 +238,95 @@ lib_httpd_setup_lighttpd () {
 	}
 }
 
+# nginx counterpart. nginx has no native CGI, so git-http-backend is driven
+# through an fcgiwrap daemon that we start alongside it and reach over a Unix
+# socket. Like lighttpd, only the plain smart/dumb HTTP subset is supported.
+lib_httpd_setup_nginx () {
+	for DEFAULT_HTTPD_PATH in '/usr/sbin/nginx' \
+				  "$(command -v nginx)"
+	do
+		if test -n "$DEFAULT_HTTPD_PATH" && test -x "$DEFAULT_HTTPD_PATH"
+		then
+			break
+		fi
+	done
+
+	LIB_HTTPD_PATH=${LIB_HTTPD_PATH-"$DEFAULT_HTTPD_PATH"}
+
+	if ! test -x "$LIB_HTTPD_PATH"
+	then
+		test_skip_or_die GIT_TEST_HTTPD "no web server found at '$LIB_HTTPD_PATH'"
+	fi
+
+	LIB_HTTPD_FCGIWRAP_PATH="${LIB_HTTPD_FCGIWRAP_PATH-$(command -v fcgiwrap)}"
+	if ! test -x "$LIB_HTTPD_FCGIWRAP_PATH"
+	then
+		test_skip_or_die GIT_TEST_HTTPD \
+			"the nginx backend requires fcgiwrap (set LIB_HTTPD_FCGIWRAP_PATH)"
+	fi
+
+	HTTPD_VERSION=$("$LIB_HTTPD_PATH" -v 2>&1 | \
+		sed -n 's|^nginx version: nginx/\([0-9.]*\).*|\1|p')
+
+	# nginx has no config-time environment interpolation, so the concrete
+	# config is generated from the nginx.conf template at start time.
+	HTTPD_CONFIG="$HTTPD_ROOT_PATH/nginx.conf"
+
+	lib_httpd_start () {
+		fcgiwrap_socket="$HTTPD_ROOT_PATH/fcgiwrap.sock"
+
+		# nginx's TLS listener also advertises HTTP/2 over ALPN, so the
+		# same config exercises HTTPS and HTTP/2 when LIB_HTTPD_SSL is set.
+		if test -n "$LIB_HTTPD_SSL"
+		then
+			nginx_listen="listen 127.0.0.1:$LIB_HTTPD_PORT ssl;"
+			nginx_ssl_params="http2 on; ssl_certificate \"$HTTPD_ROOT_PATH/httpd.pem\"; ssl_certificate_key \"$HTTPD_ROOT_PATH/httpd.pem\";"
+		else
+			nginx_listen="listen 127.0.0.1:$LIB_HTTPD_PORT;"
+			nginx_ssl_params=""
+		fi
+
+		sed -e "s|@LIB_HTTPD_PORT@|$LIB_HTTPD_PORT|g" \
+		    -e "s|@HTTPD_ROOT_PATH@|$HTTPD_ROOT_PATH|g" \
+		    -e "s|@HTTPD_DOCUMENT_ROOT_PATH@|$HTTPD_DOCUMENT_ROOT_PATH|g" \
+		    -e "s|@GIT_EXEC_PATH@|$GIT_EXEC_PATH|g" \
+		    -e "s|@LISTEN@|$nginx_listen|g" \
+		    -e "s|@SSL_PARAMS@|$nginx_ssl_params|g" \
+		    "$TEST_PATH/nginx.conf" >"$HTTPD_CONFIG" || return 1
+
+		# Start the CGI shim first, then nginx in front of it.
+		rm -f "$fcgiwrap_socket"
+		"$LIB_HTTPD_FCGIWRAP_PATH" -c 1 -s "unix:$fcgiwrap_socket" &
+		echo $! >"$HTTPD_ROOT_PATH/fcgiwrap.pid"
+
+		# -e overrides the compile-time default error log, which nginx
+		# opens before it has parsed the config's error_log directive.
+		"$LIB_HTTPD_PATH" -p "$HTTPD_ROOT_PATH" \
+			-e "$HTTPD_ROOT_PATH/error.log" -c "$HTTPD_CONFIG"
+	}
+
+	lib_httpd_stop () {
+		if test -f "$HTTPD_ROOT_PATH/httpd.pid"
+		then
+			kill "$(cat "$HTTPD_ROOT_PATH/httpd.pid")" 2>/dev/null
+		fi
+		if test -f "$HTTPD_ROOT_PATH/fcgiwrap.pid"
+		then
+			kill "$(cat "$HTTPD_ROOT_PATH/fcgiwrap.pid")" 2>/dev/null
+		fi
+		return 0
+	}
+}
+
 case "$LIB_HTTPD_TYPE" in
 apache)
 	lib_httpd_setup_apache
 	;;
 lighttpd)
 	lib_httpd_setup_lighttpd
+	;;
+nginx)
+	lib_httpd_setup_nginx
 	;;
 *)
 	test_skip_or_die GIT_TEST_HTTPD \
@@ -280,6 +363,15 @@ prepare_httpd() {
 		then
 			test_skip_or_die GIT_TEST_HTTPD \
 				"the lighttpd backend supports smart/dumb HTTP(S) only"
+		fi
+		;;
+	nginx)
+		# The nginx config adds TLS and HTTP/2, but still no WebDAV,
+		# Subversion or forward-proxy support.
+		if test -n "$LIB_HTTPD_DAV$LIB_HTTPD_SVN$LIB_HTTPD_PROXY"
+		then
+			test_skip_or_die GIT_TEST_HTTPD \
+				"the nginx backend supports smart/dumb HTTP(S) only"
 		fi
 		;;
 	esac
