@@ -55,43 +55,12 @@ fi
 
 HTTPD_PARA=""
 
-for DEFAULT_HTTPD_PATH in '/usr/sbin/httpd' \
-			  '/usr/sbin/apache2' \
-			  "$(command -v httpd)" \
-			  "$(command -v apache2)"
-do
-	if test -n "$DEFAULT_HTTPD_PATH" && test -x "$DEFAULT_HTTPD_PATH"
-	then
-		break
-	fi
-done
+# Which web server backend to drive. "apache" preserves the historical
+# behavior; "lighttpd" runs the plain smart/dumb HTTP subset (see
+# lib-httpd/lighttpd.conf). Each backend defines lib_httpd_start and
+# lib_httpd_stop and sets HTTPD_CONFIG below.
+LIB_HTTPD_TYPE="${LIB_HTTPD_TYPE:-apache}"
 
-if test -x "$DEFAULT_HTTPD_PATH"
-then
-	DETECTED_HTTPD_ROOT="$("$DEFAULT_HTTPD_PATH" -V 2>/dev/null | sed -n 's/^ -D HTTPD_ROOT="\(.*\)"$/\1/p')"
-fi
-
-for DEFAULT_HTTPD_MODULE_PATH in '/usr/libexec/apache2' \
-				 '/usr/lib/apache2/modules' \
-				 '/usr/lib64/httpd/modules' \
-				 '/usr/lib/httpd/modules' \
-				 '/usr/libexec/httpd' \
-				 '/usr/lib/apache2' \
-				 "${DETECTED_HTTPD_ROOT:+${DETECTED_HTTPD_ROOT}/modules}"
-do
-	if test -n "$DEFAULT_HTTPD_MODULE_PATH" && test -d "$DEFAULT_HTTPD_MODULE_PATH"
-	then
-		break
-	fi
-done
-
-case $(uname) in
-	Darwin)
-		HTTPD_PARA="$HTTPD_PARA -DDarwin"
-	;;
-esac
-
-LIB_HTTPD_PATH=${LIB_HTTPD_PATH-"$DEFAULT_HTTPD_PATH"}
 test_set_port LIB_HTTPD_PORT
 
 TEST_PATH="$TEST_DIRECTORY"/lib-httpd
@@ -104,52 +73,172 @@ GIT_VALGRIND_OPTIONS=$GIT_VALGRIND_OPTIONS; export GIT_VALGRIND_OPTIONS
 GIT_TEST_SIDEBAND_ALL=$GIT_TEST_SIDEBAND_ALL; export GIT_TEST_SIDEBAND_ALL
 GIT_TRACE=$GIT_TRACE; export GIT_TRACE
 
-if ! test -x "$LIB_HTTPD_PATH"
-then
-	test_skip_or_die GIT_TEST_HTTPD "no web server found at '$LIB_HTTPD_PATH'"
-fi
+# Locate an executable web-server binary from the given candidates, honoring
+# an explicit LIB_HTTPD_PATH override, and end the test if none is found.
+lib_httpd_find_binary () {
+	for DEFAULT_HTTPD_PATH in "$@"
+	do
+		if test -n "$DEFAULT_HTTPD_PATH" && test -x "$DEFAULT_HTTPD_PATH"
+		then
+			break
+		fi
+	done
 
-HTTPD_VERSION=$($LIB_HTTPD_PATH -v | \
-	sed -n 's/^Server version: Apache\/\([0-9.]*\).*$/\1/p; q')
-HTTPD_VERSION_MAJOR=$(echo $HTTPD_VERSION | cut -d. -f1)
-HTTPD_VERSION_MINOR=$(echo $HTTPD_VERSION | cut -d. -f2)
+	LIB_HTTPD_PATH=${LIB_HTTPD_PATH-"$DEFAULT_HTTPD_PATH"}
 
-if test -n "$HTTPD_VERSION_MAJOR"
-then
-	if test -z "$LIB_HTTPD_MODULE_PATH"
+	if ! test -x "$LIB_HTTPD_PATH"
 	then
-		if ! test "$HTTPD_VERSION_MAJOR" -eq 2 ||
-		   ! test "$HTTPD_VERSION_MINOR" -ge 4
-		then
-			test_skip_or_die GIT_TEST_HTTPD \
-				"at least Apache version 2.4 is required"
-		fi
-		if ! test -d "$DEFAULT_HTTPD_MODULE_PATH"
-		then
-			test_skip_or_die GIT_TEST_HTTPD \
-				"Apache module directory not found"
-		fi
-
-		LIB_HTTPD_MODULE_PATH="$DEFAULT_HTTPD_MODULE_PATH"
-	fi
-else
-	test_skip_or_die GIT_TEST_HTTPD \
-		"Could not identify web server at '$LIB_HTTPD_PATH'"
-fi
-
-if test -n "$LIB_HTTPD_DAV" && test -f /etc/os-release
-then
-	case "$(grep "^ID=" /etc/os-release | cut -d= -f2-)" in
-	alpine)
-		# The WebDAV module in Alpine Linux is broken at least up to
-		# Alpine v3.16 as the default DBM driver is missing.
-		#
-		# https://gitlab.alpinelinux.org/alpine/aports/-/issues/13112
 		test_skip_or_die GIT_TEST_HTTPD \
-			"Apache WebDAV module does not have default DBM backend driver"
+			"no web server found at '$LIB_HTTPD_PATH'"
+	fi
+}
+
+# Locate Apache, verify its version and pick a module directory, then
+# define the start/stop hooks for the Apache backend.
+lib_httpd_setup_apache () {
+	lib_httpd_find_binary '/usr/sbin/httpd' '/usr/sbin/apache2' \
+		"$(command -v httpd)" "$(command -v apache2)"
+
+	DETECTED_HTTPD_ROOT="$("$LIB_HTTPD_PATH" -V 2>/dev/null | sed -n 's/^ -D HTTPD_ROOT="\(.*\)"$/\1/p')"
+
+	for DEFAULT_HTTPD_MODULE_PATH in '/usr/libexec/apache2' \
+					 '/usr/lib/apache2/modules' \
+					 '/usr/lib64/httpd/modules' \
+					 '/usr/lib/httpd/modules' \
+					 '/usr/libexec/httpd' \
+					 '/usr/lib/apache2' \
+					 "${DETECTED_HTTPD_ROOT:+${DETECTED_HTTPD_ROOT}/modules}"
+	do
+		if test -n "$DEFAULT_HTTPD_MODULE_PATH" && test -d "$DEFAULT_HTTPD_MODULE_PATH"
+		then
+			break
+		fi
+	done
+
+	case $(uname) in
+		Darwin)
+			HTTPD_PARA="$HTTPD_PARA -DDarwin"
 		;;
 	esac
-fi
+
+	HTTPD_VERSION=$($LIB_HTTPD_PATH -v | \
+		sed -n 's/^Server version: Apache\/\([0-9.]*\).*$/\1/p; q')
+	HTTPD_VERSION_MAJOR=$(echo $HTTPD_VERSION | cut -d. -f1)
+	HTTPD_VERSION_MINOR=$(echo $HTTPD_VERSION | cut -d. -f2)
+
+	if test -n "$HTTPD_VERSION_MAJOR"
+	then
+		if test -z "$LIB_HTTPD_MODULE_PATH"
+		then
+			if ! test "$HTTPD_VERSION_MAJOR" -eq 2 ||
+			   ! test "$HTTPD_VERSION_MINOR" -ge 4
+			then
+				test_skip_or_die GIT_TEST_HTTPD \
+					"at least Apache version 2.4 is required"
+			fi
+			if ! test -d "$DEFAULT_HTTPD_MODULE_PATH"
+			then
+				test_skip_or_die GIT_TEST_HTTPD \
+					"Apache module directory not found"
+			fi
+
+			LIB_HTTPD_MODULE_PATH="$DEFAULT_HTTPD_MODULE_PATH"
+		fi
+	else
+		test_skip_or_die GIT_TEST_HTTPD \
+			"Could not identify web server at '$LIB_HTTPD_PATH'"
+	fi
+
+	if test -n "$LIB_HTTPD_DAV" && test -f /etc/os-release
+	then
+		case "$(grep "^ID=" /etc/os-release | cut -d= -f2-)" in
+		alpine)
+			# The WebDAV module in Alpine Linux is broken at least up to
+			# Alpine v3.16 as the default DBM driver is missing.
+			#
+			# https://gitlab.alpinelinux.org/alpine/aports/-/issues/13112
+			test_skip_or_die GIT_TEST_HTTPD \
+				"Apache WebDAV module does not have default DBM backend driver"
+			;;
+		esac
+	fi
+
+	HTTPD_CONFIG="$TEST_PATH/apache.conf"
+
+	lib_httpd_start () {
+		"$LIB_HTTPD_PATH" -d "$HTTPD_ROOT_PATH" \
+			-f "$HTTPD_CONFIG" $HTTPD_PARA \
+			-c "Listen 127.0.0.1:$LIB_HTTPD_PORT" -k start
+	}
+
+	lib_httpd_stop () {
+		"$LIB_HTTPD_PATH" -d "$HTTPD_ROOT_PATH" \
+			-f "$HTTPD_CONFIG" $HTTPD_PARA -k stop
+	}
+}
+
+# lighttpd counterpart to lib_httpd_setup_apache. Supports smart/dumb HTTP
+# and, when LIB_HTTPD_SSL is set, TLS + HTTP/2; prepare_httpd() rejects
+# WebDAV, Subversion and proxy here.
+lib_httpd_setup_lighttpd () {
+	lib_httpd_find_binary '/usr/sbin/lighttpd' "$(command -v lighttpd)"
+
+	HTTPD_VERSION=$("$LIB_HTTPD_PATH" -v 2>/dev/null | \
+		sed -n 's|^lighttpd/\([0-9.]*\).*|\1|p')
+	case "$HTTPD_VERSION" in
+	1.4.*)
+		;;
+	*)
+		test_skip_or_die GIT_TEST_HTTPD \
+			"lighttpd 1.4.x is required (found '${HTTPD_VERSION:-unknown}')"
+		;;
+	esac
+
+	HTTPD_CONFIG="$TEST_PATH/lighttpd.conf"
+
+	# lighttpd has no -k start/stop; it daemonizes and records its pid in
+	# the file named by server.pid-file in lighttpd.conf. Dynamic values
+	# are handed to it through the environment.
+	lib_httpd_start () {
+		# lighttpd.conf has no if/else, so generate the TLS + HTTP/2
+		# snippet it includes (empty unless SSL was requested). lighttpd
+		# offers h2 over TLS via ALPN by default.
+		if test -n "$LIB_HTTPD_SSL"
+		then
+			cat >"$HTTPD_ROOT_PATH/lighttpd-ssl.conf" <<-EOF
+			server.modules += ( "mod_openssl" )
+			ssl.engine  = "enable"
+			ssl.pemfile = "$HTTPD_ROOT_PATH/httpd.pem"
+			EOF
+		else
+			: >"$HTTPD_ROOT_PATH/lighttpd-ssl.conf"
+		fi
+
+		LIB_HTTPD_PORT="$LIB_HTTPD_PORT" \
+		HTTPD_ROOT_PATH="$HTTPD_ROOT_PATH" \
+		HTTPD_DOCUMENT_ROOT_PATH="$HTTPD_DOCUMENT_ROOT_PATH" \
+		GIT_EXEC_PATH="$GIT_EXEC_PATH" \
+			"$LIB_HTTPD_PATH" -f "$HTTPD_CONFIG"
+	}
+
+	lib_httpd_stop () {
+		test -f "$HTTPD_ROOT_PATH/httpd.pid" &&
+		kill "$(cat "$HTTPD_ROOT_PATH/httpd.pid")"
+	}
+}
+
+case "$LIB_HTTPD_TYPE" in
+apache)
+	lib_httpd_setup_apache
+	;;
+lighttpd)
+	lib_httpd_setup_lighttpd
+	;;
+*)
+	test_skip_or_die GIT_TEST_HTTPD \
+		"unknown web server type '$LIB_HTTPD_TYPE'"
+	;;
+esac
 
 install_script () {
 	write_script "$HTTPD_ROOT_PATH/$1" <"$TEST_PATH/$1"
@@ -169,7 +258,20 @@ prepare_httpd() {
 	install_script nph-custom-auth.sh
 	install_script http-429.sh
 
-	ln -s "$LIB_HTTPD_MODULE_PATH" "$HTTPD_ROOT_PATH/modules"
+	case "$LIB_HTTPD_TYPE" in
+	apache)
+		ln -s "$LIB_HTTPD_MODULE_PATH" "$HTTPD_ROOT_PATH/modules"
+		;;
+	lighttpd)
+		# The lighttpd config adds TLS and HTTP/2, but no WebDAV,
+		# Subversion or forward-proxy support.
+		if test -n "$LIB_HTTPD_DAV$LIB_HTTPD_SVN$LIB_HTTPD_PROXY"
+		then
+			test_skip_or_die GIT_TEST_HTTPD \
+				"the lighttpd backend supports smart/dumb HTTP(S) only"
+		fi
+		;;
+	esac
 
 	if test -n "$LIB_HTTPD_SSL"
 	then
@@ -235,10 +337,7 @@ start_httpd() {
 
 	test_atexit stop_httpd
 
-	if ! "$LIB_HTTPD_PATH" -d "$HTTPD_ROOT_PATH" \
-		-f "$TEST_PATH/apache.conf" $HTTPD_PARA \
-		-c "Listen 127.0.0.1:$LIB_HTTPD_PORT" -k start \
-		>&3 2>&4
+	if ! lib_httpd_start >&3 2>&4
 	then
 		cat "$HTTPD_ROOT_PATH"/error.log >&4 2>/dev/null
 		test_skip_or_die GIT_TEST_HTTPD "web server setup failed"
@@ -246,8 +345,7 @@ start_httpd() {
 }
 
 stop_httpd() {
-	"$LIB_HTTPD_PATH" -d "$HTTPD_ROOT_PATH" \
-		-f "$TEST_PATH/apache.conf" $HTTPD_PARA -k stop
+	lib_httpd_stop
 }
 
 test_http_push_nonff () {
