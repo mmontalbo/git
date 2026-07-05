@@ -17,6 +17,7 @@
 #include "quote.h"
 #include "diff.h"
 #include "diffcore.h"
+#include "range-set.h"
 #include "delta.h"
 #include "hex.h"
 #include "xdiff-interface.h"

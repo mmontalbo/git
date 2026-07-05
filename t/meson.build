@@ -11,6 +11,7 @@ clar_test_suites = [
   'unit-tests/u-oidmap.c',
   'unit-tests/u-oidtree.c',
   'unit-tests/u-prio-queue.c',
+  'unit-tests/u-range-set.c',
   'unit-tests/u-reftable-basics.c',
   'unit-tests/u-reftable-block.c',
   'unit-tests/u-reftable-merged.c',

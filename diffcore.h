@@ -9,6 +9,7 @@
 struct diff_options;
 struct mem_pool;
 struct oid_array;
+struct range_set;
 struct repository;
 struct strintmap;
 struct strmap;
@@ -18,17 +19,6 @@ struct userdiff_driver;
  * (e.g. diffcore-rename, diffcore-pickaxe).  Never include this header
  * in anything else.
  */
-
-/* A range [start, end).  Lines are numbered starting at 0. */
-struct range {
-	long start, end;
-};
-
-/* A set of ranges.  The ranges must always be disjoint and sorted. */
-struct range_set {
-	unsigned int alloc, nr;
-	struct range *ranges;
-};
 
 /* We internally use unsigned short as the score value,
  * and rely on an int capable to hold 32-bits.  -B can take

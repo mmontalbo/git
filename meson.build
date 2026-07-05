@@ -446,6 +446,7 @@ libgit_sources = [
   'pseudo-merge.c',
   'quote.c',
   'range-diff.c',
+  'range-set.c',
   'reachable.c',
   'read-cache.c',
   'rebase-interactive.c',
