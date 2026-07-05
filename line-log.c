@@ -330,7 +330,16 @@ static int collect_diff_cb(long start_a, long count_a,
 	return 0;
 }
 
-static int collect_diff(mmfile_t *parent, mmfile_t *target, struct diff_ranges *out)
+/*
+ * Diff the parent and target blobs to find the changed line ranges that
+ * carry the tracked ranges back through history.  Copy the caller's
+ * whitespace-ignoring, -I<regex> and --anchored settings into xpp so
+ * range tracking sees the same changed lines that "git log -L" displays;
+ * otherwise a whitespace-only change would move the tracked range and
+ * select the commit even though, say, -w renders its diff empty.
+ */
+static int collect_diff(struct diff_options *opt, mmfile_t *parent,
+			mmfile_t *target, struct diff_ranges *out)
 {
 	struct collect_diff_cbdata cbdata = {NULL};
 	xpparam_t xpp;
@@ -338,6 +347,11 @@ static int collect_diff(mmfile_t *parent, mmfile_t *target, struct diff_ranges *
 	xdemitcb_t ecb;
 
 	memset(&xpp, 0, sizeof(xpp));
+	xpp.flags = opt->xdl_opts;
+	xpp.ignore_regex = opt->ignore_regex;
+	xpp.ignore_regex_nr = opt->ignore_regex_nr;
+	xpp.anchors = opt->anchors;
+	xpp.anchors_nr = opt->anchors_nr;
 	memset(&xecfg, 0, sizeof(xecfg));
 	xecfg.ctxlen = xecfg.interhunkctxlen = 0;
 
@@ -927,7 +941,7 @@ static int process_diff_filepair(struct rev_info *rev,
 	}
 
 	diff_ranges_init(&diff);
-	if (collect_diff(&file_parent, &file_target, &diff))
+	if (collect_diff(&rev->diffopt, &file_parent, &file_target, &diff))
 		die("unable to generate diff for %s", pair->one->path);
 
 	/* NEEDSWORK should apply some heuristics to prevent mismatches */

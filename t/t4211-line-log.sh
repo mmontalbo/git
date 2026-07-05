@@ -460,6 +460,51 @@ test_expect_success '-L with --ignore-all-space suppresses whitespace-only diff'
 	test $(grep -c "^diff --git" with_w) = 2
 '
 
+test_expect_success '-L --ignore-all-space drops a whitespace-only commit from history' '
+	# The whitespace-only commit only retabs a line inside func2(), so
+	# with -w it makes no change to the tracked range and must not be
+	# selected at all.  Range tracking has to honor -w like the shown
+	# diff; otherwise the commit is listed with an empty diff.
+	git log -L:func2:file.c --format="%s" >subjects &&
+	test_grep "Whitespace change in func2" subjects &&
+	git log -L:func2:file.c --format="%s" -w >subjects_w &&
+	test_grep ! "Whitespace change in func2" subjects_w
+'
+
+test_expect_success 'setup -L with an -I-matching change' '
+	git checkout -b ignore-match parent-oids &&
+	sed "s/return F2 + 2;/return F2 + 3;/" file.c >tmp &&
+	mv tmp file.c &&
+	git commit -a -m "Bump func2 return value"
+'
+
+test_expect_success '-L -I<regex> drops a commit whose only change matches' '
+	# The commit changes only "return F2 + 2;" to "return F2 + 3;" inside
+	# func2; both lines match "return F2", so -I ignores the hunk and the
+	# commit makes no change to the tracked range.  Exercises the separate
+	# xpp.ignore_regex forwarding that the --ignore-all-space test does not.
+	git log -L:func2:file.c --format="%s" >subjects &&
+	test_grep "Bump func2 return value" subjects &&
+	git log -L:func2:file.c --format="%s" -I"return F2" >subjects_i &&
+	test_grep ! "Bump func2 return value" subjects_i
+'
+
+test_expect_success 'setup -L with a blank-line-only change' '
+	git checkout -b blank-line parent-oids &&
+	sed "/return F2 + 2;/G" file.c >tmp &&
+	mv tmp file.c &&
+	git commit -a -m "Add blank line in func2"
+'
+
+test_expect_success '-L --ignore-blank-lines drops a blank-only change' '
+	# The commit only inserts a blank line inside func2, so
+	# --ignore-blank-lines ignores it and the tracked range is unchanged.
+	git log -L:func2:file.c --format="%s" >subjects &&
+	test_grep "Add blank line in func2" subjects &&
+	git log -L:func2:file.c --format="%s" --ignore-blank-lines >subjects_bl &&
+	test_grep ! "Add blank line in func2" subjects_bl
+'
+
 test_expect_success 'show line-log with graph' '
 	git checkout parent-oids &&
 	head_blob_old=$(git rev-parse --short HEAD^:file.c) &&
