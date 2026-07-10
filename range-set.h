@@ -73,12 +73,13 @@ void diff_ranges_release(struct diff_ranges *diff);
  * replaced by its parent-side counterpart, and an untouched range is
  * shifted by the lines the diff added or removed before it.  For example,
  * across a diff that inserted two lines above it, an untouched target range
- * [5,8) maps to the parent range [3,6).  The touched hunks are returned in
- * *touched_out, which the caller releases with diff_ranges_release() and
- * then frees.
+ * [5,8) maps to the parent range [3,6).  The hunks the diff touched are
+ * collected into 'touched', which the caller initializes with
+ * diff_ranges_init() beforehand and releases with diff_ranges_release()
+ * afterward.
  */
 void range_set_map_across_diff(struct range_set *out, struct range_set *rs,
 			       struct diff_ranges *diff,
-			       struct diff_ranges **touched_out);
+			       struct diff_ranges *touched);
 
 #endif /* RANGE_SET_H */

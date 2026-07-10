@@ -537,7 +537,7 @@ static void queue_diffs(struct line_log_data *range,
 static int process_diff_filepair(struct rev_info *rev,
 				 struct diff_filepair *pair,
 				 struct line_log_data *range,
-				 struct diff_ranges **diff_out)
+				 struct diff_ranges *diff_out)
 {
 	struct line_log_data *rg = range;
 	struct range_set tmp;
@@ -588,7 +588,7 @@ static int process_diff_filepair(struct rev_info *rev,
 	diff_ranges_release(&diff);
 
 	free(parent_data_to_free);
-	return ((*diff_out)->parent.nr > 0);
+	return (diff_out->parent.nr > 0);
 }
 
 static struct diff_filepair *diff_filepair_dup(struct diff_filepair *pair)
@@ -611,8 +611,9 @@ static int process_all_files(struct line_log_data **range_out,
 	*range_out = line_log_data_copy(range);
 
 	for (i = 0; i < queue->nr; i++) {
-		struct diff_ranges *pairdiff = NULL;
+		struct diff_ranges pairdiff;
 		struct diff_filepair *pair = queue->queue[i];
+		diff_ranges_init(&pairdiff);
 		if (process_diff_filepair(rev, pair, *range_out, &pairdiff)) {
 			/*
 			 * Store away the diff for later output.  We
@@ -636,13 +637,9 @@ static int process_all_files(struct line_log_data **range_out,
 				diff_free_filepair(rg->pair);
 			rg->pair = diff_filepair_dup(queue->queue[i]);
 			diff_ranges_release(&rg->diff);
-			memcpy(&rg->diff, pairdiff, sizeof(struct diff_ranges));
-			FREE_AND_NULL(pairdiff);
-		}
-
-		if (pairdiff) {
-			diff_ranges_release(pairdiff);
-			free(pairdiff);
+			rg->diff = pairdiff;
+		} else {
+			diff_ranges_release(&pairdiff);
 		}
 	}
 

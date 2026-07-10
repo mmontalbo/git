@@ -48,13 +48,6 @@ void test_range_set__union(void)
 	range_set_release(&out);
 }
 
-static void free_touched(struct diff_ranges *touched)
-{
-	range_set_release(&touched->parent);
-	range_set_release(&touched->target);
-	free(touched);
-}
-
 void test_range_set__map_untouched_range_shifts(void)
 {
 	/*
@@ -69,7 +62,7 @@ void test_range_set__map_untouched_range_shifts(void)
 	 */
 	struct range_set rs, out;
 	struct diff_ranges diff;
-	struct diff_ranges *touched = NULL;
+	struct diff_ranges touched;
 	const long expect[] = { 3, 6 };
 
 	range_set_init(&rs, 0);
@@ -81,16 +74,17 @@ void test_range_set__map_untouched_range_shifts(void)
 	range_set_append(&diff.target, 1, 3);	/* 2 inserted lines */
 
 	range_set_init(&out, 0);
+	diff_ranges_init(&touched);
 	range_set_map_across_diff(&out, &rs, &diff, &touched);
 
 	assert_ranges(&out, expect, 1);
-	cl_assert_equal_i((int)touched->target.nr, 0);
+	cl_assert_equal_i((int)touched.target.nr, 0);
 
 	range_set_release(&rs);
 	range_set_release(&out);
 	range_set_release(&diff.parent);
 	range_set_release(&diff.target);
-	free_touched(touched);
+	diff_ranges_release(&touched);
 }
 
 void test_range_set__map_touched_range_blames_commit(void)
@@ -103,7 +97,7 @@ void test_range_set__map_touched_range_blames_commit(void)
 	 */
 	struct range_set rs, out;
 	struct diff_ranges diff;
-	struct diff_ranges *touched = NULL;
+	struct diff_ranges touched;
 	const long expect_out[] = { 2, 3 };
 	const long expect_touched[] = { 2, 4 };
 
@@ -116,16 +110,17 @@ void test_range_set__map_touched_range_blames_commit(void)
 	range_set_append(&diff.target, 2, 4);
 
 	range_set_init(&out, 0);
+	diff_ranges_init(&touched);
 	range_set_map_across_diff(&out, &rs, &diff, &touched);
 
 	assert_ranges(&out, expect_out, 1);
-	assert_ranges(&touched->target, expect_touched, 1);
+	assert_ranges(&touched.target, expect_touched, 1);
 
 	range_set_release(&rs);
 	range_set_release(&out);
 	range_set_release(&diff.parent);
 	range_set_release(&diff.target);
-	free_touched(touched);
+	diff_ranges_release(&touched);
 }
 
 void test_range_set__union_disjoint(void)
@@ -219,7 +214,7 @@ void test_range_set__map_empty_set(void)
 	 */
 	struct range_set rs, out;
 	struct diff_ranges diff;
-	struct diff_ranges *touched = NULL;
+	struct diff_ranges touched;
 
 	range_set_init(&rs, 0);
 
@@ -229,16 +224,17 @@ void test_range_set__map_empty_set(void)
 	range_set_append(&diff.target, 1, 3);
 
 	range_set_init(&out, 0);
+	diff_ranges_init(&touched);
 	range_set_map_across_diff(&out, &rs, &diff, &touched);
 
 	cl_assert_equal_i((int)out.nr, 0);
-	cl_assert_equal_i((int)touched->target.nr, 0);
+	cl_assert_equal_i((int)touched.target.nr, 0);
 
 	range_set_release(&rs);
 	range_set_release(&out);
 	range_set_release(&diff.parent);
 	range_set_release(&diff.target);
-	free_touched(touched);
+	diff_ranges_release(&touched);
 }
 
 void test_range_set__map_mixed_touched_and_untouched(void)
@@ -252,7 +248,7 @@ void test_range_set__map_mixed_touched_and_untouched(void)
 	 */
 	struct range_set rs, out;
 	struct diff_ranges diff;
-	struct diff_ranges *touched = NULL;
+	struct diff_ranges touched;
 	const long expect_out[] = { 2, 3, 5, 7 };
 	const long expect_touched[] = { 2, 4 };
 
@@ -266,14 +262,15 @@ void test_range_set__map_mixed_touched_and_untouched(void)
 	range_set_append(&diff.target, 2, 4);
 
 	range_set_init(&out, 0);
+	diff_ranges_init(&touched);
 	range_set_map_across_diff(&out, &rs, &diff, &touched);
 
 	assert_ranges(&out, expect_out, 2);		/* [2,3), [5,7) */
-	assert_ranges(&touched->target, expect_touched, 1);
+	assert_ranges(&touched.target, expect_touched, 1);
 
 	range_set_release(&rs);
 	range_set_release(&out);
 	range_set_release(&diff.parent);
 	range_set_release(&diff.target);
-	free_touched(touched);
+	diff_ranges_release(&touched);
 }

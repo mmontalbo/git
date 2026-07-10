@@ -289,19 +289,15 @@ static void range_set_shift_diff(struct range_set *out,
 void range_set_map_across_diff(struct range_set *out,
 			       struct range_set *rs,
 			       struct diff_ranges *diff,
-			       struct diff_ranges **touched_out)
+			       struct diff_ranges *touched)
 {
-	struct diff_ranges *touched = xmalloc(sizeof(*touched));
 	struct range_set untouched = { 0 };
 	struct range_set shifted = { 0 };
 
-	diff_ranges_init(touched);
 	diff_ranges_filter_touched(touched, diff, rs);
 	range_set_difference(&untouched, rs, &touched->target);
 	range_set_shift_diff(&shifted, &untouched, diff);
 	range_set_union(out, &shifted, &touched->parent);
 	range_set_release(&untouched);
 	range_set_release(&shifted);
-
-	*touched_out = touched;
 }
