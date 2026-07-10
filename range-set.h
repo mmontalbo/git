@@ -57,9 +57,9 @@ void range_set_append(struct range_set *, long start, long end);
 void sort_and_merge_range_set(struct range_set *);
 
 /*
- * Union of two (sorted, disjoint) range sets.  The result is canonical:
- * overlapping and adjacent ranges are merged, and empty ranges are
- * removed.
+ * Union of two (sorted, disjoint) range sets into 'out', which must be
+ * empty and not aliased with a or b.  The result is canonical: overlapping
+ * and adjacent ranges are merged, and empty ranges are removed.
  */
 void range_set_union(struct range_set *out,
 		     struct range_set *a, struct range_set *b);
@@ -71,9 +71,11 @@ void diff_ranges_release(struct diff_ranges *diff);
  * Map the ranges 'rs' backward across 'diff', from the target side to the
  * parent side, writing the result to 'out': a range the diff touched is
  * replaced by its parent-side counterpart, and an untouched range is
- * shifted by the lines the diff added or removed before it.  The touched
- * hunks are returned in *touched_out, which the caller releases with
- * diff_ranges_release() and then frees.
+ * shifted by the lines the diff added or removed before it.  For example,
+ * across a diff that inserted two lines above it, an untouched target range
+ * [5,8) maps to the parent range [3,6).  The touched hunks are returned in
+ * *touched_out, which the caller releases with diff_ranges_release() and
+ * then frees.
  */
 void range_set_map_across_diff(struct range_set *out, struct range_set *rs,
 			       struct diff_ranges *diff,

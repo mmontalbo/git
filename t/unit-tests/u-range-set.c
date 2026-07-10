@@ -180,6 +180,21 @@ void test_range_set__sort_and_merge_contained(void)
 	range_set_release(&rs);
 }
 
+void test_range_set__sort_and_merge_adjacent(void)
+{
+	struct range_set rs;
+	const long expect[] = { 1, 5 };
+
+	/* Adjacent (touching) ranges coalesce; a gap of one would not. */
+	range_set_init(&rs, 0);
+	range_set_append_unsafe(&rs, 3, 5);
+	range_set_append_unsafe(&rs, 1, 3);	/* [1,3) touches [3,5) */
+	sort_and_merge_range_set(&rs);
+
+	assert_ranges(&rs, expect, 1);		/* [1,5) */
+	range_set_release(&rs);
+}
+
 void test_range_set__sort_and_merge_drops_empty(void)
 {
 	struct range_set rs;
