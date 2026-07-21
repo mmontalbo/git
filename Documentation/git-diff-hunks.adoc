@@ -106,7 +106,7 @@ re-checksum it on every load. As with the commit-graph and
 multi-pack-index, the writer fsyncs the file (honoring `core.fsync`) and
 commits it atomically, so a committed store is intact; every offset and
 count is still bounds-checked as it is read. The checksum is verified by
-`git diff-hunks verify`, not on the read path.
+`git diff-hunks verify` and by linkgit:git-fsck[1], not on the read path.
 
 CONFIGURATION
 -------------

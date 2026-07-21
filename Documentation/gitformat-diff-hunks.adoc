@@ -120,7 +120,7 @@ The store is not re-checksummed on the read path. The writer fsyncs the
 file (honoring `core.fsync`) and commits it atomically, so a
 committed store is intact, the same trust model the commit-graph and
 multi-pack-index use. The trailing checksum is recomputed by
-`git diff-hunks verify` to detect corruption.
+`git diff-hunks verify` and linkgit:git-fsck[1] to detect corruption.
 
 The checksum detects corruption but does not prove who wrote the file. A
 reader trusts the coordinates in a store that passes its checks, so
