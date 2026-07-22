@@ -1005,6 +1005,23 @@ static struct option fsck_opts[] = {
 	OPT_END(),
 };
 
+/*
+ * fsck records one bit per error class in errors_found for internal
+ * accounting, and new checks keep adding bits. The process exit status is
+ * only eight bits, so it cannot distinguish more than eight classes and
+ * must not be read as a bitmask. Map the internal mask to a status that
+ * stays byte-compatible with the historical low-eight classes and is
+ * non-zero whenever any error was found, including a class that does not
+ * fit. A caller that needs to know which check failed must parse fsck's
+ * message output, not the exit code.
+ */
+static int fsck_exit_status(int mask)
+{
+	if (mask & 0xff)
+		return mask & 0xff;
+	return mask ? 1 : 0;
+}
+
 int cmd_fsck(int argc,
 	     const char **argv,
 	     const char *prefix,
@@ -1189,5 +1206,5 @@ int cmd_fsck(int argc,
 	}
 
 	free_snapshot_refs(&snap);
-	return errors_found;
+	return fsck_exit_status(errors_found);
 }
