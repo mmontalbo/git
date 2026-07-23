@@ -35,6 +35,7 @@
 #include "repository.h"
 #include "strbuf.h"
 #include "wrapper.h"
+#include "xdiff-interface.h"
 
 #define DIFF_HUNKS_SIGNATURE 0x44485046 /* "DHPF" */
 /*
@@ -428,6 +429,70 @@ int diff_hunks_store_sum(struct diff_hunks_store *s,
 		*deleted += h.old_count;
 	}
 	return 1;
+}
+
+/*
+ * A recorded hunk sequence is replayable if every coordinate fits in an int
+ * (a consumer may truncate to int) and the running old-vs-new offset stays
+ * consistent, as a well-formed diff's hunks always are. Coordinates decode
+ * from be32 into long, which is 32-bit on some platforms, so a crafted value
+ * can decode negative: bound each field to [0, INT32_MAX]. A store that
+ * fails this is treated as a miss, so the caller recomputes.
+ */
+static int replayable_hunks(const struct precomputed_entry *e)
+{
+	int64_t offset = 0;
+	uint32_t i;
+
+	for (i = 0; i < e->num_hunks; i++) {
+		struct precomputed_hunk h;
+		nth_precomputed_hunk(e, i, &h);
+		if (h.old_start < 0 || h.old_count < 0 ||
+		    h.new_start < 0 || h.new_count < 0 ||
+		    h.old_start > INT32_MAX || h.old_count > INT32_MAX ||
+		    h.new_start > INT32_MAX || h.new_count > INT32_MAX ||
+		    h.old_start - h.new_start != offset)
+			return 0;
+		offset = (int64_t)h.old_start + h.old_count -
+			 ((int64_t)h.new_start + h.new_count);
+	}
+	return 1;
+}
+
+int diff_hunks_emit(struct diff_hunks_store *store,
+		    const struct object_id *old_oid,
+		    const struct object_id *new_oid,
+		    const struct diff_hunks_settings *ds,
+		    diff_hunks_fill_fn fill, void *fill_data,
+		    xdl_emit_hunk_consume_func_t hunk_func, void *cb_data)
+{
+	mmfile_t mf_old, mf_new;
+	xpparam_t xpp = { 0 };
+	xdemitconf_t xecfg = { 0 };
+	xdemitcb_t ecb = { NULL };
+
+	if (store) {
+		struct precomputed_entry e;
+		if (diff_hunks_store_get(store, old_oid, new_oid, ds, &e) &&
+		    replayable_hunks(&e)) {
+			uint32_t i;
+			for (i = 0; i < e.num_hunks; i++) {
+				struct precomputed_hunk h;
+				nth_precomputed_hunk(&e, i, &h);
+				hunk_func(h.old_start, h.old_count,
+					  h.new_start, h.new_count, cb_data);
+			}
+			return 1;
+		}
+	}
+
+	if (fill(fill_data, &mf_old, &mf_new))
+		return -1;
+	xpp.flags = ds->xdl_opts;
+	xecfg.ctxlen = xecfg.interhunkctxlen = ds->context;
+	xecfg.hunk_func = hunk_func;
+	ecb.priv = cb_data;
+	return xdi_diff(&mf_old, &mf_new, &xpp, &xecfg, &ecb) ? -1 : 0;
 }
 
 /* Validate one store file. Returns 0 if valid or absent, -1 if corrupt. */

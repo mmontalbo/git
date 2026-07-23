@@ -2,6 +2,7 @@
 #define DIFF_HUNKS_H
 
 #include "hash.h"
+#include "xdiff-interface.h"	/* mmfile_t, xdl_emit_hunk_consume_func_t */
 
 struct object_id;
 struct repository;
@@ -84,6 +85,23 @@ int diff_hunks_store_sum(struct diff_hunks_store *s,
 			 const struct object_id *new_oid,
 			 const struct diff_hunks_settings *ds,
 			 uintmax_t *added, uintmax_t *deleted);
+
+/*
+ * Emit the hunks of diffing (old_oid, new_oid) under ds through hunk_func.
+ * On a store hit (with a valid, in-range recorded diff) the hunks are
+ * replayed and the blobs are never loaded; otherwise fill() supplies the
+ * two mmfiles and xdi_diff() computes them. Returns 1 when served from the
+ * store, 0 when computed, and -1 on a fill or diff error. Pass store == NULL
+ * to always compute (e.g. when the diff is not the plain blob-pair diff the
+ * key describes).
+ */
+typedef int (*diff_hunks_fill_fn)(void *data, mmfile_t *mf_old, mmfile_t *mf_new);
+int diff_hunks_emit(struct diff_hunks_store *store,
+		    const struct object_id *old_oid,
+		    const struct object_id *new_oid,
+		    const struct diff_hunks_settings *ds,
+		    diff_hunks_fill_fn fill, void *fill_data,
+		    xdl_emit_hunk_consume_func_t hunk_func, void *cb_data);
 
 /*
  * A warming run's writer: it accumulates the hunks it computes in memory
