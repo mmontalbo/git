@@ -3,6 +3,7 @@
 #include "hex.h"
 #include "config.h"
 #include "commit.h"
+#include "diff-hunks.h"
 #include "tree.h"
 #include "blob.h"
 #include "tag.h"
@@ -59,6 +60,7 @@ static timestamp_t now;
 #define ERROR_MULTI_PACK_INDEX 040
 #define ERROR_PACK_REV_INDEX 0100
 #define ERROR_BITMAP 0200
+#define ERROR_DIFF_HUNKS 0400
 
 static const char *describe_object(const struct object_id *oid)
 {
@@ -1005,6 +1007,23 @@ static struct option fsck_opts[] = {
 	OPT_END(),
 };
 
+/*
+ * fsck records one bit per error class in errors_found for internal
+ * accounting, and new checks keep adding bits. The process exit status is
+ * only eight bits, so it cannot distinguish more than eight classes and
+ * must not be read as a bitmask. Map the internal mask to a status that
+ * stays byte-compatible with the historical low-eight classes and is
+ * non-zero whenever any error was found, including a class that does not
+ * fit. A caller that needs to know which check failed must parse fsck's
+ * message output, not the exit code.
+ */
+static int fsck_exit_status(int mask)
+{
+	if (mask & 0xff)
+		return mask & 0xff;
+	return mask ? 1 : 0;
+}
+
 int cmd_fsck(int argc,
 	     const char **argv,
 	     const char *prefix,
@@ -1170,6 +1189,11 @@ int cmd_fsck(int argc,
 		}
 	}
 
+	if (repo->settings.core_diff_hunks) {
+		if (diff_hunks_verify(repo))
+			errors_found |= ERROR_DIFF_HUNKS;
+	}
+
 	if (repo->settings.core_multi_pack_index) {
 		struct child_process midx_verify = CHILD_PROCESS_INIT;
 
@@ -1189,5 +1213,6 @@ int cmd_fsck(int argc,
 	}
 
 	free_snapshot_refs(&snap);
-	return errors_found;
+
+	return fsck_exit_status(errors_found);
 }

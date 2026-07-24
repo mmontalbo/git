@@ -23,6 +23,8 @@
 #include "commit-slab.h"
 #include "bloom.h"
 #include "commit-graph.h"
+#include "diff-hunks.h"
+#include "userdiff.h"
 
 define_commit_slab(blame_suspects, struct blame_origin *);
 static struct blame_suspects blame_suspects;
@@ -314,8 +316,8 @@ static struct commit *fake_working_tree_commit(struct repository *r,
 
 
 
-static int diff_hunks(mmfile_t *file_a, mmfile_t *file_b,
-		      xdl_emit_hunk_consume_func_t hunk_func, void *cb_data, int xdl_opts)
+static int xdiff_hunks(mmfile_t *file_a, mmfile_t *file_b,
+		       xdl_emit_hunk_consume_func_t hunk_func, void *cb_data, int xdl_opts)
 {
 	xpparam_t xpp = {0};
 	xdemitconf_t xecfg = {0};
@@ -1936,6 +1938,60 @@ static int blame_chunk_cb(long start_a, long count_a,
 	return 0;
 }
 
+
+/*
+ * The hunk store is keyed by the (old blob, new blob) pair and may
+ * only be consulted for a diff whose result is determined by that
+ * pair and the xdiff settings. Textconv rewrites the buffers being
+ * diffed away from the blob contents the key names, so any origin
+ * whose path has a textconv driver must bypass the store.
+ */
+static int blame_textconv_active(struct blame_scoreboard *sb,
+				 const char *path)
+{
+	struct userdiff_driver *drv;
+
+	if (!sb->revs->diffopt.flags.allow_textconv)
+		return 0;
+	drv = userdiff_find_by_path(sb->repo->index, path);
+	return drv && drv->textconv;
+}
+
+static int hunks_store_usable(struct blame_scoreboard *sb,
+			      struct blame_origin *target,
+			      struct blame_origin *parent,
+			      int ignore_diffs)
+{
+	return repo_diff_hunks_store(sb->repo) &&
+		!sb->reverse &&
+		!ignore_diffs &&
+		!blame_textconv_active(sb, target->path) &&
+		!blame_textconv_active(sb, parent->path);
+}
+
+/*
+ * Try to use precomputed diff hunks instead of running xdiff.
+ * Returns 1 on a store hit (blame fully passed to parent), 0 on a miss.
+ */
+struct blame_diff_fill {
+	struct blame_scoreboard *sb;
+	struct blame_origin *parent, *target;
+	int ignore_diffs;
+};
+
+/* Lazy blob load for diff_hunks_emit(): only called on a store miss. */
+static int blame_diff_fill(void *data, mmfile_t *mf_old, mmfile_t *mf_new)
+{
+	struct blame_diff_fill *f = data;
+
+	fill_origin_blob(&f->sb->revs->diffopt, f->parent, mf_old,
+			 &f->sb->num_read_blob, f->ignore_diffs);
+	fill_origin_blob(&f->sb->revs->diffopt, f->target, mf_new,
+			 &f->sb->num_read_blob, f->ignore_diffs);
+	f->sb->num_get_patch++;
+	return 0;
+}
+
 /*
  * We are looking at the origin 'target' and aiming to pass blame
  * for the lines it is suspected to its parent.  Run diff to find
@@ -1945,9 +2001,14 @@ static void pass_blame_to_parent(struct blame_scoreboard *sb,
 				 struct blame_origin *target,
 				 struct blame_origin *parent, int ignore_diffs)
 {
-	mmfile_t file_p, file_o;
 	struct blame_chunk_cb_data d;
 	struct blame_entry *newdest = NULL;
+	struct blame_diff_fill fill = { sb, parent, target, ignore_diffs };
+	struct diff_hunks_settings ds = {
+		.xdl_opts = sb->xdl_opts, .context = 0
+	};
+	struct diff_hunks_store *store;
+	int served;
 
 	if (!target->suspects)
 		return; /* nothing remains for this target */
@@ -1958,16 +2019,26 @@ static void pass_blame_to_parent(struct blame_scoreboard *sb,
 	d.ignore_diffs = ignore_diffs;
 	d.dstq = &newdest; d.srcq = &target->suspects;
 
-	fill_origin_blob(&sb->revs->diffopt, parent, &file_p,
-			 &sb->num_read_blob, ignore_diffs);
-	fill_origin_blob(&sb->revs->diffopt, target, &file_o,
-			 &sb->num_read_blob, ignore_diffs);
-	sb->num_get_patch++;
-
-	if (diff_hunks(&file_p, &file_o, blame_chunk_cb, &d, sb->xdl_opts))
+	/*
+	 * Consult the store only where blame's diff is the plain blob-pair
+	 * diff the key describes; otherwise pass NULL to compute it.
+	 */
+	store = hunks_store_usable(sb, target, parent, ignore_diffs) ?
+		repo_diff_hunks_store(sb->repo) : NULL;
+	served = diff_hunks_emit(store, &parent->blob_oid, &target->blob_oid,
+				 &ds, blame_diff_fill, &fill,
+				 blame_chunk_cb, &d);
+	if (served < 0)
 		die("unable to generate diff (%s -> %s)",
 		    oid_to_hex(&parent->commit->object.oid),
 		    oid_to_hex(&target->commit->object.oid));
+	if (store) {
+		if (served)
+			sb->num_precomputed_hits++;
+		else
+			sb->num_precomputed_misses++;
+	}
+
 	/* The rest are the same as the parent */
 	blame_chunk(&d.dstq, &d.srcq, INT_MAX, d.offset, INT_MAX, 0,
 		    parent, target, 0);
@@ -1975,8 +2046,6 @@ static void pass_blame_to_parent(struct blame_scoreboard *sb,
 	if (ignore_diffs)
 		sort_blame_entries(&newdest, compare_blame_suspect);
 	queue_blames(sb, parent, newdest);
-
-	return;
 }
 
 /*
@@ -2117,7 +2186,7 @@ static void find_copy_in_blob(struct blame_scoreboard *sb,
 	 * file_p partially may match that image.
 	 */
 	memset(split, 0, sizeof(struct blame_entry [3]));
-	if (diff_hunks(file_p, &file_o, handle_split_cb, &d, sb->xdl_opts))
+	if (xdiff_hunks(file_p, &file_o, handle_split_cb, &d, sb->xdl_opts))
 		die("unable to generate diff (%s)",
 		    oid_to_hex(&parent->commit->object.oid));
 	/* remainder, if any, all match the preimage */
@@ -2953,5 +3022,14 @@ void cleanup_scoreboard(struct blame_scoreboard *sb)
 				   "bloom/queries", bloom_count_queries);
 		trace2_data_intmax("blame", sb->repo,
 				   "bloom/response-no", bloom_count_no);
+	}
+
+	if (repo_diff_hunks_store(sb->repo)) {
+		trace2_data_intmax("blame", sb->repo,
+				   "precomputed/hits",
+				   sb->num_precomputed_hits);
+		trace2_data_intmax("blame", sb->repo,
+				   "precomputed/misses",
+				   sb->num_precomputed_misses);
 	}
 }

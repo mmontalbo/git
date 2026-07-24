@@ -132,6 +132,8 @@ struct blame_scoreboard {
 	int num_read_blob;
 	int num_get_patch;
 	int num_commits;
+	int num_precomputed_hits;
+	int num_precomputed_misses;
 
 	/*
 	 * blame for a blame_entry with score lower than these thresholds
