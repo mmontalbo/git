@@ -1,6 +1,29 @@
 #include "git-compat-util.h"
 #include "diff-provider.h"
 
+enum diff_provider_hunks_error
+diff_provider_hunks_check(struct diff_provider_hunks_check *c,
+			  long old_start, long old_count,
+			  long new_start, long new_count)
+{
+	if (old_start < 0 || old_count < 0 ||
+	    new_start < 0 || new_count < 0 ||
+	    old_start > INT32_MAX || old_count > INT32_MAX ||
+	    new_start > INT32_MAX || new_count > INT32_MAX)
+		return PROVIDER_HUNKS_RANGE;
+	if (old_start < c->prev_old_end || new_start < c->prev_new_end)
+		return PROVIDER_HUNKS_OVERLAP;
+	if (old_start - c->prev_old_end != new_start - c->prev_new_end)
+		return PROVIDER_HUNKS_MISALIGNED;
+	/*
+	 * With each field bounded to int32 above, these sums cannot
+	 * overflow the int64 running state even where long is 32-bit.
+	 */
+	c->prev_old_end = (int64_t)old_start + old_count;
+	c->prev_new_end = (int64_t)new_start + new_count;
+	return PROVIDER_HUNKS_OK;
+}
+
 int diff_provider_emit_hunks(const xpparam_t *xpp,
 			     hunk_pair_fill_fn fill, void *fill_data,
 			     xdl_emit_hunk_consume_func_t hunk_cb,
