@@ -43,7 +43,10 @@ diff_provider_hunks_check(struct diff_provider_hunks_check *c,
 	return PROVIDER_HUNKS_OK;
 }
 
-int diff_provider_emit_hunks(const xpparam_t *xpp,
+int diff_provider_emit_hunks(struct repository *r,
+			     const struct object_id *old_oid,
+			     const struct object_id *new_oid,
+			     const xpparam_t *xpp,
 			     hunk_pair_fill_fn fill, void *fill_data,
 			     xdl_emit_hunk_consume_func_t hunk_cb,
 			     void *cb_data)
@@ -52,7 +55,19 @@ int diff_provider_emit_hunks(const xpparam_t *xpp,
 	xdemitcb_t ecb = { .priv = cb_data };
 	mmfile_t old_file, new_file;
 
+	/*
+	 * -I patterns and anchors shape the diff but are outside the
+	 * settings that key a provider's answer, so such a request is
+	 * computed, never served.
+	 */
+	if (!xpp->ignore_regex_nr && !xpp->anchors_nr &&
+	    diff_provider_query_hunks(r, old_oid, new_oid, xpp->flags,
+				      hunk_cb, cb_data))
+		return 1;
+
 	if (fill(fill_data, &old_file, &new_file) < 0)
 		return -1;
-	return xdi_diff(&old_file, &new_file, xpp, &xecfg, &ecb);
+	if (xdi_diff(&old_file, &new_file, xpp, &xecfg, &ecb) < 0)
+		return -1;
+	return 0;
 }

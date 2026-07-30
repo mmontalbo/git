@@ -24,6 +24,7 @@
 #include "bloom.h"
 #include "commit-graph.h"
 #include "diff-provider.h"
+#include "userdiff.h"
 
 define_commit_slab(blame_suspects, struct blame_origin *);
 static struct blame_suspects blame_suspects;
@@ -1934,6 +1935,24 @@ static int blame_chunk_cb(long start_a, long count_a,
 	return 0;
 }
 
+/*
+ * A hunk provider's key names the (old blob, new blob) pair and may only
+ * serve a diff whose result is determined by that pair and the xdiff
+ * settings. Textconv rewrites the buffers being diffed away from the
+ * blob contents the key names, so any origin whose path has a textconv
+ * driver must withhold the pair's identity.
+ */
+static int blame_textconv_active(struct blame_scoreboard *sb,
+				 const char *path)
+{
+	struct userdiff_driver *drv;
+
+	if (!sb->revs->diffopt.flags.allow_textconv)
+		return 0;
+	drv = userdiff_find_by_path(sb->repo->index, path);
+	return drv && drv->textconv;
+}
+
 struct blame_diff_fill {
 	struct blame_scoreboard *sb;
 	struct blame_origin *parent, *target;
@@ -1966,6 +1985,7 @@ static void pass_blame_to_parent(struct blame_scoreboard *sb,
 	struct blame_entry *newdest = NULL;
 	struct blame_diff_fill fill = { sb, parent, target, ignore_diffs };
 	xpparam_t xpp = { .flags = sb->xdl_opts };
+	int provider_usable, served;
 
 	if (!target->suspects)
 		return; /* nothing remains for this target */
@@ -1976,11 +1996,31 @@ static void pass_blame_to_parent(struct blame_scoreboard *sb,
 	d.ignore_diffs = ignore_diffs;
 	d.dstq = &newdest; d.srcq = &target->suspects;
 
-	if (diff_provider_emit_hunks(&xpp, blame_diff_fill, &fill,
-				     blame_chunk_cb, &d))
+	/*
+	 * Offer the pair's identity only where blame's diff is the plain
+	 * blob-pair diff a provider's key describes; reverse blame,
+	 * ignored revisions, and textconv paths withhold it and always
+	 * compute.
+	 */
+	provider_usable = !sb->reverse && !ignore_diffs &&
+		!blame_textconv_active(sb, target->path) &&
+		!blame_textconv_active(sb, parent->path);
+
+	served = diff_provider_emit_hunks(sb->repo,
+					  provider_usable ? &parent->blob_oid : NULL,
+					  provider_usable ? &target->blob_oid : NULL,
+					  &xpp, blame_diff_fill, &fill,
+					  blame_chunk_cb, &d);
+	if (served < 0)
 		die("unable to generate diff (%s -> %s)",
 		    oid_to_hex(&parent->commit->object.oid),
 		    oid_to_hex(&target->commit->object.oid));
+	if (provider_usable && diff_provider_active(sb->repo)) {
+		if (served)
+			sb->num_precomputed_hits++;
+		else
+			sb->num_precomputed_misses++;
+	}
 	/* The rest are the same as the parent */
 	blame_chunk(&d.dstq, &d.srcq, INT_MAX, d.offset, INT_MAX, 0,
 		    parent, target, 0);
