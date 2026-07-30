@@ -1,0 +1,7 @@
+diffHunks.write::
+	If true, diff-producing commands (`git diff` and `git log` with a
+	`--stat`, `--numstat`, or `--shortstat` format) write the hunks
+	they compute to the diff-hunks store, filling it as a side effect.
+	The `GIT_DIFF_HUNKS_WRITE` environment variable overrides this for
+	a single invocation. Reading the store is controlled separately by
+	`core.diffHunks`. See linkgit:git-diff-hunks[1]. Defaults to false.

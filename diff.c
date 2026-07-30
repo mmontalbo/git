@@ -16,6 +16,8 @@
 #include "revision.h"
 #include "quote.h"
 #include "diff.h"
+#include "diff-hunks.h"
+#include "diff-provider.h"
 #include "diffcore.h"
 #include "delta.h"
 #include "hex.h"
@@ -25,6 +27,7 @@
 #include "utf8.h"
 #include "odb.h"
 #include "userdiff.h"
+#include "diff-process.h"
 #include "submodule.h"
 #include "hashmap.h"
 #include "mem-pool.h"
@@ -34,6 +37,7 @@
 #include "tmp-objdir.h"
 #include "graph.h"
 #include "oid-array.h"
+#include "trace2.h"
 #include "packfile.h"
 #include "pager.h"
 #include "parse-options.h"
@@ -2929,6 +2933,75 @@ static struct diffstat_file *diffstat_add(struct diffstat_t *diffstat,
 	return x;
 }
 
+struct diffstat_hunk_cb_data {
+	struct precomputed_hunk **h;
+	size_t *nr, *alloc;
+};
+
+/*
+ * Hunk callback that appends each hunk's coordinates to a growable
+ * array, so one xdiff pass can both sum a diffstat and record hunks for
+ * the store.
+ */
+static int diffstat_hunk_cb(long start_a, long count_a,
+			    long start_b, long count_b,
+			    void *cb_data)
+{
+	struct diffstat_hunk_cb_data *d = cb_data;
+
+	ALLOC_GROW(*d->h, *d->nr + 1, *d->alloc);
+	(*d->h)[*d->nr].old_start = start_a;
+	(*d->h)[*d->nr].old_count = count_a;
+	(*d->h)[*d->nr].new_start = start_b;
+	(*d->h)[*d->nr].new_count = count_b;
+	(*d->nr)++;
+	return 0;
+}
+
+/*
+ * Collect the hunks of the two files at zero context. diff_fn chooses
+ * whether trimming runs: xdi_diff applies trim_common_tail, yielding the
+ * zero-context hunks blame reads; xdl_diff does not, yielding the
+ * untrimmed hunks. Both run at zero context, so the untrimmed hunks are
+ * not grouped the way a nonzero context would group them; diffstat only
+ * sums their counts, which grouping does not change. Sets *ph (caller
+ * frees) and *ph_nr.
+ */
+typedef int (*xdiff_fn)(mmfile_t *, mmfile_t *, xpparam_t const *,
+			xdemitconf_t const *, xdemitcb_t *);
+static int collect_hunks(xdiff_fn diff_fn, mmfile_t *mf1, mmfile_t *mf2,
+			       xpparam_t *xpp, struct precomputed_hunk **ph,
+			       size_t *ph_nr)
+{
+	size_t ph_alloc = 0;
+	xdemitcb_t ecb = { 0 };
+	xdemitconf_t xecfg = { 0 };
+	struct diffstat_hunk_cb_data cd = { ph, ph_nr, &ph_alloc };
+
+	*ph = NULL;
+	*ph_nr = 0;
+	xecfg.hunk_func = diffstat_hunk_cb;
+	ecb.priv = &cd;
+	return diff_fn(mf1, mf2, xpp, &xecfg, &ecb);
+}
+
+void diff_hunks_attach(struct diff_options *o)
+{
+	if (!(o->output_format &
+	      (DIFF_FORMAT_DIFFSTAT | DIFF_FORMAT_SHORTSTAT | DIFF_FORMAT_NUMSTAT)))
+		return;
+	o->hunks_writer = diff_hunks_writer_maybe_new(o->repo);
+}
+
+void diff_hunks_detach(struct diff_options *o)
+{
+	if (o->hunks_read_hits)
+		trace2_data_intmax("diff-hunks", o->repo, "read-hits",
+				   o->hunks_read_hits);
+	diff_hunks_writer_finish(o->hunks_writer);
+	o->hunks_writer = NULL;
+}
+
 static int diffstat_consume(void *priv, char *line, unsigned long len)
 {
 	struct diffstat_t *diffstat = priv;
@@ -4164,6 +4237,25 @@ static void builtin_diff(const char *name_a,
 		xpp.ignore_regex_nr = o->ignore_regex_nr;
 		xpp.anchors = o->anchors;
 		xpp.anchors_nr = o->anchors_nr;
+
+		/*
+		 * Send the blob oids only for a side whose content is the
+		 * raw blob: textconv rewrites the bytes, and a working-tree
+		 * side has no stored oid, so pass NULL there rather than an
+		 * oid that would not name what the tool receives.
+		 */
+		if (diff_process_fill_hunks(o, name_a, &mf1, &mf2,
+					    (textconv_one || !one->oid_valid) ? NULL : &one->oid,
+					    (textconv_two || !two->oid_valid) ? NULL : &two->oid,
+					    &xpp)
+		    == DIFF_PROCESS_EQUIVALENT) {
+			if (textconv_one)
+				free(mf1.ptr);
+			if (textconv_two)
+				free(mf2.ptr);
+			goto free_ab_and_return;
+		}
+
 		xecfg.ctxlen = o->context;
 		xecfg.interhunkctxlen = o->interhunkcontext;
 		xecfg.flags = XDL_EMIT_FUNCNAMES;
@@ -4208,6 +4300,7 @@ static void builtin_diff(const char *name_a,
 		} else if (xdi_diff_outf(&mf1, &mf2, NULL, fn_out_consume,
 					 &ecbdata, &xpp, &xecfg))
 			die("unable to generate diff for %s", one->path);
+		free(xpp.external_hunks);
 		if (o->word_diff)
 			free_diff_words_data(&ecbdata);
 		if (textconv_one)
@@ -4250,6 +4343,180 @@ static const char *get_compact_summary(const struct diff_filepair *p, int is_ren
 		 (p->two->mode & 0777) == 0644)
 		return "mode -x";
 	return NULL;
+}
+
+/* Hunk callback for the provider seam: sum counts into a diffstat entry. */
+static int diffstat_sum_hunk_cb(long start_a UNUSED, long count_a,
+				long start_b UNUSED, long count_b,
+				void *cb_data)
+{
+	struct diffstat_file *data = cb_data;
+
+	data->added += count_b;
+	data->deleted += count_a;
+	return 0;
+}
+
+/*
+ * Fill data->added/deleted for a modified pair from the hunk provider seam: on
+ * a hit, sum the provided counts; on a warming run, compute and record them.
+ * Returns 1 when it produced the counts, 0 when neither a provider nor the
+ * writer is usable for this pair and the caller must compute the diffstat
+ * itself.
+ *
+ * The store is keyed by (old blob, new blob, xdl_opts), so it may only serve
+ * or receive pairs whose result is determined by that key alone. Inputs that
+ * perturb the hunks outside the key (-B, -I, --anchored) must be off.
+ * --ignore-blank-lines coalesces hunks differently between the emit and
+ * hunk-callback paths, so it is excluded to keep output identical to a
+ * store-less run. (--inter-hunk-context is not excluded: it only groups hunks,
+ * and diffstat sums their counts, which grouping does not change.) Both sides
+ * must be valid regular files with known blob IDs. blame applies the same rule
+ * to its own perturbing inputs. The -I and --anchored exclusions here, plus
+ * xdl_opts in the key, cover every field of xpparam_t; the assert in the
+ * function body checks that at compile time.
+ */
+static int diffstat_from_hunks(struct diff_options *o,
+			       const char *name_a,
+			       struct diff_filespec *one,
+			       struct diff_filespec *two,
+			       struct diffstat_file *data)
+{
+	struct precomputed_hunk *ph_trim, *ph_full, *counts;
+	size_t n_trim, n_full, n_counts, k;
+	int stable;
+	mmfile_t mf1, mf2;
+	xpparam_t xpp;
+	xpparam_t probe = { .flags = o->xdl_opts,
+			    .ignore_regex_nr = o->ignore_regex_nr,
+			    .anchors_nr = o->anchors_nr };
+
+	/*
+	 * A process-capable driver makes the tool the producer for the
+	 * path: the stat must reflect the tool's hunks, so neither a
+	 * store read (it holds xdiff's answer) nor this function's own
+	 * xdiff-and-record may stand in.  A tool that negotiated
+	 * hunks-by-oid can answer right here, before any blob is read;
+	 * otherwise step aside and let the caller consult it with
+	 * content.
+	 */
+	if (diff_process_driver(o, name_a, &probe)) {
+		switch (diff_process_query_hunks(o, name_a,
+						 one->oid_valid ? &one->oid : NULL,
+						 two->oid_valid ? &two->oid : NULL,
+						 &probe, diffstat_sum_hunk_cb,
+						 data)) {
+		case DIFF_PROCESS_OK:
+		case DIFF_PROCESS_EQUIVALENT:
+			return 1;
+		default:
+			return 0;
+		}
+	}
+
+	/*
+	 * xpparam_t is the diff algorithm's input. Its flags are the key's
+	 * xdl_opts; ignore_regex (-I) and anchors (--anchored) are instead
+	 * excluded by the guard below. external_hunks carries a
+	 * caller-supplied answer rather than a setting: the store paths
+	 * build their xpparam_t locally and never populate it, so a
+	 * recorded diff is always xdiff's own.
+	 *
+	 * Adding an xpparam_t field fires this assert (its size no longer
+	 * matches the reference struct). To clear it: (1) add the field to
+	 * the reference struct below; then (2) decide how it affects the
+	 * key -- make it part of the key, or exclude diffs that use it in
+	 * the guard below. The assert only tracks size: a same-size reorder
+	 * or a changed field meaning slips past, so re-read the fields when
+	 * it fires.
+	 */
+	(void)BUILD_ASSERT_OR_ZERO(sizeof(xpparam_t) == sizeof(struct {
+		unsigned long flags;
+		regex_t **ignore_regex;
+		size_t ignore_regex_nr;
+		char **anchors;
+		size_t anchors_nr;
+		struct xdl_hunk *external_hunks;
+		size_t external_hunks_nr;
+	}));
+
+	if (!((diff_provider_active(o->repo) || o->hunks_writer) &&
+	      o->break_opt == -1 &&
+	      !o->ignore_regex_nr &&
+	      !o->anchors_nr &&
+	      !(o->xdl_opts & XDF_IGNORE_BLANK_LINES) &&
+	      DIFF_FILE_VALID(one) && DIFF_FILE_VALID(two) &&
+	      S_ISREG(one->mode) && S_ISREG(two->mode) &&
+	      one->oid_valid && two->oid_valid))
+		return 0;
+
+	/*
+	 * On a provider hit, sum hunk counts directly without decompressing
+	 * blobs or running xdiff. The consult keys on the current
+	 * diff_options, so a hit carries the hunks a provider-less run would
+	 * have produced; the answer is validated before the first count
+	 * reaches data.
+	 */
+	if (diff_provider_query_hunks(o->repo, &one->oid, &two->oid,
+				      o->xdl_opts,
+				      diffstat_sum_hunk_cb, data)) {
+		o->hunks_read_hits++;
+		return 1;
+	}
+
+	/* A miss on a read-only run: let the caller compute the diffstat. */
+	if (!o->hunks_writer)
+		return 0;
+
+	if (fill_mmfile(o->repo, &mf1, one) < 0 ||
+	    fill_mmfile(o->repo, &mf2, two) < 0)
+		die("unable to read files to diff");
+	memset(&xpp, 0, sizeof(xpp));
+	xpp.flags = o->xdl_opts;
+	xpp.ignore_regex = o->ignore_regex;
+	xpp.ignore_regex_nr = o->ignore_regex_nr;
+	xpp.anchors = o->anchors;
+	xpp.anchors_nr = o->anchors_nr;
+
+	/*
+	 * Compute the zero-context trimmed diff (what blame reads) and the
+	 * untrimmed diff (whose counts a nonzero-context stat matches).
+	 * xdi_diff runs first: it enforces the size limit, so the xdl_diff
+	 * call is already bounded.
+	 */
+	if (collect_hunks(xdi_diff, &mf1, &mf2, &xpp, &ph_trim, &n_trim) ||
+	    collect_hunks(xdl_diff, &mf1, &mf2, &xpp, &ph_full, &n_full))
+		die("unable to generate diffstat for %s", one->path);
+
+	/*
+	 * Match a store-less run: at zero context xdi_diff trims, so sum the
+	 * trimmed diff; otherwise sum the untrimmed one.
+	 */
+	counts = o->context ? ph_full : ph_trim;
+	n_counts = o->context ? n_full : n_trim;
+	for (k = 0; k < n_counts; k++) {
+		data->added += counts[k].new_count;
+		data->deleted += counts[k].old_count;
+	}
+
+	/*
+	 * Record only a trim-stable pair, one whose trimmed and untrimmed
+	 * diffs are identical, so the single entry answers any consumer at
+	 * any context (see diff-hunks.h). A pair where the two differ is
+	 * never recorded and every consumer computes it.
+	 */
+	stable = n_trim == n_full;
+	for (k = 0; stable && k < n_trim; k++)
+		stable = ph_trim[k].old_start == ph_full[k].old_start &&
+			 ph_trim[k].old_count == ph_full[k].old_count &&
+			 ph_trim[k].new_start == ph_full[k].new_start &&
+			 ph_trim[k].new_count == ph_full[k].new_count;
+	if (stable)
+		diff_hunks_writer_add(o->hunks_writer, &one->oid, &two->oid,
+				      o->xdl_opts, ph_trim, n_trim);
+	free(ph_trim);
+	free(ph_full);
+	return 1;
 }
 
 static void builtin_diffstat(const char *name_a, const char *name_b,
@@ -4303,38 +4570,77 @@ static void builtin_diffstat(const char *name_a, const char *name_b,
 	}
 
 	else if (may_differ) {
-		/* Crazy xdl interfaces.. */
-		xpparam_t xpp;
-		xdemitconf_t xecfg;
+		/*
+		 * Serve or record via the diff-hunks store. A "log -L"
+		 * range-scoped stat is not the whole-pair diff the store
+		 * keys, so it neither reads nor records. Otherwise diff
+		 * normally.
+		 */
+		if (p->line_ranges ||
+		    !diffstat_from_hunks(o, name_a, one, two, data)) {
+			/* Crazy xdl interfaces.. */
+			xpparam_t xpp;
+			xdemitconf_t xecfg;
 
-		if (fill_mmfile(o->repo, &mf1, one) < 0 ||
-		    fill_mmfile(o->repo, &mf2, two) < 0)
-			die("unable to read files to diff");
+			if (fill_mmfile(o->repo, &mf1, one) < 0 ||
+			    fill_mmfile(o->repo, &mf2, two) < 0)
+				die("unable to read files to diff");
 
-		memset(&xpp, 0, sizeof(xpp));
-		memset(&xecfg, 0, sizeof(xecfg));
-		xpp.flags = o->xdl_opts;
-		xpp.ignore_regex = o->ignore_regex;
-		xpp.ignore_regex_nr = o->ignore_regex_nr;
-		xpp.anchors = o->anchors;
-		xpp.anchors_nr = o->anchors_nr;
-		xecfg.ctxlen = o->context;
-		xecfg.interhunkctxlen = o->interhunkcontext;
-		xecfg.flags = XDL_EMIT_NO_HUNK_HDR;
+			memset(&xpp, 0, sizeof(xpp));
+			memset(&xecfg, 0, sizeof(xecfg));
+			xpp.flags = o->xdl_opts;
+			xpp.ignore_regex = o->ignore_regex;
+			xpp.ignore_regex_nr = o->ignore_regex_nr;
+			xpp.anchors = o->anchors;
+			xpp.anchors_nr = o->anchors_nr;
+			xecfg.ctxlen = o->context;
+			xecfg.interhunkctxlen = o->interhunkcontext;
+			xecfg.flags = XDL_EMIT_NO_HUNK_HDR;
+			/*
+			 * Consult the diff process so --stat reflects the
+			 * tool's view of which lines changed rather than the
+			 * builtin line diff.  --stat never applies textconv,
+			 * so the tool is fed the same raw mmfiles the stat
+			 * itself diffs (unlike builtin_diff, which consults
+			 * the process on textconv'd content).
+			 * When the tool reports the files as equivalent we
+			 * skip xdiff entirely, leaving added and deleted at
+			 * zero so the file is pruned below, just as
+			 * builtin_diff() emits no patch for an equivalent
+			 * file.
+			 *
+			 * Under -L, feed the tool's hunks through the same
+			 * line-range filter the builtin stat uses, so a
+			 * process-provided diff is scoped to the tracked
+			 * range.
+			 */
+			if (diff_process_fill_hunks(o, name_a, &mf1, &mf2,
+						    one->oid_valid ? &one->oid : NULL,
+						    two->oid_valid ? &two->oid : NULL,
+						    &xpp)
+			    != DIFF_PROCESS_EQUIVALENT) {
+				if (p->line_ranges) {
+					struct line_range_filter lr_filter;
 
-		if (p->line_ranges) {
-			struct line_range_filter lr_filter;
+					line_range_filter_init(&lr_filter,
+							       p->line_ranges,
+							       diffstat_consume,
+							       diffstat);
 
-			line_range_filter_init(&lr_filter, p->line_ranges,
-					       diffstat_consume, diffstat);
-
-			if (line_range_filter_diff(&lr_filter, &mf1, &mf2,
-						   &xpp, &xecfg))
-				die("unable to generate diffstat for %s",
-				    one->path);
-		} else if (xdi_diff_outf(&mf1, &mf2, NULL,
-				  diffstat_consume, diffstat, &xpp, &xecfg))
-			die("unable to generate diffstat for %s", one->path);
+					if (line_range_filter_diff(&lr_filter,
+								   &mf1, &mf2,
+								   &xpp, &xecfg))
+						die("unable to generate diffstat for %s",
+						    one->path);
+				} else if (xdi_diff_outf(&mf1, &mf2, NULL,
+							 diffstat_consume,
+							 diffstat,
+							 &xpp, &xecfg))
+					die("unable to generate diffstat for %s",
+					    one->path);
+			}
+			free(xpp.external_hunks);
+		}
 
 		if (DIFF_FILE_VALID(one) && DIFF_FILE_VALID(two)) {
 			struct diffstat_file *file =
@@ -6050,6 +6356,17 @@ static int diff_opt_submodule(const struct option *opt,
 	return 0;
 }
 
+static int diff_opt_ext_diff(const struct option *opt,
+			     const char *arg, int unset)
+{
+	struct diff_options *options = opt->value;
+
+	BUG_ON_OPT_ARG(arg);
+	options->flags.allow_external = !unset;
+	options->flags.no_diff_process = unset;
+	return 0;
+}
+
 static int diff_opt_textconv(const struct option *opt,
 			     const char *arg, int unset)
 {
@@ -6380,8 +6697,9 @@ struct option *add_diff_options(const struct option *opts,
 			 N_("exit with 1 if there were differences, 0 otherwise")),
 		OPT_BOOL(0, "quiet", &options->flags.quick,
 			 N_("disable all output of the program")),
-		OPT_BOOL(0, "ext-diff", &options->flags.allow_external,
-			 N_("allow an external diff helper to be executed")),
+		OPT_CALLBACK_F(0, "ext-diff", options, NULL,
+			       N_("allow an external diff helper to be executed"),
+			       PARSE_OPT_NOARG, diff_opt_ext_diff),
 		OPT_CALLBACK_F(0, "textconv", options, NULL,
 			       N_("run external text conversion filters when comparing binary files"),
 			       PARSE_OPT_NOARG, diff_opt_textconv),
