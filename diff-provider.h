@@ -21,6 +21,36 @@
  * consumer sees them.
  */
 
+struct object_id;
+struct repository;
+
+/*
+ * Nonzero when the in-process provider, the diff-hunks store, is
+ * present, for consumers that decide up front whether consulting can
+ * pay off.  A configured process does not register here: its paths
+ * are consulted regardless.
+ */
+int diff_provider_active(struct repository *r);
+
+/*
+ * Consult the providers that answer from this key alone (the
+ * diff-hunks store) for the changed ranges of the blob pair
+ * (old_oid, new_oid) diffed under xdl_opts, without loading content.
+ * On a hit the ranges are emitted through hunk_cb and 1 is returned;
+ * nothing is emitted before the provider's answer is validated, so a
+ * consumer may accumulate directly into its result.  0 is a miss: no
+ * provider answered, and the consumer computes its diff as it would
+ * without providers.  The callback's return value is not consulted:
+ * replay of a validated answer has no error leg, so the callback
+ * must return 0.
+ */
+int diff_provider_query_hunks(struct repository *r,
+			      const struct object_id *old_oid,
+			      const struct object_id *new_oid,
+			      int xdl_opts,
+			      xdl_emit_hunk_consume_func_t hunk_cb,
+			      void *cb_data);
+
 /*
  * Load the pair's content.  Called at most once per request, only
  * when the ranges are computed rather than provided.  The buffers
