@@ -81,6 +81,43 @@ test_expect_success 'a second warming run refreshes the store in place' '
 	test_cmp expect actual
 '
 
+test_expect_success 'core.diffhunks=false disables lookups' '
+	warm &&
+	git -c core.diffhunks=false blame --show-stats file.txt >out 2>&1 &&
+	test_grep "num precomputed hits: 0" out
+'
+
+# Writing seeds from the current store and merges into it, so a later
+# warming run keeps the entries an earlier one recorded rather than
+# rebuilding. Warm one pair, then a different pair, and confirm the first
+# is still served.
+test_expect_success 'a later warming run preserves earlier entries' '
+	git init incr &&
+	(
+		cd incr &&
+		test_commit a1 f.txt "1" &&
+		test_commit a2 f.txt "1
+2" &&
+		test_commit a3 f.txt "1
+2
+3" &&
+		GIT_DIFF_HUNKS_WRITE=1 git diff --stat a1 a2 >/dev/null &&
+		git diff-hunks verify &&
+		GIT_DIFF_HUNKS_WRITE=1 git diff --stat a2 a3 >/dev/null &&
+		git diff-hunks verify &&
+
+		# Blaming as of a2 diffs the a1..a2 pair. If seeding had
+		# dropped it when the a2..a3 pair was warmed, this would
+		# report zero precomputed hits.
+		git blame --show-stats a2 -- f.txt >out 2>&1 &&
+		test_grep "num precomputed hits: [1-9]" out &&
+
+		no_store log --stat >expect &&
+		git log --stat >actual &&
+		test_cmp expect actual
+	)
+'
+
 test_expect_success 'log --stat matches with and without the store' '
 	no_store log --stat >expect &&
 	warm &&
@@ -207,6 +244,14 @@ test_expect_success 'log -R --stat matches (reversed pairs keyed apart)' '
 	test_cmp expect actual
 '
 
+# One warm serves both diffstat and blame: the blob pairs a blame
+# walks are the same parent-child pairs the diffstat warm recorded.
+test_expect_success 'a single warming run serves both blame and diffstat' '
+	warm &&
+	git blame --show-stats file.txt >out 2>&1 &&
+	test_grep "num precomputed hits: [1-9][0-9]*" out
+'
+
 # The diffstat read path produces identical output on a hit or a miss, so
 # it emits a trace2 "read-hits" count to prove it consulted the store.
 test_expect_success 'diffstat consults the store (trace shows read hits)' '
@@ -215,6 +260,23 @@ test_expect_success 'diffstat consults the store (trace shows read hits)' '
 	test_grep read-hits trace_on.json &&
 	test_env GIT_TRACE2_EVENT="$PWD/trace_off.json" no_store log --stat >/dev/null &&
 	test_grep ! read-hits trace_off.json
+'
+
+test_expect_success 'blame matches with and without the store' '
+	no_store blame file.txt >expect &&
+	warm &&
+	git blame file.txt >actual &&
+	test_cmp expect actual
+'
+
+test_expect_success 'blame --porcelain and --incremental match' '
+	no_store blame --porcelain file.txt >expect_p &&
+	no_store blame --incremental file.txt >expect_i &&
+	warm &&
+	git blame --porcelain file.txt >got_p &&
+	git blame --incremental file.txt >got_i &&
+	test_cmp expect_p got_p &&
+	test_cmp expect_i got_i
 '
 
 # Diff settings that change hunks but are not part of the store key must
@@ -303,6 +365,26 @@ test_expect_success 'a whitespace-ignoring diff is not served default entries' '
 	)
 '
 
+test_expect_success 'blame -w stays correct and does not hit default entries' '
+	(
+		cd ws-repo &&
+		no_store blame -w f >expect &&
+		git blame -w --show-stats f >out 2>&1 &&
+		test_grep "num precomputed hits: 0" out &&
+		git blame -w f >actual &&
+		test_cmp expect actual
+	)
+'
+
+test_expect_success 'blame with indentHeuristic off stays correct and misses' '
+	warm &&
+	git -c diff.indentHeuristic=false blame --show-stats file.txt >out 2>&1 &&
+	test_grep "num precomputed hits: 0" out &&
+	no_store -c diff.indentHeuristic=false blame file.txt >expect &&
+	git -c diff.indentHeuristic=false blame file.txt >actual &&
+	test_cmp expect actual
+'
+
 test_expect_success 'a driver algorithm override keeps output correct' '
 	git init driver-algo &&
 	(
@@ -323,6 +405,62 @@ test_expect_success 'a driver algorithm override keeps output correct' '
 	)
 '
 
+test_expect_success 'blame --reverse never consults the store' '
+	warm &&
+	git blame --reverse HEAD~3..HEAD file.txt >actual 2>/dev/null &&
+	no_store blame --reverse HEAD~3..HEAD file.txt >expect 2>/dev/null &&
+	test_cmp expect actual &&
+	# reverse blame withholds the pair identity, so the store must
+	# register zero hits, not merely produce identical output
+	git blame --reverse --show-stats HEAD~3..HEAD file.txt \
+		>stats 2>/dev/null &&
+	test_grep "num precomputed hits: 0" stats
+'
+
+test_expect_success 'blame with a textconv driver bypasses the store' '
+	echo "tc.txt diff=tc" >>.gitattributes &&
+	git add .gitattributes &&
+	git commit -m tc-attr &&
+	git config diff.tc.textconv "sed -e s/1/one/" &&
+	test_commit tc1 tc.txt "line 1" &&
+	test_commit tc2 tc.txt "line 1
+line 2" &&
+	warm &&
+	git blame --show-stats tc.txt >out 2>&1 &&
+	test_grep "num precomputed hits: 0" out &&
+	no_store blame tc.txt >expect &&
+	git blame tc.txt >actual &&
+	test_cmp expect actual
+'
+
+test_expect_success 'blame -M and -C stay correct with the store' '
+	warm &&
+	no_store blame -M file.txt >expect_m &&
+	no_store blame -C file.txt >expect_c &&
+	git blame -M file.txt >got_m &&
+	git blame -C file.txt >got_c &&
+	test_cmp expect_m got_m &&
+	test_cmp expect_c got_c
+'
+
+# Copy-detecting (and reverse) blame still diff blob pairs through
+# pass_blame_to_parent, so they must use the real blame xdl_opts. A
+# whitespace-only change is invisible under -w; if -w were dropped on
+# these paths the -w and non-w results would coincide.
+test_expect_success 'blame -C honors -w' '
+	git init -q blame-cw &&
+	(
+		cd blame-cw &&
+		printf "one\ntwo\nthree\n" >f &&
+		git add f && git commit -q -m base &&
+		printf "one\n  two  \nthree\n" >f &&
+		git add f && git commit -q -m reindent &&
+		git blame -C -w f >with_w &&
+		git blame -C f >without_w &&
+		! test_cmp with_w without_w
+	)
+'
+
 # Cover the pair shapes an object walk encounters: binary and
 # mode-only changes produce no text hunks to record.
 test_expect_success 'binary and mode-only changes do not break the writer' '
@@ -340,6 +478,79 @@ test_expect_success 'binary and mode-only changes do not break the writer' '
 	no_store log --stat >expect &&
 	warm &&
 	git log --stat >actual &&
+	test_cmp expect actual
+'
+
+test_expect_success 'blame across a rename matches' '
+	echo "original content" >rename-src.txt &&
+	git add rename-src.txt &&
+	git commit -m "add rename-src" &&
+	echo "more" >>rename-src.txt &&
+	git add rename-src.txt &&
+	git commit -m "modify rename-src" &&
+	git mv rename-src.txt rename-dst.txt &&
+	git commit -m "rename" &&
+	echo "post" >>rename-dst.txt &&
+	git add rename-dst.txt &&
+	git commit -m "modify after rename" &&
+	no_store blame rename-dst.txt >expect &&
+	warm &&
+	git blame rename-dst.txt >actual &&
+	test_cmp expect actual
+'
+
+test_expect_success 'blame handles merge commits' '
+	git checkout -b merge-side main~2 &&
+	test_commit merge-change merge-file.txt "side content" &&
+	git checkout main &&
+	git merge --no-edit merge-side &&
+	no_store blame merge-file.txt >expect &&
+	warm &&
+	git blame merge-file.txt >actual &&
+	test_cmp expect actual
+'
+
+test_expect_success 'distinct --contents against one revision do not collide' '
+	warm &&
+	test_write_lines "line 1" "appended line" >c1 &&
+	test_write_lines "rewritten line" >c2 &&
+	# Ground truth without the store.
+	no_store blame -s --contents=c2 file.txt initial >expect &&
+	# With the store, an intervening c1 run must not poison the c2 lookup.
+	git blame -s --contents=c1 file.txt initial >/dev/null &&
+	git blame -s --contents=c2 file.txt initial >actual &&
+	test_cmp expect actual
+'
+
+# Integrity: a structurally broken header is read as absent (the reader
+# falls back to xdiff and stays correct); a checksum mismatch is caught
+# by verify, which is when integrity is checked.
+test_expect_success 'a truncated store is read as absent' '
+	warm &&
+	test_copy_bytes 20 <$STORE >truncated &&
+	mv truncated $STORE &&
+	no_store blame file.txt >expect &&
+	git blame file.txt >actual &&
+	test_cmp expect actual
+'
+
+test_expect_success 'a corrupt signature is read as absent' '
+	warm &&
+	printf "XXXX" >corrupt &&
+	tail -c +5 <$STORE >>corrupt &&
+	mv corrupt $STORE &&
+	no_store blame file.txt >expect &&
+	git blame file.txt >actual &&
+	test_cmp expect actual
+'
+
+# Byte 6 of the header is the chunk count; a value larger than the file
+# can hold must be rejected before the chunk table is walked.
+test_expect_success 'an over-claimed chunk count is read as absent' '
+	warm &&
+	printf "\377" | dd of=$STORE bs=1 seek=6 count=1 conv=notrunc 2>/dev/null &&
+	no_store blame file.txt >expect &&
+	git blame file.txt >actual &&
 	test_cmp expect actual
 '
 

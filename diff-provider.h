@@ -60,11 +60,19 @@ typedef int (*hunk_pair_fill_fn)(void *data, mmfile_t *old_file,
 				 mmfile_t *new_file);
 
 /*
- * Emit the exact changed ranges (context 0) for one file pair to
- * hunk_cb.  xpp carries the diff parameters that determine the
- * ranges.  Returns 0 on success, -1 on failure to load or diff.
+ * Emit the exact changed ranges (context 0) for the pair (old_oid,
+ * new_oid) to hunk_cb.  Providers are consulted first, keyed by the
+ * object ids and xpp's flags; pass NULL object ids when the diffed
+ * bytes are not those blobs (or there are no blobs), which makes
+ * every consult miss.  On a miss, fill supplies the content and
+ * xdiff computes the ranges from xpp.  Returns 1 when a provider
+ * supplied the ranges, 0 when they were computed, and -1 on failure
+ * to load or diff.
  */
-int diff_provider_emit_hunks(const xpparam_t *xpp,
+int diff_provider_emit_hunks(struct repository *r,
+			     const struct object_id *old_oid,
+			     const struct object_id *new_oid,
+			     const xpparam_t *xpp,
 			     hunk_pair_fill_fn fill, void *fill_data,
 			     xdl_emit_hunk_consume_func_t hunk_cb,
 			     void *cb_data);
