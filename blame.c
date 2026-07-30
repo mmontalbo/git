@@ -2006,9 +2006,17 @@ static void pass_blame_to_parent(struct blame_scoreboard *sb,
 		!blame_textconv_active(sb, target->path) &&
 		!blame_textconv_active(sb, parent->path);
 
+	/*
+	 * Look up the driver by the parent (old) path, as builtin_diff()
+	 * does with name_a, so a renamed file resolves to the same driver
+	 * across diff, blame, and line-log.  A tool that reports a pair
+	 * equivalent emits no hunks, so blame passes the whole commit
+	 * through and looks past it.
+	 */
 	served = diff_provider_emit_hunks(sb->repo,
 					  provider_usable ? &parent->blob_oid : NULL,
 					  provider_usable ? &target->blob_oid : NULL,
+					  parent->path, &sb->revs->diffopt,
 					  &xpp, blame_diff_fill, &fill,
 					  blame_chunk_cb, &d);
 	if (served < 0)

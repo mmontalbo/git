@@ -5,6 +5,17 @@
 
 struct diff_options;
 struct object_id;
+struct userdiff_driver;
+
+/*
+ * The driver whose process a consultation for path would ask, or NULL
+ * when none applies (no driver, process disabled or failed, or xpp
+ * carries options the tool is never told about).  Needs no content, so
+ * a caller can pick a producer before loading the blobs.
+ */
+struct userdiff_driver *diff_process_driver(struct diff_options *diffopt,
+					    const char *path,
+					    const xpparam_t *xpp);
 
 enum diff_process_result {
 	DIFF_PROCESS_ERROR = -1, /* failed; caller falls back to builtin */

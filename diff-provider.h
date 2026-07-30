@@ -11,10 +11,20 @@
  * A hunk provider answers a consumer's request from the pair's blob
  * object ids and the settings that determine the diff, before any
  * content is loaded; a request no provider answers falls through to
- * the consumer's own computation.  The diff-hunks store (diff-hunks.h)
- * is the provider consulted today.
+ * the consumer's own computation.  Two providers implement this
+ * interface with different authority.  The diff-hunks store
+ * (diff-hunks.h) is in-process and not authoritative: it may only
+ * reproduce the builtin result, so it never asserts a pair
+ * equivalent, and it stands aside wherever a tool outranks it.  A
+ * configured diff.<driver>.process tool (diff-process.h) is
+ * authoritative for its paths: its answer may deliberately differ
+ * from the builtin diff, including asserting a pair equivalent.  The
+ * consult order in diff_provider_emit_hunks() is that authority
+ * resolution.  Whichever provider answers, its coordinates pass
+ * diff_provider_hunks_check() before any consumer sees them.
  */
 
+struct diff_options;
 struct object_id;
 struct repository;
 
@@ -80,17 +90,28 @@ typedef int (*hunk_pair_fill_fn)(void *data, mmfile_t *old_file,
 
 /*
  * Emit the exact changed ranges (context 0) for the pair (old_oid,
- * new_oid) to hunk_cb.  Providers are consulted first, keyed by the
- * object ids and xpp's flags; pass NULL object ids when the diffed
- * bytes are not those blobs (or there are no blobs), which makes
- * every consult miss.  On a miss, fill supplies the content and
- * xdiff computes the ranges from xpp.  Returns 1 when a provider
- * supplied the ranges, 0 when they were computed, and -1 on failure
- * to load or diff.
+ * new_oid) at path to hunk_cb.
+ *
+ * The producer is picked before content is loaded.  A path whose
+ * driver has a diff process makes the tool the producer: the store's
+ * entries hold xdiff's answer, which a semantic tool may deliberately
+ * contradict, so the identity phase is skipped, content is loaded,
+ * and the tool is consulted; its hunks feed xdiff's emission, and a
+ * tool that reports the pair equivalent emits no hunks at all.
+ * Otherwise the store is consulted by the object ids and xpp's flags,
+ * and only a miss loads content and computes.
+ *
+ * Pass NULL object ids when the diffed bytes are not those blobs (or
+ * there are no blobs): the identity phase then misses, and no id is
+ * sent to a tool.  Pass a NULL diffopt or path to consult no tool.
+ * Returns 1 when the store supplied the ranges, 0 when they were
+ * emitted any other way, and -1 on failure to load or diff.
  */
 int diff_provider_emit_hunks(struct repository *r,
 			     const struct object_id *old_oid,
 			     const struct object_id *new_oid,
+			     const char *path,
+			     struct diff_options *diffopt,
 			     const xpparam_t *xpp,
 			     hunk_pair_fill_fn fill, void *fill_data,
 			     xdl_emit_hunk_consume_func_t hunk_cb,

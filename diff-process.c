@@ -420,6 +420,38 @@ static int validate_external_hunks(const struct xdl_hunk *hunks, size_t nr,
 	return 0;
 }
 
+struct userdiff_driver *diff_process_driver(struct diff_options *diffopt,
+					    const char *path,
+					    const xpparam_t *xpp)
+{
+	struct userdiff_driver *drv;
+
+	if (!diffopt || !path)
+		return NULL;
+	if (diffopt->flags.no_diff_process || diffopt->ignore_driver_algorithm)
+		return NULL;
+	/*
+	 * Whitespace-ignoring, regex-ignore (-I) and anchored options
+	 * change which lines count as different, but the tool is never
+	 * told about them, so its hunks could not honor them.  Rather
+	 * than silently override the user's request, fall back to the
+	 * builtin diff, which does honor these flags.  Key this off xpp
+	 * (the parameters this diff actually runs with) rather than
+	 * diffopt, so a caller like blame that keeps its flags outside
+	 * diffopt is covered without a separate guard of its own.
+	 */
+	if ((xpp->flags & (XDF_WHITESPACE_FLAGS | XDF_IGNORE_BLANK_LINES)) ||
+	    xpp->ignore_regex_nr || xpp->anchors_nr)
+		return NULL;
+
+	drv = userdiff_find_by_path(diffopt->repo->index, path);
+	if (!drv || !drv->process)
+		return NULL;
+	if (drv->diff_process_failed)
+		return NULL;
+	return drv;
+}
+
 enum diff_process_result diff_process_fill_hunks(
 		struct diff_options *diffopt,
 		const char *path,
@@ -434,28 +466,8 @@ enum diff_process_result diff_process_fill_hunks(
 	size_t nr = 0;
 	enum diff_process_result res;
 
-	if (!diffopt || !path)
-		return DIFF_PROCESS_SKIP;
-	if (diffopt->flags.no_diff_process || diffopt->ignore_driver_algorithm)
-		return DIFF_PROCESS_SKIP;
-	/*
-	 * Whitespace-ignoring, regex-ignore (-I) and anchored options
-	 * change which lines count as different, but the tool is never
-	 * told about them, so its hunks could not honor them.  Rather
-	 * than silently override the user's request, fall back to the
-	 * builtin diff, which does honor these flags.  Key this off xpp
-	 * (the parameters this diff actually runs with) rather than
-	 * diffopt, so a caller like blame that keeps its flags outside
-	 * diffopt is covered without a separate guard of its own.
-	 */
-	if ((xpp->flags & (XDF_WHITESPACE_FLAGS | XDF_IGNORE_BLANK_LINES)) ||
-	    xpp->ignore_regex_nr || xpp->anchors_nr)
-		return DIFF_PROCESS_SKIP;
-
-	drv = userdiff_find_by_path(diffopt->repo->index, path);
-	if (!drv || !drv->process)
-		return DIFF_PROCESS_SKIP;
-	if (drv->diff_process_failed)
+	drv = diff_process_driver(diffopt, path, xpp);
+	if (!drv)
 		return DIFF_PROCESS_SKIP;
 
 	res = get_hunks(drv, path,

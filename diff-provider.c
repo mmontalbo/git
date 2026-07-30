@@ -1,6 +1,7 @@
 #include "git-compat-util.h"
 #include "diff-provider.h"
 #include "diff-hunks.h"
+#include "diff-process.h"
 
 int diff_provider_active(struct repository *r)
 {
@@ -46,28 +47,51 @@ diff_provider_hunks_check(struct diff_provider_hunks_check *c,
 int diff_provider_emit_hunks(struct repository *r,
 			     const struct object_id *old_oid,
 			     const struct object_id *new_oid,
+			     const char *path,
+			     struct diff_options *diffopt,
 			     const xpparam_t *xpp,
 			     hunk_pair_fill_fn fill, void *fill_data,
 			     xdl_emit_hunk_consume_func_t hunk_cb,
 			     void *cb_data)
 {
+	xpparam_t xpp_local = *xpp;
 	xdemitconf_t xecfg = { .hunk_func = hunk_cb };
 	xdemitcb_t ecb = { .priv = cb_data };
 	mmfile_t old_file, new_file;
+	int ret;
+
+	/* Only a tool consulted here may supply external hunks. */
+	xpp_local.external_hunks = NULL;
+	xpp_local.external_hunks_nr = 0;
 
 	/*
-	 * -I patterns and anchors shape the diff but are outside the
-	 * settings that key a provider's answer, so such a request is
-	 * computed, never served.
+	 * A process-capable driver makes the tool the producer for the
+	 * path, so the store (which holds xdiff's answer, one a semantic
+	 * tool may deliberately contradict) is not consulted.  -I
+	 * patterns and anchors shape the diff but are outside the
+	 * settings that key the store, so such a request is computed,
+	 * never served.
 	 */
-	if (!xpp->ignore_regex_nr && !xpp->anchors_nr &&
+	if (!diff_process_driver(diffopt, path, xpp) &&
+	    !xpp->ignore_regex_nr && !xpp->anchors_nr &&
 	    diff_provider_query_hunks(r, old_oid, new_oid, xpp->flags,
 				      hunk_cb, cb_data))
 		return 1;
 
 	if (fill(fill_data, &old_file, &new_file) < 0)
 		return -1;
-	if (xdi_diff(&old_file, &new_file, xpp, &xecfg, &ecb) < 0)
-		return -1;
-	return 0;
+
+	switch (diff_process_fill_hunks(diffopt, path, &old_file, &new_file,
+					old_oid, new_oid, &xpp_local)) {
+	case DIFF_PROCESS_EQUIVALENT:
+		/* The tool reports the pair equal: there is no hunk to emit. */
+		return 0;
+	default:
+		break; /* OK: tool hunks now in xpp_local; SKIP/ERROR: builtin */
+	}
+
+	ret = xdi_diff(&old_file, &new_file, &xpp_local, &xecfg, &ecb) < 0 ?
+		-1 : 0;
+	free(xpp_local.external_hunks);
+	return ret;
 }
