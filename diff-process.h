@@ -57,4 +57,25 @@ enum diff_process_result diff_process_fill_hunks(
 		const struct object_id *oid_b,
 		xpparam_t *xpp);
 
+/*
+ * Ask the diff process configured for 'path' to answer from the blob
+ * pair's object ids alone (the "hunks-by-oid" capability): no content
+ * is loaded or sent.  On DIFF_PROCESS_OK the tool's hunks are emitted
+ * through hunk_cb in 0-based emission coordinates, validated for order,
+ * overlap, and lockstep alignment first; because Git holds no content,
+ * the answer is used as the tool sent it, without xdiff's compaction.
+ * DIFF_PROCESS_EQUIVALENT means the tool asserts the pair equal.
+ * DIFF_PROCESS_SKIP covers everything that should fall through to a
+ * content consult: no driver or capability, a missing object id, a
+ * status=need-content answer, or an invalid response.
+ */
+enum diff_process_result diff_process_query_hunks(
+		struct diff_options *diffopt,
+		const char *path,
+		const struct object_id *old_oid,
+		const struct object_id *new_oid,
+		const xpparam_t *xpp,
+		xdl_emit_hunk_consume_func_t hunk_cb,
+		void *cb_data);
+
 #endif /* DIFF_PROCESS_H */

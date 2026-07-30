@@ -24,6 +24,19 @@
  *
  * When the tool returns no hunks with status=success, it considers
  * the files equivalent.  Git will skip the diff for that file.
+ *
+ * A tool that also negotiates the "hunks-by-oid" capability may be
+ * asked without content, when both sides are stored blobs:
+ *   git> command=hunks-by-oid / pathname=<path> / old-oid=<hex> / new-oid=<hex> / flush
+ *   tool< hunk ... / flush
+ *   tool< status=success / flush
+ * No content sections follow such a request.  The tool may instead
+ * answer status=need-content, and Git re-asks with a full
+ * command=hunks request.  Because Git holds no content for this
+ * exchange, the answer is used as sent: the hunks are not re-run
+ * through xdiff's compaction, and zero hunks assert equivalence
+ * outright (a tool that cannot rule out a trailing-newline-only
+ * difference from its cache must answer need-content).
  */
 
 #include "git-compat-util.h"
@@ -41,6 +54,7 @@
 #include "xdiff/xdiff.h"
 
 #define CAP_HUNKS (1u << 0)
+#define CAP_OID_HUNKS (1u << 1)
 
 struct diff_subprocess {
 	struct subprocess_entry subprocess;
@@ -52,6 +66,7 @@ static int start_diff_process_fn(struct subprocess_entry *subprocess)
 	static int versions[] = { 1, 0 };
 	static struct subprocess_capability capabilities[] = {
 		{ "hunks", CAP_HUNKS },
+		{ "hunks-by-oid", CAP_OID_HUNKS },
 		{ NULL, 0 }
 	};
 	struct diff_subprocess *entry =
@@ -371,6 +386,9 @@ static long count_lines(const char *buf, long size)
  * xdiff stays diagnostic-free; on a bad response we warn and the caller
  * falls back to the builtin diff.  Returns 0 if valid, -1 (after
  * warning) otherwise.
+ *
+ * An oid-only answer arrives without content: pass negative line
+ * counts, and the two content-dependent checks do not apply.
  */
 static int validate_external_hunks(const struct xdl_hunk *hunks, size_t nr,
 				   long old_lines, long new_lines,
@@ -382,8 +400,9 @@ static int validate_external_hunks(const struct xdl_hunk *hunks, size_t nr,
 	for (i = 0; i < nr; i++) {
 		const struct xdl_hunk *h = &hunks[i];
 
-		if (h->old_count > old_lines - h->old_start + 1 ||
-		    h->new_count > new_lines - h->new_start + 1) {
+		if (old_lines >= 0 &&
+		    (h->old_count > old_lines - h->old_start + 1 ||
+		     h->new_count > new_lines - h->new_start + 1)) {
 			warning(_("diff process '%s' returned a hunk past the "
 				  "end of '%s'; using the builtin diff"),
 				process, path);
@@ -411,7 +430,8 @@ static int validate_external_hunks(const struct xdl_hunk *hunks, size_t nr,
 			return -1;
 		}
 	}
-	if (old_lines - c.prev_old_end != new_lines - c.prev_new_end) {
+	if (old_lines >= 0 &&
+	    old_lines - c.prev_old_end != new_lines - c.prev_new_end) {
 		warning(_("diff process '%s' returned hunks that leave '%s' "
 			  "misaligned; using the builtin diff"),
 			process, path);
@@ -508,4 +528,138 @@ enum diff_process_result diff_process_fill_hunks(
 		return DIFF_PROCESS_ERROR;
 	}
 	return DIFF_PROCESS_SKIP;
+}
+
+/*
+ * Without content there is no size-derived bound on a response, so cap
+ * accumulation at a constant instead.  A pair with more changed lines
+ * than this is served by the content request, whose cap follows the
+ * file sizes.
+ */
+#define OID_HUNKS_MAX (1 << 20)
+
+enum diff_process_result diff_process_query_hunks(
+		struct diff_options *diffopt,
+		const char *path,
+		const struct object_id *old_oid,
+		const struct object_id *new_oid,
+		const xpparam_t *xpp,
+		xdl_emit_hunk_consume_func_t hunk_cb,
+		void *cb_data)
+{
+	struct userdiff_driver *drv;
+	struct diff_subprocess *backend;
+	struct child_process *process;
+	int fd_in, fd_out;
+	struct strbuf status = STRBUF_INIT;
+	struct xdl_hunk *hunks = NULL;
+	struct diff_process_hunk presented;
+	struct xdl_hunk hunk;
+	size_t nr_hunks = 0, alloc_hunks = 0, i;
+	int len;
+	char *line;
+	enum diff_process_result res;
+
+	if (!old_oid || !new_oid)
+		return DIFF_PROCESS_SKIP;
+	drv = diff_process_driver(diffopt, path, xpp);
+	if (!drv)
+		return DIFF_PROCESS_SKIP;
+
+	backend = get_or_launch_process(drv);
+	if (!backend)
+		return DIFF_PROCESS_ERROR;
+	if ((backend->supported_capabilities & (CAP_HUNKS | CAP_OID_HUNKS))
+	    != (CAP_HUNKS | CAP_OID_HUNKS))
+		return DIFF_PROCESS_SKIP;
+
+	process = subprocess_get_child_process(&backend->subprocess);
+	fd_in = process->in;
+	fd_out = process->out;
+
+	sigchain_push(SIGPIPE, SIG_IGN);
+
+	if (packet_write_fmt_gently(fd_in, "command=hunks-by-oid\n") ||
+	    packet_write_fmt_gently(fd_in, "pathname=%s\n", path) ||
+	    packet_write_fmt_gently(fd_in, "old-oid=%s\n", oid_to_hex(old_oid)) ||
+	    packet_write_fmt_gently(fd_in, "new-oid=%s\n", oid_to_hex(new_oid)) ||
+	    packet_flush_gently(fd_in))
+		goto comm_error;
+
+	while ((len = packet_read_line_gently(fd_out, NULL, &line)) >= 0 &&
+	       line) {
+		if (parse_hunk_line(line, &presented) < 0)
+			goto comm_error;
+		if (diff_process_hunk_to_xdl(&presented, &hunk) < 0)
+			goto comm_error;
+		if (nr_hunks >= OID_HUNKS_MAX) {
+			warning(_("diff process '%s' sent too many hunks"
+				  " for '%s'"), drv->process, path);
+			goto comm_error;
+		}
+		ALLOC_GROW(hunks, nr_hunks + 1, alloc_hunks);
+		hunks[nr_hunks++] = hunk;
+	}
+	if (len < 0)
+		goto comm_error;
+
+	if (subprocess_read_status(fd_out, &status))
+		goto comm_error;
+
+	if (!strcmp(status.buf, "success")) {
+		if (validate_external_hunks(hunks, nr_hunks, -1, -1,
+					    drv->process, path) < 0) {
+			res = DIFF_PROCESS_SKIP;
+			goto out;
+		}
+		if (!nr_hunks) {
+			res = DIFF_PROCESS_EQUIVALENT;
+			goto out;
+		}
+		/*
+		 * Replay in the coordinates a hunk consumer receives from
+		 * xdiff's emission: 0-based starts.  The answer is used as
+		 * the tool sent it; with no content in hand it cannot be
+		 * re-run through xdiff's compaction.
+		 */
+		for (i = 0; i < nr_hunks; i++)
+			hunk_cb(hunks[i].old_start - 1, hunks[i].old_count,
+				hunks[i].new_start - 1, hunks[i].new_count,
+				cb_data);
+		res = DIFF_PROCESS_OK;
+		goto out;
+	}
+	if (!strcmp(status.buf, "need-content")) {
+		/* The tool wants the content request; the caller sends it. */
+		res = DIFF_PROCESS_SKIP;
+		goto out;
+	}
+	if (!strcmp(status.buf, "abort")) {
+		/*
+		 * The tool withdrew from oid-only answers: stop asking, but
+		 * keep consulting it with content.
+		 */
+		backend->supported_capabilities &= ~CAP_OID_HUNKS;
+		res = DIFF_PROCESS_SKIP;
+		goto out;
+	}
+	warning(_("diff process '%s' failed for '%s',"
+		  " falling back to builtin diff"),
+		drv->process, path);
+	res = DIFF_PROCESS_ERROR;
+out:
+	free(hunks);
+	strbuf_release(&status);
+	sigchain_pop(SIGPIPE);
+	return res;
+
+comm_error:
+	drv->diff_process_failed = 1;
+	drv->diff_subprocess = NULL;
+	subprocess_stop_command(&backend->subprocess);
+	free(backend);
+	free(hunks);
+	strbuf_release(&status);
+	sigchain_pop(SIGPIPE);
+	return DIFF_PROCESS_ERROR;
 }

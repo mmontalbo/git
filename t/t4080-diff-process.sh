@@ -923,6 +923,49 @@ test_expect_success 'a warmed hunk store does not override tool hunks in --stat'
 	test_cmp expect actual
 '
 
+test_expect_success 'an oid-capable tool answers blame without content' '
+	test_when_finished "rm -f backend.log" &&
+	ORIG=$(git rev-parse --short HEAD~1) &&
+	git -c diff.cdiff.process="$BACKEND --mode=oid-fixed --log=backend.log" \
+		blame blame-hunk.c >actual &&
+	sed -n "9p" actual >line9 &&
+	sed -n "10p" actual >line10 &&
+	test_grep "$ORIG" line9 &&
+	test_grep "$ORIG" line10 &&
+	test_grep "command=hunks-by-oid pathname=blame-hunk.c" backend.log &&
+	test_grep ! "command=hunks pathname=" backend.log
+'
+
+test_expect_success 'an oid-capable tool answers --stat without content' '
+	test_when_finished "rm -f backend.log" &&
+	git -c diff.cdiff.process="$BACKEND --mode=oid-fixed --log=backend.log" \
+		log -1 --format= --numstat -- blame-hunk.c >actual &&
+	printf "2\t2\tblame-hunk.c\n" >expect &&
+	test_cmp expect actual &&
+	test_grep "command=hunks-by-oid pathname=blame-hunk.c" backend.log &&
+	test_grep ! "command=hunks pathname=" backend.log
+'
+
+test_expect_success 'need-content falls back to a content request' '
+	test_when_finished "rm -f backend.log" &&
+	git -c diff.cdiff.process="$BACKEND --mode=oid-need-content --log=backend.log" \
+		log -1 --format= --numstat -- blame-hunk.c >actual &&
+	printf "2\t2\tblame-hunk.c\n" >expect &&
+	test_cmp expect actual &&
+	test_grep "command=hunks-by-oid pathname=blame-hunk.c" backend.log &&
+	test_grep "command=hunks pathname=blame-hunk.c" backend.log
+'
+
+test_expect_success 'a worktree side sends content to an oid-capable tool' '
+	test_when_finished "rm -f backend.log" &&
+	git -c diff.cdiff.process="$BACKEND --mode=oid-fixed --log=backend.log" \
+		diff --numstat boundary.c >actual &&
+	printf "2\t2\tboundary.c\n" >expect &&
+	test_cmp expect actual &&
+	test_grep "command=hunks pathname=boundary.c" backend.log &&
+	test_grep ! "command=hunks-by-oid" backend.log
+'
+
 test_expect_success 'blame skips commits with no hunks from diff process' '
 	cat >blame.c <<-\EOF &&
 	int main(void) {

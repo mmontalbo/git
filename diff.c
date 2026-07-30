@@ -4395,11 +4395,24 @@ static int diffstat_from_hunks(struct diff_options *o,
 	 * A process-capable driver makes the tool the producer for the
 	 * path: the stat must reflect the tool's hunks, so neither a
 	 * store read (it holds xdiff's answer) nor this function's own
-	 * xdiff-and-record may stand in.  Step aside and let the caller
-	 * consult the tool.
+	 * xdiff-and-record may stand in.  A tool that negotiated
+	 * hunks-by-oid can answer right here, before any blob is read;
+	 * otherwise step aside and let the caller consult it with
+	 * content.
 	 */
-	if (diff_process_driver(o, name_a, &probe))
-		return 0;
+	if (diff_process_driver(o, name_a, &probe)) {
+		switch (diff_process_query_hunks(o, name_a,
+						 one->oid_valid ? &one->oid : NULL,
+						 two->oid_valid ? &two->oid : NULL,
+						 &probe, diffstat_sum_hunk_cb,
+						 data)) {
+		case DIFF_PROCESS_OK:
+		case DIFF_PROCESS_EQUIVALENT:
+			return 1;
+		default:
+			return 0;
+		}
+	}
 
 	/*
 	 * xpparam_t is the diff algorithm's input. Its flags are the key's

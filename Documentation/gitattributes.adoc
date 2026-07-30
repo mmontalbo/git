@@ -898,6 +898,30 @@ blob it names: it is omitted when the content is textconv-transformed,
 and for a working-tree side that has no stored object.  A tool that
 does not recognize these keys ignores them.
 
+A tool that also announces the `hunks-by-oid` capability may be asked
+to answer from the object names alone.  Such a request uses
+`command=hunks-by-oid`, always carries both keys, and is not followed
+by any content section:
+
+-----------------------
+packet:          git> command=hunks-by-oid
+packet:          git> pathname=path/file.c
+packet:          git> old-oid=<hex>
+packet:          git> new-oid=<hex>
+packet:          git> 0000
+-----------------------
+
+The tool answers in the same hunk-line form as below, or with
+`status=need-content`, upon which Git repeats the request as a full
+`command=hunks` exchange with the content included.  Git holds no
+content for an oid-only exchange, so the answer is used exactly as
+sent: the hunks feed the consuming feature directly, and a
+`status=success` response with zero hunks asserts that the blobs are
+equivalent, including their trailing newlines.  A tool that cannot
+promise that from its cache answers `need-content`.  Blame and the
+summary formats send such requests for stored blob pairs; patch
+output always sends content.
+
 The tool is expected to respond with zero or more hunk lines,
 a flush packet, and a status packet terminated with a flush packet.
 Each hunk line has the form:

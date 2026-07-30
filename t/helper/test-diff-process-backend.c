@@ -41,6 +41,12 @@
  *   error        (status=error instead of status=success)
  *   abort        (status=abort instead of status=success)
  *   crash        exit(1) before sending any response
+ *   oid-fixed    (advertises hunks-by-oid; answers any request,
+ *                oid-only or content, with the fixed-hunk response)
+ *   oid-need-content
+ *                (advertises hunks-by-oid; answers an oid-only request
+ *                with status=need-content, a content request with the
+ *                fixed-hunk response)
  *
  * All success modes (not error/abort/crash) end with:
  *
@@ -77,6 +83,8 @@ enum mode {
 	MODE_ERROR,
 	MODE_ABORT,
 	MODE_CRASH,
+	MODE_OID_FIXED,
+	MODE_OID_NEED_CONTENT,
 };
 
 static enum mode parse_mode(const char *s)
@@ -113,6 +121,10 @@ static enum mode parse_mode(const char *s)
 		return MODE_ABORT;
 	if (!strcmp(s, "crash"))
 		return MODE_CRASH;
+	if (!strcmp(s, "oid-fixed"))
+		return MODE_OID_FIXED;
+	if (!strcmp(s, "oid-need-content"))
+		return MODE_OID_NEED_CONTENT;
 	die("unknown --mode=%s", s);
 }
 
@@ -189,6 +201,9 @@ static void respond(enum mode mode,
 	case MODE_CRASH:
 		exit(1);
 	case MODE_FIXED_HUNK:
+	case MODE_OID_FIXED:
+	case MODE_OID_NEED_CONTENT:
+		/* the oid modes reach here only for a content request */
 		packet_write_fmt(1, "hunk 5 2 5 2\n");
 		break;
 	case MODE_BAD_HUNK:
@@ -280,13 +295,18 @@ static void command_loop(enum mode mode)
 		char *old_oid = NULL, *new_oid = NULL;
 		struct strbuf obuf = STRBUF_INIT;
 		struct strbuf nbuf = STRBUF_INIT;
+		int by_oid;
 
 		if (!read_request_header(&command, &pathname,
 					 &old_oid, &new_oid))
 			break; /* EOF: Git closed its end */
 
-		read_packetized_to_strbuf(0, &obuf, 0);
-		read_packetized_to_strbuf(0, &nbuf, 0);
+		/* An oid-only request has no content sections to read. */
+		by_oid = command && !strcmp(command, "hunks-by-oid");
+		if (!by_oid) {
+			read_packetized_to_strbuf(0, &obuf, 0);
+			read_packetized_to_strbuf(0, &nbuf, 0);
+		}
 
 		if (logfile) {
 			fprintf(logfile,
@@ -303,7 +323,21 @@ static void command_loop(enum mode mode)
 			fflush(logfile);
 		}
 
-		respond(mode, &obuf, &nbuf);
+		if (by_oid) {
+			if (mode == MODE_OID_FIXED) {
+				packet_write_fmt(1, "hunk 5 2 5 2\n");
+				send_status("status=success");
+			} else {
+				/*
+				 * oid-need-content, and the safe default for
+				 * a mode that never advertised the
+				 * capability: ask for the content request.
+				 */
+				send_status("status=need-content");
+			}
+		} else {
+			respond(mode, &obuf, &nbuf);
+		}
 
 		free(command);
 		free(pathname);
@@ -338,6 +372,8 @@ static void handshake(enum mode mode)
 	/* Respond with our capabilities (or none for no-cap mode) */
 	if (mode != MODE_NO_CAP)
 		packet_write_fmt(1, "capability=hunks\n");
+	if (mode == MODE_OID_FIXED || mode == MODE_OID_NEED_CONTENT)
+		packet_write_fmt(1, "capability=hunks-by-oid\n");
 	packet_flush(1);
 }
 

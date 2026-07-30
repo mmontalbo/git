@@ -78,6 +78,19 @@ int diff_provider_emit_hunks(struct repository *r,
 				      hunk_cb, cb_data))
 		return 1;
 
+	/*
+	 * A tool that negotiated hunks-by-oid answers the identity phase
+	 * itself; only a fall-through loads content.
+	 */
+	switch (diff_process_query_hunks(diffopt, path, old_oid, new_oid,
+					 xpp, hunk_cb, cb_data)) {
+	case DIFF_PROCESS_OK:
+	case DIFF_PROCESS_EQUIVALENT:
+		return 0;
+	default:
+		break;
+	}
+
 	if (fill(fill_data, &old_file, &new_file) < 0)
 		return -1;
 
