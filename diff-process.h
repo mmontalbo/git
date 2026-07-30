@@ -19,10 +19,43 @@ struct userdiff_driver *diff_process_driver(struct diff_options *diffopt,
 
 enum diff_process_result {
 	DIFF_PROCESS_ERROR = -1, /* failed; caller falls back to builtin */
-	DIFF_PROCESS_OK = 0,     /* the process supplied hunks */
+	DIFF_PROCESS_OK = 0,     /* hunks populated in xpp */
 	DIFF_PROCESS_SKIP,       /* process did not apply: use builtin */
 	DIFF_PROCESS_EQUIVALENT, /* process says files are equivalent */
 };
+
+/*
+ * Consult the diff process configured for 'path' and populate
+ * xpp->external_hunks with the returned hunks.
+ *
+ * Handles driver lookup, flag checks (--no-ext-diff,
+ * --diff-algorithm), subprocess management, and error reporting.
+ *
+ * Returns DIFF_PROCESS_OK when hunks are populated in xpp.
+ * The caller owns xpp->external_hunks and must free() it.
+ *
+ * Returns DIFF_PROCESS_EQUIVALENT when the process returns no hunks and
+ * the blobs are not a trailing-newline-only change (files are
+ * considered identical); caller should skip diff/blame.
+ * Returns DIFF_PROCESS_SKIP when no process applies; caller
+ * should use the builtin diff algorithm.
+ * Returns DIFF_PROCESS_ERROR on process failure (already warned);
+ * caller should fall back to the builtin diff algorithm.
+ *
+ * oid_a/oid_b, when non-NULL, are sent to the process as old-oid/new-oid
+ * so it can key a cache on the blob pair.  Pass NULL for a side whose
+ * content is not the raw blob (e.g. textconv'd) or whose object name is
+ * unknown, so any oid that is sent always names the bytes the process
+ * receives.
+ */
+enum diff_process_result diff_process_fill_hunks(
+		struct diff_options *diffopt,
+		const char *path,
+		const mmfile_t *file_a,
+		const mmfile_t *file_b,
+		const struct object_id *oid_a,
+		const struct object_id *oid_b,
+		xpparam_t *xpp);
 
 /*
  * Ask the diff process configured for 'path' to answer from the blob
@@ -32,8 +65,8 @@ enum diff_process_result {
  * overlap, and lockstep alignment first; because Git holds no content,
  * the answer is used as the process sent it, without xdiff's compaction.
  * DIFF_PROCESS_EQUIVALENT means the process asserts the pair equal.
- * DIFF_PROCESS_SKIP covers everything that should fall through to the
- * builtin computation: no driver or capability, a missing object id, a
+ * DIFF_PROCESS_SKIP covers everything that should fall through to a
+ * content consult: no driver or capability, a missing object id, a
  * status=need-content answer, or an invalid response.
  */
 enum diff_process_result diff_process_query_hunks(

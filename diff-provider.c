@@ -57,9 +57,16 @@ int diff_provider_emit_hunks(struct repository *r,
 			     xdl_emit_hunk_consume_func_t hunk_cb,
 			     void *cb_data)
 {
+	xpparam_t xpp_local = *xpp;
 	xdemitconf_t xecfg = { .hunk_func = hunk_cb };
 	xdemitcb_t ecb = { .priv = cb_data };
 	mmfile_t old_file, new_file;
+	int process_failed = 0;
+	int ret;
+
+	/* Only a process consulted here may supply external hunks. */
+	xpp_local.external_hunks = NULL;
+	xpp_local.external_hunks_nr = 0;
 
 	/*
 	 * A process-capable driver makes the process the producer for the
@@ -76,21 +83,45 @@ int diff_provider_emit_hunks(struct repository *r,
 		return 1;
 
 	/*
-	 * A process that negotiated hunks-by-oid answers from the object
-	 * ids alone; only a fall-through loads content and computes.
+	 * A process that negotiated hunks-by-oid answers the identity phase
+	 * itself; only a fall-through loads content.
 	 */
 	switch (diff_process_query_hunks(diffopt, path, old_oid, new_oid,
 					 xpp, hunk_cb, cb_data)) {
 	case DIFF_PROCESS_OK:
 	case DIFF_PROCESS_EQUIVALENT:
 		return 0;
+	case DIFF_PROCESS_ERROR:
+		/*
+		 * The process failed for this pair (already warned about):
+		 * compute below rather than asking it again with content.
+		 */
+		process_failed = 1;
+		break;
 	default:
 		break;
 	}
 
 	if (fill(fill_data, &old_file, &new_file) < 0)
 		return -1;
-	if (xdi_diff(&old_file, &new_file, xpp, &xecfg, &ecb) < 0)
-		return -1;
-	return 0;
+
+	if (!process_failed)
+		switch (diff_process_fill_hunks(diffopt, path,
+						&old_file, &new_file,
+						old_oid, new_oid, &xpp_local)) {
+		case DIFF_PROCESS_EQUIVALENT:
+			/*
+			 * The process reports the pair equal: there is no hunk
+			 * to emit.
+			 */
+			return 0;
+		default:
+			/* OK: process hunks now in xpp_local; else: builtin */
+			break;
+		}
+
+	ret = xdi_diff(&old_file, &new_file, &xpp_local, &xecfg, &ecb) < 0 ?
+		-1 : 0;
+	free(xpp_local.external_hunks);
+	return ret;
 }

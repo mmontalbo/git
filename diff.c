@@ -17,7 +17,6 @@
 #include "quote.h"
 #include "diff.h"
 #include "diff-hunks.h"
-#include "diff-process.h"
 #include "diff-provider.h"
 #include "diffcore.h"
 #include "delta.h"
@@ -28,6 +27,7 @@
 #include "utf8.h"
 #include "odb.h"
 #include "userdiff.h"
+#include "diff-process.h"
 #include "submodule.h"
 #include "hashmap.h"
 #include "mem-pool.h"
@@ -4237,6 +4237,29 @@ static void builtin_diff(const char *name_a,
 		xpp.ignore_regex_nr = o->ignore_regex_nr;
 		xpp.anchors = o->anchors;
 		xpp.anchors_nr = o->anchors_nr;
+
+		/*
+		 * Send the blob oids only for a side whose content is the
+		 * raw blob: textconv rewrites the bytes, a working-tree
+		 * side has no stored oid, and a gitlink's id names a
+		 * commit rather than the pseudo-text being diffed, so
+		 * pass NULL there rather than an oid that would not name
+		 * what the process receives.
+		 */
+		if (diff_process_fill_hunks(o, name_a, &mf1, &mf2,
+					    (textconv_one || !one->oid_valid ||
+					     S_ISGITLINK(one->mode)) ? NULL : &one->oid,
+					    (textconv_two || !two->oid_valid ||
+					     S_ISGITLINK(two->mode)) ? NULL : &two->oid,
+					    &xpp)
+		    == DIFF_PROCESS_EQUIVALENT) {
+			if (textconv_one)
+				free(mf1.ptr);
+			if (textconv_two)
+				free(mf2.ptr);
+			goto free_ab_and_return;
+		}
+
 		xecfg.ctxlen = o->context;
 		xecfg.interhunkctxlen = o->interhunkcontext;
 		xecfg.flags = XDL_EMIT_FUNCNAMES;
@@ -4281,6 +4304,7 @@ static void builtin_diff(const char *name_a,
 		} else if (xdi_diff_outf(&mf1, &mf2, NULL, fn_out_consume,
 					 &ecbdata, &xpp, &xecfg))
 			die("unable to generate diff for %s", one->path);
+		free(xpp.external_hunks);
 		if (o->word_diff)
 			free_diff_words_data(&ecbdata);
 		if (textconv_one)
@@ -4342,7 +4366,8 @@ static int diffstat_sum_hunk_cb(long start_a UNUSED, long count_a,
  * a hit, sum the provided counts; on a warming run, compute and record them.
  * Returns 1 when it produced the counts, 0 when neither a provider nor the
  * writer is usable for this pair and the caller must compute the diffstat
- * itself.
+ * itself, and -1 when the process failed for this pair: the caller must then
+ * compute the diffstat without consulting the process again.
  *
  * The store is keyed by (old blob, new blob, xdl_opts), so it may only serve
  * or receive pairs whose result is determined by that key alone. Inputs that
@@ -4377,7 +4402,8 @@ static int diffstat_from_hunks(struct diff_options *o,
 	 * store read (it holds xdiff's answer) nor this function's own
 	 * xdiff-and-record may stand in.  A process that negotiated
 	 * hunks-by-oid can answer right here, before any blob is read;
-	 * otherwise step aside, and the caller computes the stat.
+	 * otherwise step aside and let the caller consult it with
+	 * content.
 	 */
 	if (diff_process_driver(o, name_a, &probe)) {
 		switch (diff_process_query_hunks(o, name_a,
@@ -4392,6 +4418,9 @@ static int diffstat_from_hunks(struct diff_options *o,
 		case DIFF_PROCESS_OK:
 		case DIFF_PROCESS_EQUIVALENT:
 			return 1;
+		case DIFF_PROCESS_ERROR:
+			/* Warned about; the process is not asked again. */
+			return -1;
 		default:
 			return 0;
 		}
@@ -4560,8 +4589,10 @@ static void builtin_diffstat(const char *name_a, const char *name_b,
 		 * keys, so it neither reads nor records. Otherwise diff
 		 * normally.
 		 */
-		if (p->line_ranges ||
-		    !diffstat_from_hunks(o, name_a, one, two, data)) {
+		int from_hunks = p->line_ranges ? 0 :
+			diffstat_from_hunks(o, name_a, one, two, data);
+
+		if (from_hunks <= 0) {
 			/* Crazy xdl interfaces.. */
 			xpparam_t xpp;
 			xdemitconf_t xecfg;
@@ -4580,24 +4611,58 @@ static void builtin_diffstat(const char *name_a, const char *name_b,
 			xecfg.ctxlen = o->context;
 			xecfg.interhunkctxlen = o->interhunkcontext;
 			xecfg.flags = XDL_EMIT_NO_HUNK_HDR;
+			/*
+			 * Consult the diff process so --stat reflects the
+			 * process's view of which lines changed rather than the
+			 * builtin line diff.  --stat never applies textconv,
+			 * so the process is fed the same raw mmfiles the stat
+			 * itself diffs (unlike builtin_diff, which consults
+			 * the process on textconv'd content).
+			 * When the process reports the files as equivalent we
+			 * skip xdiff entirely, leaving added and deleted at
+			 * zero so the file is pruned below, just as
+			 * builtin_diff() emits no patch for an equivalent
+			 * file.
+			 *
+			 * Under -L, feed the process's hunks through the same
+			 * line-range filter the builtin stat uses, so a
+			 * process-provided diff is scoped to the tracked
+			 * range.
+			 *
+			 * An oid-phase failure was already warned about:
+			 * compute without asking the same process again.
+			 */
+			if (from_hunks < 0 ||
+			    diff_process_fill_hunks(o, name_a, &mf1, &mf2,
+						    (one->oid_valid &&
+						     !S_ISGITLINK(one->mode)) ?
+						    &one->oid : NULL,
+						    (two->oid_valid &&
+						     !S_ISGITLINK(two->mode)) ?
+						    &two->oid : NULL,
+						    &xpp)
+			    != DIFF_PROCESS_EQUIVALENT) {
+				if (p->line_ranges) {
+					struct line_range_filter lr_filter;
 
-			if (p->line_ranges) {
-				struct line_range_filter lr_filter;
+					line_range_filter_init(&lr_filter,
+							       p->line_ranges,
+							       diffstat_consume,
+							       diffstat);
 
-				line_range_filter_init(&lr_filter,
-						       p->line_ranges,
-						       diffstat_consume,
-						       diffstat);
-
-				if (line_range_filter_diff(&lr_filter, &mf1,
-							   &mf2, &xpp, &xecfg))
+					if (line_range_filter_diff(&lr_filter,
+								   &mf1, &mf2,
+								   &xpp, &xecfg))
+						die("unable to generate diffstat for %s",
+						    one->path);
+				} else if (xdi_diff_outf(&mf1, &mf2, NULL,
+							 diffstat_consume,
+							 diffstat,
+							 &xpp, &xecfg))
 					die("unable to generate diffstat for %s",
 					    one->path);
-			} else if (xdi_diff_outf(&mf1, &mf2, NULL,
-						 diffstat_consume, diffstat,
-						 &xpp, &xecfg))
-				die("unable to generate diffstat for %s",
-				    one->path);
+			}
+			free(xpp.external_hunks);
 		}
 
 		if (DIFF_FILE_VALID(one) && DIFF_FILE_VALID(two)) {

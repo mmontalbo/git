@@ -25,6 +25,14 @@
  * resolution.  Whichever provider answers, its coordinates pass
  * the shared coordinate check (diff-provider-internal.h) before
  * any consumer sees them.
+ *
+ * Providers serve two consumer shapes.  A consumer that needs only
+ * the coordinates is served outright: its callback receives the
+ * provider's hunks and no diff runs.  A consumer that runs its own
+ * emission over the file text (patch output) can have only its hunk
+ * selection replaced: the process's answer rides to xdiff in xpparam_t's
+ * external hunks (diff_process_fill_hunks()), and xdiff emits context
+ * and text from the real content.
  */
 
 struct diff_options;
@@ -74,16 +82,19 @@ typedef int (*hunk_pair_fill_fn)(void *data, mmfile_t *old_file,
  * driver has a diff process makes the process the producer: the
  * store's entries hold xdiff's answer, which the process may
  * deliberately contradict, so the store is not consulted, and the
- * process is asked by the pair's object ids.  A process that reports
- * the pair equivalent emits no hunks at all.  On any other path the
- * store is consulted by the object ids and xpp's flags, unless -I
- * patterns or anchors are in effect (they shape the diff outside the
- * key), in which case the pair is computed.  Only a request no
- * provider answers loads content, through fill, and computes.
+ * process is asked by the pair's object ids first.  A request the
+ * identity phase does not settle loads content, through fill, and
+ * asks the process with it; its hunks then feed xdiff's emission,
+ * and a process that reports the pair equivalent emits no hunks at
+ * all.  On a path with no process the store is consulted by the
+ * object ids and xpp's flags, unless -I patterns or anchors are in
+ * effect (they shape the diff outside the key); only a miss loads
+ * content and computes.
  *
  * Pass NULL object ids when the diffed bytes are not those blobs (or
- * there are no blobs): no provider is asked, and no id is sent to a
- * process.  Pass a NULL diffopt or path to consult no process.
+ * there are no blobs): the identity phase then misses, and no id is
+ * sent to a process.  Pass a NULL diffopt or path to consult no
+ * process.
  * Returns 1 when the store supplied the ranges, 0 when they were
  * emitted any other way, and -1 on failure to load or diff.
  */
