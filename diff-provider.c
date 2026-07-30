@@ -1,5 +1,24 @@
 #include "git-compat-util.h"
 #include "diff-provider.h"
+#include "diff-hunks.h"
+
+int diff_provider_active(struct repository *r)
+{
+	return !!repo_diff_hunks_store(r);
+}
+
+int diff_provider_query_hunks(struct repository *r,
+			      const struct object_id *old_oid,
+			      const struct object_id *new_oid,
+			      int xdl_opts,
+			      xdl_emit_hunk_consume_func_t hunk_cb,
+			      void *cb_data)
+{
+	if (!old_oid || !new_oid)
+		return 0;
+	return diff_hunks_replay(repo_diff_hunks_store(r), old_oid, new_oid,
+				 xdl_opts, hunk_cb, cb_data);
+}
 
 enum diff_provider_hunks_error
 diff_provider_hunks_check(struct diff_provider_hunks_check *c,

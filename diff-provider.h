@@ -7,7 +7,38 @@
  * The seam between naming a pair of file versions to diff and
  * computing their changed line ranges.  Consumers that operate on
  * hunk coordinates route their diff through here.
+ *
+ * A hunk provider answers a consumer's request from the pair's blob
+ * object ids and the settings that determine the diff, before any
+ * content is loaded; a request no provider answers falls through to
+ * the consumer's own computation.  The diff-hunks store (diff-hunks.h)
+ * is the provider consulted today.
  */
+
+struct object_id;
+struct repository;
+
+/*
+ * Nonzero when a hunk provider is available for the repository, for
+ * consumers that decide up front whether consulting can pay off.
+ */
+int diff_provider_active(struct repository *r);
+
+/*
+ * Consult hunk providers for the changed ranges of the blob pair
+ * (old_oid, new_oid) diffed under xdl_opts, without loading content.
+ * On a hit the ranges are emitted through hunk_cb and 1 is returned;
+ * nothing is emitted before the provider's answer is validated, so a
+ * consumer may accumulate directly into its result.  0 is a miss: no
+ * provider answered, and the consumer computes its diff as it would
+ * without providers.
+ */
+int diff_provider_query_hunks(struct repository *r,
+			      const struct object_id *old_oid,
+			      const struct object_id *new_oid,
+			      int xdl_opts,
+			      xdl_emit_hunk_consume_func_t hunk_cb,
+			      void *cb_data);
 
 /*
  * Incremental well-formedness check for a provider-supplied hunk
