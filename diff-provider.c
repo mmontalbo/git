@@ -1,6 +1,7 @@
 #include "git-compat-util.h"
 #include "diff-provider-internal.h"
 #include "diff-hunks.h"
+#include "diff-process.h"
 
 int diff_provider_active(struct repository *r)
 {
@@ -49,6 +50,8 @@ diff_provider_check_hunk(struct diff_provider_hunks_check *c,
 int diff_provider_emit_hunks(struct repository *r,
 			     const struct object_id *old_oid,
 			     const struct object_id *new_oid,
+			     const char *path,
+			     struct diff_options *diffopt,
 			     const xpparam_t *xpp,
 			     hunk_pair_fill_fn fill, void *fill_data,
 			     xdl_emit_hunk_consume_func_t hunk_cb,
@@ -59,14 +62,31 @@ int diff_provider_emit_hunks(struct repository *r,
 	mmfile_t old_file, new_file;
 
 	/*
-	 * -I patterns and anchors shape the diff but are outside the
-	 * settings that key a provider's answer, so such a request is
-	 * computed, never served.
+	 * A process-capable driver makes the process the producer for the
+	 * path, so the store (which holds xdiff's answer, one a semantic
+	 * process may deliberately contradict) is not consulted.  -I
+	 * patterns and anchors shape the diff but are outside the
+	 * settings that key the store, so such a request is computed,
+	 * never served.
 	 */
-	if (!xpp->ignore_regex_nr && !xpp->anchors_nr &&
+	if (!diff_process_driver(diffopt, path, xpp) &&
+	    !xpp->ignore_regex_nr && !xpp->anchors_nr &&
 	    diff_provider_query_hunks(r, old_oid, new_oid, xpp->flags,
 				      hunk_cb, cb_data))
 		return 1;
+
+	/*
+	 * A process that negotiated hunks-by-oid answers from the object
+	 * ids alone; only a fall-through loads content and computes.
+	 */
+	switch (diff_process_query_hunks(diffopt, path, old_oid, new_oid,
+					 xpp, hunk_cb, cb_data)) {
+	case DIFF_PROCESS_OK:
+	case DIFF_PROCESS_EQUIVALENT:
+		return 0;
+	default:
+		break;
+	}
 
 	if (fill(fill_data, &old_file, &new_file) < 0)
 		return -1;

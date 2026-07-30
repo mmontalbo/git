@@ -17,6 +17,7 @@
 #include "quote.h"
 #include "diff.h"
 #include "diff-hunks.h"
+#include "diff-process.h"
 #include "diff-provider.h"
 #include "diffcore.h"
 #include "delta.h"
@@ -4356,6 +4357,7 @@ static int diffstat_sum_hunk_cb(long start_a UNUSED, long count_a,
  * function body ties that list to xpparam_t's size at compile time.
  */
 static int diffstat_from_hunks(struct diff_options *o,
+			       const char *name_a,
 			       struct diff_filespec *one,
 			       struct diff_filespec *two,
 			       struct diffstat_file *data)
@@ -4365,6 +4367,35 @@ static int diffstat_from_hunks(struct diff_options *o,
 	int stable;
 	mmfile_t mf1, mf2;
 	xpparam_t xpp;
+	xpparam_t probe = { .flags = o->xdl_opts,
+			    .ignore_regex_nr = o->ignore_regex_nr,
+			    .anchors_nr = o->anchors_nr };
+
+	/*
+	 * A process-capable driver makes the process the producer for the
+	 * path: the stat must reflect the process's hunks, so neither a
+	 * store read (it holds xdiff's answer) nor this function's own
+	 * xdiff-and-record may stand in.  A process that negotiated
+	 * hunks-by-oid can answer right here, before any blob is read;
+	 * otherwise step aside, and the caller computes the stat.
+	 */
+	if (diff_process_driver(o, name_a, &probe)) {
+		switch (diff_process_query_hunks(o, name_a,
+						 (one->oid_valid &&
+						  !S_ISGITLINK(one->mode)) ?
+						 &one->oid : NULL,
+						 (two->oid_valid &&
+						  !S_ISGITLINK(two->mode)) ?
+						 &two->oid : NULL,
+						 &probe, diffstat_sum_hunk_cb,
+						 data)) {
+		case DIFF_PROCESS_OK:
+		case DIFF_PROCESS_EQUIVALENT:
+			return 1;
+		default:
+			return 0;
+		}
+	}
 
 	/*
 	 * xpparam_t is the diff algorithm's input. Its flags are the key's
@@ -4374,7 +4405,7 @@ static int diffstat_from_hunks(struct diff_options *o,
 	 * Adding an xpparam_t field fires this assert (its size no longer
 	 * matches the reference struct). To clear it: (1) add the field to
 	 * the reference struct below; then (2) decide how it affects the
-	 * key -- make it part of the key, or exclude diffs that use it in
+	 * key: make it part of the key, or exclude diffs that use it in
 	 * the guard below. The assert only tracks size: a same-size reorder
 	 * or a changed field meaning slips past, so re-read the fields when
 	 * it fires.
@@ -4518,12 +4549,14 @@ static void builtin_diffstat(const char *name_a, const char *name_b,
 
 	else if (may_differ) {
 		/*
-		 * Serve or record via the diff-hunks store. A "log -L"
+		 * Serve from a hunk provider (the process, then the store),
+		 * or record into the store on a warming run. A "log -L"
 		 * range-scoped stat is not the whole-pair diff the store
 		 * keys, so it neither reads nor records. Otherwise diff
 		 * normally.
 		 */
-		if (p->line_ranges || !diffstat_from_hunks(o, one, two, data)) {
+		if (p->line_ranges ||
+		    !diffstat_from_hunks(o, name_a, one, two, data)) {
 			/* Crazy xdl interfaces.. */
 			xpparam_t xpp;
 			xdemitconf_t xecfg;
@@ -6276,6 +6309,17 @@ static int diff_opt_submodule(const struct option *opt,
 	return 0;
 }
 
+static int diff_opt_ext_diff(const struct option *opt,
+			     const char *arg, int unset)
+{
+	struct diff_options *options = opt->value;
+
+	BUG_ON_OPT_ARG(arg);
+	options->flags.allow_external = !unset;
+	options->flags.allow_diff_process = !unset;
+	return 0;
+}
+
 static int diff_opt_textconv(const struct option *opt,
 			     const char *arg, int unset)
 {
@@ -6606,8 +6650,9 @@ struct option *add_diff_options(const struct option *opts,
 			 N_("exit with 1 if there were differences, 0 otherwise")),
 		OPT_BOOL(0, "quiet", &options->flags.quick,
 			 N_("disable all output of the program")),
-		OPT_BOOL(0, "ext-diff", &options->flags.allow_external,
-			 N_("allow an external diff helper to be executed")),
+		OPT_CALLBACK_F(0, "ext-diff", options, NULL,
+			       N_("allow an external diff helper to be executed"),
+			       PARSE_OPT_NOARG, diff_opt_ext_diff),
 		OPT_CALLBACK_F(0, "textconv", options, NULL,
 			       N_("run external text conversion filters when comparing binary files"),
 			       PARSE_OPT_NOARG, diff_opt_textconv),
