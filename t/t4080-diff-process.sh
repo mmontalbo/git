@@ -590,6 +590,56 @@ test_expect_success 'diff process not used by format-patch' '
 	test_path_is_missing backend.log
 '
 
+test_expect_success 'diff process not used by format-patch --ext-diff' '
+	test_when_finished "rm -f backend.log" &&
+	git -c diff.cdiff.process="$BACKEND --log=backend.log" \
+		format-patch -1 --stdout --ext-diff -- logtest.c >actual &&
+	test_grep "return 2" actual &&
+	test_path_is_missing backend.log
+'
+
+test_expect_success 'diff process not consulted by plumbing diff commands' '
+	test_when_finished "rm -f backend.log" &&
+	git -c diff.cdiff.process="$BACKEND --log=backend.log" \
+		diff-files -p -- worddiff.c >actual &&
+	test_grep "return 999" actual &&
+	git -c diff.cdiff.process="$BACKEND --log=backend.log" \
+		diff-index -p HEAD -- worddiff.c >actual &&
+	test_grep "return 999" actual &&
+	git -c diff.cdiff.process="$BACKEND --log=backend.log" \
+		diff-tree -p HEAD >actual &&
+	test_path_is_missing backend.log
+'
+
+test_expect_success 'add -p stages from the builtin diff with a process configured' '
+	test_when_finished "rm -f backend.log" &&
+	cat >gate.c <<-\EOF &&
+	int gate(void) { return 1; }
+	EOF
+	git add gate.c &&
+	git commit -m "add gate.c" &&
+	cat >gate.c <<-\EOF &&
+	int gate(void) { return 2; }
+	EOF
+	# A process that reports every pair equivalent would leave add -p
+	# with nothing to stage if the hunk-collecting child consulted
+	# it; the child is plumbing, so it must not.
+	test_write_lines y |
+	git -c diff.cdiff.process="$BACKEND --mode=no-hunks --log=backend.log" \
+		add -p gate.c &&
+	git diff --cached -- gate.c >staged &&
+	test_grep "return 2" staged &&
+	test_path_is_missing backend.log &&
+	git commit -m "gate.c v2"
+'
+
+test_expect_success 'range-diff output is not shaped by the diff process' '
+	test_when_finished "rm -f backend.log" &&
+	git -c diff.cdiff.process="$BACKEND --log=backend.log" \
+		range-diff HEAD~2..HEAD~1 HEAD~1..HEAD >actual &&
+	test_path_is_missing backend.log
+'
+
 test_expect_success 'diff process bypassed under whitespace-ignoring flags' '
 	test_when_finished "rm -f backend.log" &&
 	printf "a\nb\nc\n" >wsbypass.c &&
@@ -997,6 +1047,19 @@ test_expect_success 'a worktree side sends content to an oid-capable process' '
 	test_grep ! "command=hunks-by-oid" backend.log
 '
 
+test_expect_success 'blame withholds identity for the working-tree pair' '
+	test_when_finished "rm -f backend.log && git checkout -- blame-hunk.c" &&
+	echo "uncommitted" >>blame-hunk.c &&
+	wt=$(git hash-object blame-hunk.c) &&
+	# The dirty working-tree side is not a stored blob: the pair has
+	# no identity a process could look up, so it is consulted with
+	# content and without object ids.
+	git -c diff.cdiff.process="$BACKEND --mode=oid-fixed --log=backend.log" \
+		blame blame-hunk.c >actual &&
+	test_grep "command=hunks pathname=blame-hunk.c old-oid=(none) new-oid=(none)" backend.log &&
+	test_grep ! "new-oid=$wt" backend.log
+'
+
 test_expect_success 'blame skips commits with no hunks from diff process' '
 	cat >blame.c <<-\EOF &&
 	int main(void) {
@@ -1071,63 +1134,49 @@ test_expect_success 'blame -w bypasses diff process' '
 	test_path_is_missing backend.log
 '
 
-test_expect_success 'diff process not used by format-patch --ext-diff' '
-	test_when_finished "rm -f backend.log" &&
-	git -c diff.cdiff.process="$BACKEND --mode=oid-fixed --log=backend.log" \
-		format-patch -1 --stdout --ext-diff -- pair.c >actual &&
-	test_grep "^+changed9" actual &&
-	test_path_is_missing backend.log
-'
+#
+# Line-log (git log -L) range tracking.
+#
 
-test_expect_success 'diff process not consulted by plumbing diff commands' '
+test_expect_success 'diff process drops equivalent commit from log -L' '
 	test_when_finished "rm -f backend.log" &&
-	git -c diff.cdiff.process="$BACKEND --mode=oid-fixed --log=backend.log" \
-		diff-tree --numstat HEAD >actual &&
-	test_grep "pair.c" actual &&
-	git -c diff.cdiff.process="$BACKEND --mode=oid-fixed --log=backend.log" \
-		diff-index --numstat HEAD -- pair.c >actual &&
-	git -c diff.cdiff.process="$BACKEND --mode=oid-fixed --log=backend.log" \
-		diff-files --numstat -- pair.c >actual &&
-	test_path_is_missing backend.log
-'
-
-test_expect_success 'add -p stages from the builtin diff with a process configured' '
-	test_when_finished "rm -f backend.log" &&
-	cat >gate.c <<-\EOF &&
-	int gate(void) { return 1; }
+	cat >linelog.c <<-\EOF &&
+	int tracked(void) { return 1; }
 	EOF
-	git add gate.c &&
-	git commit -m "add gate.c" &&
-	cat >gate.c <<-\EOF &&
-	int gate(void) { return 2; }
+	git add linelog.c &&
+	git commit -m "add linelog.c" &&
+
+	cat >linelog.c <<-\EOF &&
+	int tracked(void) { return 2; }
 	EOF
-	# A configured tool must not shape what add -p offers: the
-	# hunk-collecting child is plumbing, so it is not consulted.
-	test_write_lines y |
-	git -c diff.cdiff.process="$BACKEND --mode=oid-fixed --log=backend.log" \
-		add -p gate.c &&
-	git diff --cached -- gate.c >staged &&
-	test_grep "return 2" staged &&
-	test_path_is_missing backend.log &&
-	git commit -m "gate.c v2"
+	git commit -am "change tracked line" &&
+
+	# Builtin line tracking selects the change commit.
+	git log --no-ext-diff -L1,1:linelog.c --format="%s" >builtin &&
+	test_grep "change tracked line" builtin &&
+
+	# With the process reporting the change as equivalent, tracking
+	# drops the commit (the range maps across unchanged) instead of
+	# selecting it and rendering an empty diff.
+	git -c diff.cdiff.process="$BACKEND --mode=no-hunks --log=backend.log" \
+		log -L1,1:linelog.c --format="%s" >actual &&
+	test_grep ! "change tracked line" actual &&
+	# The creating commit still appears, so the change commit was
+	# selectively dropped rather than the whole log going empty.
+	test_grep "add linelog.c" actual &&
+	test_grep "command=hunks pathname=linelog.c" backend.log
 '
 
-test_expect_success 'range-diff output is not shaped by the diff process' '
+test_expect_success 'log -L -w does not consult the diff process' '
 	test_when_finished "rm -f backend.log" &&
-	git -c diff.cdiff.process="$BACKEND --mode=oid-fixed --log=backend.log" \
-		range-diff HEAD~2..HEAD~1 HEAD~1..HEAD >actual &&
+	# -w changes which lines count as different and the process is never
+	# told about it, so neither tracking nor display may consult the
+	# process: the output must match a process-less run.
+	git log --no-ext-diff -L1,1:linelog.c -w >expect &&
+	git -c diff.cdiff.process="$BACKEND --mode=no-hunks --log=backend.log" \
+		log -L1,1:linelog.c -w >actual &&
+	test_cmp expect actual &&
 	test_path_is_missing backend.log
-'
-
-test_expect_success 'blame withholds identity for the working-tree pair' '
-	test_when_finished "rm -f backend.log && git checkout -- pair.c" &&
-	echo "uncommitted" >>pair.c &&
-	wt=$(git hash-object pair.c) &&
-	git -c diff.cdiff.process="$BACKEND --mode=oid-fixed --log=backend.log" \
-		blame pair.c >actual &&
-	# The dirty working-tree side is not a stored blob: no request
-	# may name its bytes by object id.
-	test_grep ! "new-oid=$wt" backend.log
 '
 
 test_done

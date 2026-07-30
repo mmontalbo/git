@@ -2013,7 +2013,7 @@ static void pass_blame_to_parent(struct blame_scoreboard *sb,
 	/*
 	 * Look up the driver by the parent (old) path, as builtin_diff()
 	 * does with name_a, so a renamed file resolves to the same driver
-	 * across diff and blame.  A process that reports a pair
+	 * across diff, blame, and line-log.  A process that reports a pair
 	 * equivalent emits no hunks, so blame passes the whole commit
 	 * through and looks past it.
 	 */
