@@ -831,6 +831,295 @@ NOTE: If `diff.<name>.command` is defined for path with the
 (see above), and adding `diff.<name>.algorithm` has no effect, as the
 algorithm is not passed to the external diff driver.
 
+Using an external diff process
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If `diff.<name>.process` is defined, Git sends the old and new file
+content to an external diff process.  The process returns a list of
+changed regions: pairs of line ranges in the old and new file.  Git
+uses these instead of its builtin diff algorithm.  Git still controls
+all output formatting, so features like word diff, function context,
+color, and blame work normally.  Git carries this exchange over the
+long-running process protocol (described in
+Documentation/technical/long-running-process-protocol.adoc).
+Unlike `diff.<name>.command`, which replaces Git's output entirely,
+the diff process feeds results back into the standard pipeline.  If
+both are configured for a path, `diff.<name>.command` takes precedence
+for the patch output it replaces.  The summary formats, `git blame`,
+and `git log -L` never run the command.
+
+First, in `.gitattributes`, assign the `diff` attribute for paths.
+
+------------------------
+*.c diff=cdiff
+------------------------
+
+Then, define a "diff.<name>.process" configuration to specify
+the diff process command.
+
+----------------------------------------------------------------
+[diff "cdiff"]
+  process = /path/to/my-diff-process
+----------------------------------------------------------------
+
+When Git encounters the first file that needs to be diffed, it starts
+the process and performs the handshake.  In the handshake, the welcome
+message sent by Git is "git-diff-client", only version 1 is supported,
+and the supported capability is "hunks" (the changed regions
+described below).  The process replies with "git-diff-server", the
+version it supports, and the capabilities it supports.  It must select
+only from the capabilities Git advertised; advertising any other is a
+fatal error that aborts the command (as with the long-running filter
+process).
+
+-----------------------
+packet:          git> git-diff-client
+packet:          git> version=1
+packet:          git> 0000
+packet:          git< git-diff-server
+packet:          git< version=1
+packet:          git< 0000
+packet:          git> capability=hunks
+packet:          git> 0000
+packet:          git< capability=hunks
+packet:          git< 0000
+-----------------------
+
+For each file, Git sends a list of "key=value" pairs terminated with
+a flush packet, followed by the old and new file content as packetized
+data, each terminated with a flush packet.  The pathname is relative
+to the repository root.  When `diff.<name>.textconv` is also set,
+the process receives the textconv-transformed content rather than the
+raw blob.  Git does not send binary files to the diff process.
+
+-----------------------
+packet:          git> command=hunks
+packet:          git> pathname=path/file.c
+packet:          git> [old-oid=<hex>]
+packet:          git> [new-oid=<hex>]
+packet:          git> 0000
+packet:          git> OLD_CONTENT
+packet:          git> 0000
+packet:          git> NEW_CONTENT
+packet:          git> 0000
+-----------------------
+
+The optional `old-oid` and `new-oid` keys give the object ids of the
+old and new blobs.  A process can cache its analysis keyed on the pair.
+Git sends a side's key only when the content for that side is the raw
+blob it names.  Git omits the key when the content is
+textconv-transformed, and for a working-tree side that has no stored
+object.  A process that does not recognize these keys ignores them.
+
+The process responds with any hunk lines it found (possibly none),
+a flush packet, and a status packet terminated with a flush packet.
+Each hunk line has the form:
+
+  `hunk <old_start> <old_count> <new_start> <new_count>`
+
+where `<old_start>` and `<old_count>` identify a range of lines in
+the old file, and `<new_start>` and `<new_count>` identify the
+replacement range in the new file.  The four fields are separated by
+single spaces.  Start values are 1-based and counts are non-negative.
+For example, `hunk 3 2 3 4` means that 2 lines starting at line 3 in
+the old file were replaced by 4 lines starting at line 3 in the new
+file.  An `<old_count>` of 0 means no lines were removed (pure
+insertion); a `<new_count>` of 0 means no lines were added (pure
+deletion).  For a side with a count of 0 (a pure insertion or
+deletion) the start is the 1-based line the change sits before.  It
+ranges from 1 to one past the last line (the line count plus 1, which
+places the change at the end of the file).  Like every start, it must
+keep the unchanged runs aligned on both sides (see below), which
+fixes it at one determined value for a given change.  Git accepts a
+start of 0 only on a count-0 side, and treats it as 1.  This
+matches the empty-file-side form `git diff` emits (e.g. `hunk 0 0 1 5`
+for a newly added file).  A start of 0 paired with a nonzero count names
+no line, so Git rejects it and falls back to the builtin diff.  A hunk
+whose old and new counts are both 0 names no change, so Git also
+rejects it and falls back.  A nonzero range must not extend beyond the
+end of the file.  Git ignores any extra whitespace-separated tokens
+after `<new_count>`.  A future protocol version can therefore append
+fields to a hunk line (for example a "moved" marker) without an older
+diff process rejecting it.
+
+Lines are delimited by newlines.  A file `"foo\nbar\n"` and a
+file `"foo\nbar"` both have 2 lines.
+
+Hunks must be listed in order and must not overlap.  Any line not
+covered by a hunk is treated as unchanged and is paired, in order,
+with the unchanged lines on the other side.  Each run of unchanged
+lines between two hunks (and the run before the first hunk and
+after the last) must therefore be the same length on both sides,
+not equal only in total.  For the hunks `1 3 1 5` and `10 2 12 2`
+below, lines 4-9 of the old file and lines 6-11 of the new file are
+both the six unchanged lines between the two hunks.  A response that
+balances only the total unchanged count but misaligns one of these
+runs is rejected, and Git falls back to the builtin diff.
+
+Git does not check that the lines a hunk leaves unchanged are
+byte-for-byte identical between the two sides; it pairs them by
+position and shows the new side as context.  A process may therefore
+report lines that differ textually (a pure reformatting, say) as
+unchanged, and the diff reflects that classification.  That
+flexibility is the point of a semantic backend.  Even so, a
+misbehaving process can produce a diff whose context does not match
+the old blob.  As with `git diff -w`, such a patch may not apply
+against the old content.
+
+-----------------------
+packet:          git< hunk 1 3 1 5
+packet:          git< hunk 10 2 12 2
+packet:          git< 0000
+packet:          git< status=success
+packet:          git< 0000
+-----------------------
+
+If the process responds with hunks and "success", Git marks those lines
+as changed and feeds them into the standard diff pipeline.  For display,
+Git may still slide or regroup those changes against matching context,
+exactly as it compacts its own diffs.  The process therefore controls
+which lines are reported as changed, not the precise hunk boundaries.
+Patch output features (word diff, function context, color) work
+normally.  Summary formats such as `--stat` still compute their counts
+with the builtin diff for now; see "Which features consult the diff
+process" below for the full picture and the reasoning behind it.
+
+When a "success" response carries no hunk lines, Git treats the two
+blobs as unchanged.  `git diff` then produces no output.  `git diff
+--exit-code` and `--quiet` report success even though the stored blobs
+differ.  The plumbing commands `git diff-tree`, `git
+diff-index`, and `git diff-files` do not consult the process for
+`--quiet` or `--exit-code`, unless `--ext-diff` is given.  By default,
+they compare object ids and report a change without examining content.
+This matches how they already treat `diff.<name>.command`, `textconv`,
+and `-w`.
+
+One exception applies to the content request (patch output): a change
+that only adds or removes the file's trailing
+newline.  Line hunks cannot express it.  When the line content otherwise
+matches, Git keeps the builtin diff for that file, preserving the `\ No
+newline at end of file` marker instead of treating the two sides as
+equal.
+
+-----------------------
+packet:          git< 0000
+packet:          git< status=success
+packet:          git< 0000
+-----------------------
+
+If the process returns well-formed but invalid hunks (out of bounds,
+overlapping, with misaligned unchanged runs, or naming no change), Git
+warns and falls back to the builtin diff for that file.  The process
+stays available for subsequent files.  A malformed hunk line is a
+protocol violation instead: bad syntax, a nonzero count paired with a
+start of 0, or more hunks than the file has lines.  Git then stops the
+process and sends it no further requests, as described below.
+
+The status packet reports the outcome:
+
+[cols="1,3",options="header"]
+|===
+|Status |Git's action
+
+|`success` |Use the returned hunks; with none, treat the two blobs as
+ equal (see above).
+|`error` |Warn and fall back to the builtin diff for this file.  Any
+ status other than `success` or `abort` is treated this way.  The process
+ stays available for later files.
+|`abort` |Silently fall back for this file, and send the process no
+ further content (`command=hunks`) requests for the lifetime of this Git
+ process.  A process that also advertises `hunks-by-oid` may still receive
+ `command=hunks-by-oid`; to withdraw from that path too, fail its request.
+|===
+
+-----------------------
+packet:          git< 0000
+packet:          git< status=error
+packet:          git< 0000
+-----------------------
+
+The process may die mid-exchange or otherwise break the protocol, for
+example with a malformed hunk line or malformed or missing status
+framing.  Git then warns once, falls back, and does not consult the
+process again this session.
+A corrupt pkt-line frame (a malformed packet-length prefix) is the one
+exception to that fall-back behavior: as with the long-running filter
+process, Git cannot parse the rest of the stream, so a corrupt frame
+aborts the command.
+
+Future versions of Git may send additional `command=` values.  Any new
+command that version 1 introduces sends no content, so a reply of
+`status=error` leaves no unread bytes and cannot desync the stream; a
+command that needed content would require a new version or capability.
+To stay forward-compatible, a process should ignore unknown keys in the
+per-file request and respond to an unrecognized command with
+`status=error` rather than terminating.
+
+Which features consult the diff process
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The diff process answers a single question: given two blobs, which
+line ranges differ?  A feature consults it when that is the question
+it is really asking, and uses the builtin algorithm otherwise:
+
+[cols="2,1,3",options="header"]
+|===
+|Feature |Consults? |Notes
+
+|`git diff` patch output |yes
+|Word diff, `-W`, `--color-moved`, and `@@` headers all operate on the
+ emitted patch lines, so they follow the process's hunks.
+
+|`git blame` |no
+|May consult the process in a later change; uses the builtin diff for now.
+
+|`git log -L` |no
+|May consult the process in a later change; uses the builtin diff for now.
+
+|`--stat`, `--numstat`, `--dirstat=lines` |no
+|May consult the process in a later change; uses the builtin counts for now.
+
+|default `--dirstat` (byte-weighted) |no
+|Weighs byte changes; computed independently.
+
+|`-G` / `-S` (pickaxe) |selection: no
+|The pickaxe search uses Git's builtin matching.  A selected filepair then
+ renders through the normal patch or stat path, which may consult the
+ process.
+
+|`git patch-id` |no
+|Must hash a patch identically everywhere; a configured process would
+ make equal patches hash differently across machines.
+
+|`git merge-tree`, `rerere` |no
+|Compute merge content and conflict signatures, not display output.
+
+|`git range-diff` |no
+|Diffs patch text, not source blobs.
+
+|`--check` |no
+|Whitespace breakage is a property of the literal bytes, so it uses
+ the builtin partition of added lines and may flag a line the process
+ treats as unchanged.
+
+|`--raw`, `--name-only`, `--name-status` |no
+|Compare object ids at the tree level; no line diff runs.
+
+|`--cc` / combined diffs |no
+|Would need one comparison per merge parent; may consult the process in a
+ later change.
+|===
+
+`--diff-algorithm` bypasses the process entirely, for every feature
+listed above.  The whitespace-ignoring options (`-w`,
+`--ignore-space-change`, `--ignore-blank-lines`, and the like),
+`-I<regex>`, and `--anchored` also bypass it for the affected files.
+Git never tells the process about these options, so the process could
+not honor them.  For patch output and `--stat`, Git falls back to the
+builtin diff, which does honor them.  `git log -L` range tracking ignores
+these options with or without a process.  Its builtin tracking runs with
+none set, so bypassing the process changes nothing there.
+
 Defining a custom hunk-header
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

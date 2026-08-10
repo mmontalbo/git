@@ -25,6 +25,7 @@
 #include "utf8.h"
 #include "odb.h"
 #include "userdiff.h"
+#include "diff-process.h"
 #include "submodule.h"
 #include "hashmap.h"
 #include "mem-pool.h"
@@ -4164,6 +4165,30 @@ static void builtin_diff(const char *name_a,
 		xpp.ignore_regex_nr = o->ignore_regex_nr;
 		xpp.anchors = o->anchors;
 		xpp.anchors_nr = o->anchors_nr;
+
+		/*
+		 * Send a side's blob oid only when it names the exact bytes the
+		 * process receives.  textconv rewrites the content, so its oid is
+		 * withheld (NULL); a side with no valid oid is withheld too.
+		 * Otherwise the oid is sent as a cache key for the raw content,
+		 * including a worktree side, whose oid is computed over the same
+		 * cleaned bytes the process is given.
+		 */
+		if (diff_process_fill_hunks(o,
+					    DIFF_FILE_VALID(one) ? one->path : two->path,
+					    (textconv_one || !one->oid_valid) ? NULL : &one->oid,
+					    (textconv_two || !two->oid_valid) ? NULL : &two->oid,
+					    &mf1, &mf2,
+					    &xpp)
+		    == DIFF_PROCESS_EQUIVALENT) {
+			diff_process_clear_hunks(&xpp);
+			if (textconv_one)
+				free(mf1.ptr);
+			if (textconv_two)
+				free(mf2.ptr);
+			goto free_ab_and_return;
+		}
+
 		xecfg.ctxlen = o->context;
 		xecfg.interhunkctxlen = o->interhunkcontext;
 		xecfg.flags = XDL_EMIT_FUNCNAMES;
@@ -4208,6 +4233,7 @@ static void builtin_diff(const char *name_a,
 		} else if (xdi_diff_outf(&mf1, &mf2, NULL, fn_out_consume,
 					 &ecbdata, &xpp, &xecfg))
 			die("unable to generate diff for %s", one->path);
+		diff_process_clear_hunks(&xpp);
 		if (o->word_diff)
 			free_diff_words_data(&ecbdata);
 		if (textconv_one)
