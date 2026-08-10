@@ -863,11 +863,13 @@ the diff process command.
 ----------------------------------------------------------------
 
 When Git encounters the first file that needs to be diffed, it starts
-the process and performs the handshake.  In the handshake, the welcome
-message sent by Git is "git-diff-client", only version 1 is supported,
-and the supported capability is "hunks" (the changed regions
-described below).  The process replies with "git-diff-server", the
-version it supports, and the capabilities it supports.  It must select
+the process and performs the handshake.  In the handshake, Git sends
+the welcome message "git-diff-client" and the one version it supports,
+version 1.  Git advertises two capabilities: "hunks" (the changed regions described
+below) and "hunks-by-oid" (answering from object ids with no content,
+also described below).  The process replies with "git-diff-server", a
+single `version=` line it supports, and the capabilities it supports.  It
+must select
 only from the capabilities Git advertised; advertising any other is a
 fatal error that aborts the command (as with the long-running filter
 process).
@@ -880,8 +882,10 @@ packet:          git< git-diff-server
 packet:          git< version=1
 packet:          git< 0000
 packet:          git> capability=hunks
+packet:          git> capability=hunks-by-oid
 packet:          git> 0000
 packet:          git< capability=hunks
+packet:          git< capability=hunks-by-oid
 packet:          git< 0000
 -----------------------
 
@@ -910,6 +914,68 @@ Git sends a side's key only when the content for that side is the raw
 blob it names.  Git omits the key when the content is
 textconv-transformed, and for a working-tree side that has no stored
 object.  A process that does not recognize these keys ignores them.
+
+A process that advertises the "hunks-by-oid" capability can answer for a
+blob pair from the object ids alone, with no content sent.  When both
+sides of a pair are stored blobs, Git sends `command=hunks-by-oid` with
+`old-oid` and `new-oid` and no content:
+
+-----------------------
+packet:          git> command=hunks-by-oid
+packet:          git> pathname=path/file.c
+packet:          git> old-oid=<hex>
+packet:          git> new-oid=<hex>
+packet:          git> 0000
+-----------------------
+
+The process reads or caches the two blobs itself.  It sends one
+`lines <old_count> <new_count>` line first, before any hunk.  This line
+gives each blob's total line count.  Each count must fit Git's diff size
+limit (about a billion lines); a larger count is a protocol failure.  The
+hunk lines and a status packet follow:
+
+-----------------------
+packet:          git< lines 10 10
+packet:          git< hunk 5 2 5 2
+packet:          git< 0000
+packet:          git< status=success
+packet:          git< 0000
+-----------------------
+
+The process must send the `lines` line on every successful response.  This
+includes a response with no hunks.  A no-hunks response reports the blobs
+equivalent only when the two line counts match.  When they differ, Git
+falls back to the builtin diff for that pair.  Sending it first lets Git
+validate the hunks (order, overlap, bounds, and alignment) and bound their
+number, without loading either blob.  Git
+treats a response as a protocol failure when it withholds the `lines`
+line or ends in any status other than `success`.  Git then warns once
+and drops the process for the rest of the session, using the builtin
+diff for this file and all that follow.  Unlike the content request,
+this path does not recover per file: `git blame` and `git log -L`
+consult by object id once per commit, so a per-file fallback would warn
+on every commit.  A process that cannot answer by object id should not
+advertise "hunks-by-oid".
+
+Some features need only which lines changed, such as `git blame` and
+`git log -L` range tracking.  These features use this path and read no
+blob when the process answers.  Each side of a pair must be an object the
+process can read.  An enabled textconv driver on either side disqualifies
+the pair, since the object ids would not name the transformed content.  So
+does uncommitted working-tree content under `git blame`, whose blob is
+not written to the object store.  In either case these features withhold
+the by-oid consult and fall back to the builtin diff.  The content
+consumers (patch, `--stat`) instead send that side's content directly.
+
+These features carry no content, so they cannot detect a change that
+only adds or removes the trailing newline.  The process reports such a
+pair as no hunks, and these features treat it as equal.
+
+A process that answers both `hunks` and `hunks-by-oid` must return the
+same ranges for a given blob pair.  `git log -L` decides which commits
+to keep from the object id answer, but renders each body from the
+content answer.  A process that disagrees between the two can keep a
+commit yet show it with an empty range diff.
 
 The process responds with any hunk lines it found (possibly none),
 a flush packet, and a status packet terminated with a flush packet.
@@ -1015,7 +1081,8 @@ protocol violation instead: bad syntax, a nonzero count paired with a
 start of 0, or more hunks than the file has lines.  Git then stops the
 process and sends it no further requests, as described below.
 
-The status packet reports the outcome:
+In the content request, the status packet reports the outcome (the
+hunks-by-oid request has no silent `abort`; see its description above):
 
 [cols="1,3",options="header"]
 |===
