@@ -214,29 +214,31 @@ class MakeMesonEnforcer:
                 self._makefile(), re.M))
         return self._lib[stem(c)] == 1
 
-    def _has_object_rule(self, c):
-        """Whether a Makefile rule names <stem>.o as a target, that is
-        <stem>.o appears as a whitespace-delimited token before the
-        first colon of some line, such as 'setup.o: EXTRA_CPPFLAGS =
-        ...' or 'version.o: version-def.h'. The lookarounds treat a
-        hyphen as part of the filename, so walker.o does not match the
-        http-walker.o rule. Such an object carries per-object build
-        state that a path move would break, so it is not relocatable."""
+    def _root_object_rule(self, text, name):
+        """Whether the given Makefile text names the root object
+        <name>.o as a rule target, that is <name>.o appears as a
+        path-and-hyphen-delimited token before the first colon of some
+        line, such as 'setup.o: EXTRA_CPPFLAGS = ...' or 'version.o:
+        version-def.h'. The lookarounds treat a slash and a hyphen as
+        part of the filename, so neither http-walker.o nor a
+        setup/setup.o that apply has already reparented matches a bare
+        <name> query. This is the post-rewrite safety detector: after
+        the triplet rewrite it must be False for every moved object."""
         pat = re.compile(
-            r'^[^:\n]*(?<![\w.-])' + re.escape(stem(c))
-            + r'\.o(?![\w.-])[^:\n]*:', re.M)
-        return bool(pat.search(self._makefile()))
+            r'^[^:\n]*(?<![\w./-])' + re.escape(name)
+            + r'\.o(?![\w./-])[^:\n]*:', re.M)
+        return bool(pat.search(text))
 
     def _relocatable(self, c):
-        """(ok, reason). A source moves only when it is a single libgit
-        object and carries no per-object build rule. reason is the
-        standalone skip phrase; _paired_reason turns it into the
-        paired-header phrase."""
+        """(ok, reason). A source moves when it is a single libgit
+        object. A program (non-LIB_OBJS) cannot move because its
+        program name derives from the object path. A per-object build
+        rule does not block the move; apply rewrites the rule to the
+        new path. reason is the standalone skip phrase; _paired_reason
+        turns it into the paired-header phrase."""
         if not self._is_lib_object(c):
             return Verdict(
                 False, "built as a program, not a libgit object")
-        if self._has_object_rule(c):
-            return Verdict(False, "carries a per-object build rule")
         return Verdict(True, "")
 
     @staticmethod
@@ -393,6 +395,7 @@ class MakeMesonEnforcer:
         lines = []
         self._rewrite_includes(headers, plan.target)
         self._patch_build(moved_c, plan.target)
+        self._patch_object_rules(moved_c, plan.target)
         for src, dst in plan.moves:
             r = subprocess.run(["git", "-C", TOP, "mv", src, dst],
                                capture_output=True, text=True)
@@ -474,6 +477,43 @@ class MakeMesonEnforcer:
                              f"for {n}, found {k}")
                 text = new
             open(p, "w", encoding="utf-8").write(text)
+
+    def _patch_object_rules(self, moved_c, target):
+        """Reparent per-object Makefile rules for the moved sources.
+
+        git writes per-object build state as a consistent triplet
+        target 'NAME.sp NAME.s NAME.o:'. For each moved .c NAME, rewrite
+        every such line to the same triplet under target/, preserving
+        the rest of the line. A file may carry 0, 1, or 2 such lines;
+        rewrite all. meson needs no change: it applies these defines
+        project-wide via libgit_c_args, not per file.
+
+        Safety: after the rewrite, the root object NAME.o must no longer
+        be a rule target in any form. If a per-object rule survives that
+        the triplet rewrite did not catch, stop rather than move the
+        source into a tree that will not build."""
+        p = os.path.join(TOP, "Makefile")
+        text = open(p, encoding="utf-8").read()
+        pfx = target + "/"
+        for c in moved_c:
+            n = c[:-2]
+            e = re.escape(n)
+            pat = re.compile(
+                r'^(?P<lead>[ \t]*)'
+                + e + r'\.sp[ \t]+' + e + r'\.s[ \t]+' + e
+                + r'\.o(?P<rest>[ \t]*:.*)$', re.M)
+            text = pat.sub(
+                lambda m: (m.group("lead") + pfx + n + ".sp "
+                           + pfx + n + ".s " + pfx + n + ".o"
+                           + m.group("rest")),
+                text)
+        for c in moved_c:
+            n = c[:-2]
+            if self._root_object_rule(text, n):
+                sys.exit(f"reorg apply: Makefile: a per-object rule "
+                         f"for {n}.o survives in a form this adapter "
+                         f"does not reparent; refusing to move {n}.c")
+        open(p, "w", encoding="utf-8").write(text)
 
     def _tracked_dirty(self):
         unstaged = subprocess.run(
