@@ -24,3 +24,5 @@ CODE_OF_CONDUCT.md -whitespace
 /commit-reach.c  area=revision
 /commit-reach.h  area=revision
 /tree-diff.c     area=diff
+/diff-delta.c    area=pack
+/patch-delta.c   area=pack
