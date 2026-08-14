@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """git-reorg: enforce a declared source layout.
 
-A thin launcher. Put this directory on sys.path, import the git
-adapter (importing it registers the "git-c" triple), then hand control
-to the core with git-c as the default triple and git-layout.map as the
-default map. Run as: python3 research/git-reorg/git-reorg check
+A thin launcher. Put this directory on sys.path, import the adapters
+(importing each registers its triple: git-c, cohesion), then hand
+control to the core with git-c as the default triple and
+git-layout.map as the default map. Run as:
+python3 research/git-reorg/git-reorg check
 """
 import os
 import sys
@@ -15,6 +16,10 @@ if _HERE not in sys.path:
 
 import reorg_core                       # noqa: E402
 import reorg_git                        # noqa: E402  registers git-c
+try:                                    # optional: the cohesion
+    import reorg_cohesion               # noqa: E402  triple needs the
+except ImportError:                     # untracked research/lib-reorg,
+    pass                                # so git-c works without it
 
 
 def main():
