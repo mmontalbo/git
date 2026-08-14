@@ -214,6 +214,15 @@ class MakeMesonEnforcer:
                 self._makefile(), re.M))
         return self._lib[stem(c)] == 1
 
+    def _has_localized_core(self, c):
+        """Whether the Makefile lists the root source c in
+        LOCALIZED_C_CORE (feeds po/git-core.pot). Present for only some
+        sources, so absence is fine."""
+        pat = re.compile(
+            r'^[ \t]*LOCALIZED_C_CORE \+= '
+            + re.escape(os.path.basename(c)) + r'$', re.M)
+        return bool(pat.search(self._makefile()))
+
     def _root_object_rule(self, text, name):
         """Whether the given Makefile text names the root object
         <name>.o as a rule target, that is <name>.o appears as a
@@ -297,13 +306,16 @@ class MakeMesonEnforcer:
     def plan(self, target, files):
         """Build one area's Plan from the files the Policy placed here.
 
-        The .c is the primary unit and pulls its same-stem .h. A
-        non-relocatable .c is skipped and does not pull its header. A
-        flagged .h whose .c is absent moves alone; whose .c is present
-        but not moving is skipped with a reason."""
+        The .c is the primary unit. Its same-stem .h moves only when it
+        is INTERNAL, that is every file that includes it co-moves; a
+        PUBLIC interface header stays at the repo root. This follows
+        git's own carve convention (odb/, refs/, builtin/), so the move
+        is a pure git mv with no include rewrites. A non-relocatable .c
+        is skipped; a flagged .h whose .c is present but not moving is
+        skipped with a reason."""
         flagged = {f for f in files
                    if not self.already_placed(f, target)}
-        move_set, paired, skipped = set(), set(), []
+        move_set, kept_public, skipped = set(), set(), []
         moving_c = set()
         for c in sorted(f for f in flagged if f.endswith(".c")):
             v = self._relocatable(c)
@@ -312,28 +324,52 @@ class MakeMesonEnforcer:
                 continue
             moving_c.add(c)
         moving_stems = {stem(f) for f in moving_c}
+        # Candidate headers: a same-stem .h of a moving .c, or a flagged
+        # .h whose .c is absent (a header-only lib).
+        cands = {stem(c) + ".h" for c in moving_c if exists(stem(c) + ".h")}
+        for h in flagged:
+            if h.endswith(".h") and not exists(stem(h) + ".c"):
+                cands.add(h)
+        internal = self._internal_headers(cands, moving_c)
+        move_set |= moving_c | internal
+        # A same-stem header that is not internal is PUBLIC: it stays at
+        # root, tracked for a display note, and is not a skip.
         for c in moving_c:
-            move_set.add(c)
             h = stem(c) + ".h"
-            if exists(h):
-                move_set.add(h)
-                if h not in flagged:
-                    paired.add(h)
+            if h in cands and h not in internal:
+                kept_public.add(h)
         for h in flagged:
             if not h.endswith(".h"):
                 continue
             c = stem(h) + ".c"
-            if not exists(c):
-                move_set.add(h)      # header-only lib, moves alone
-            elif stem(h) not in moving_stems:
+            if exists(c) and stem(h) not in moving_stems:
                 skipped.append((h, self._skip_note(c)))
         moves = tuple(sorted((f, f"{target}/{f}") for f in move_set))
         headers = sorted(f for f in move_set if f.endswith(".h"))
-        steps = self._steps(target, moves, paired, headers)
-        notes = self._notes(target, headers, moves)
+        steps = self._steps(target, moves)
+        notes = self._notes(target, moves, sorted(kept_public))
         return Plan(target=target, moves=moves,
                     skipped=tuple(sorted(skipped)),
                     steps=steps, notes=notes)
+
+    def _internal_headers(self, cands, moving_c):
+        """The candidate headers all of whose includers co-move.
+
+        A candidate H is internal when every file that includes H (by
+        full path via _include_edits) is in the moving set: the moving
+        .c files plus any other internal header. A header may include a
+        header, so grow the internal set by fixpoint until it stops."""
+        includers = {h: {f for f, _ in self._include_edits(h)}
+                     for h in cands}
+        internal = set()
+        changed = True
+        while changed:
+            changed = False
+            for h in cands - internal:
+                if includers[h] <= (moving_c | internal):
+                    internal.add(h)
+                    changed = True
+        return internal
 
     def _skip_note(self, c):
         v = self._relocatable(c)
@@ -341,59 +377,52 @@ class MakeMesonEnforcer:
             return self._paired_reason(c, v.reason)
         return f"paired {c} is unlabelled"
 
-    def _steps(self, target, moves, paired, headers):
-        """One move Step per pair, its summary the printed line, plus
-        one edit Step per moved header. The core prints move summaries;
-        the include and build detail rides in notes."""
+    def _steps(self, target, moves):
+        """One move Step per file, its summary the printed line. The
+        carve is a pure rename, so there are no include-rewrite edit
+        Steps; the build detail rides in notes."""
         steps = []
         for src, dst in moves:
-            mark = "   (paired header)" if src in paired else ""
+            mark = "   (internal header)" if src.endswith(".h") else ""
             steps.append(Step(
                 kind="move",
                 summary=f"  {src:<10}  ->  {dst}{mark}",
                 reads=(src,), writes=(dst,),
                 preview=None, payload=(src, dst)))
-        for h in headers:
-            steps.append(Step(
-                kind="edit", summary=f"rewrite includers of {h}",
-                reads=(h,), writes=(),
-                preview=None, payload=h))
         return tuple(steps)
 
-    def _notes(self, target, headers, moves):
-        """The include-rewrite and build-edit report lines the core
-        prints verbatim after the moves."""
-        rows, stale = [], 0
-        for h in headers:
-            n = len({f for f, _ in self._include_edits(h)})
-            stale += self._nonsource_refs(h)
-            rows.append((f'"{h}"', f'"{target}/{h}"', n))
-        n_files = sum(c for _, _, c in rows)
-        lines = ["", f"include rewrites: {len(rows)} headers, "
-                 f"{n_files} including files"]
-        for frm, to, c in rows:
-            lines.append(f"  {frm:<12}  ->  {to}   ({c} files)")
-        if stale:
+    def _notes(self, target, moves, kept_public):
+        """The build-edit report lines the core prints verbatim after
+        the moves. The carve is a pure rename: every moved header is
+        internal, so same-dir resolution holds and no include is
+        rewritten."""
+        moved_c = [s for s, _ in moves if s.endswith(".c")]
+        n_c = len(moved_c)
+        n_loc = sum(1 for c in moved_c if self._has_localized_core(c))
+        lines = ["", "carve is a pure rename (0 include rewrites)"]
+        if kept_public:
             lines.append(
-                f"  note: {stale} non-source references (docs, patch "
-                "fixtures) are left as-is")
-        n_c = sum(1 for s, _ in moves if s.endswith(".c"))
+                f"kept public at root: {len(kept_public)} headers "
+                "(interface stays put)")
         lines += ["", "build edits:",
                   f"  Makefile:    {n_c} LIB_OBJS lines",
                   f"  meson.build: {n_c} source lines"]
+        if n_loc:
+            lines.append(
+                f"  Makefile:    {n_loc} LOCALIZED_C_CORE lines")
         return tuple(lines)
 
     # apply
 
     def apply(self, plan, commit):
-        """Rewrite includes and patch build lists, then git mv the
-        pairs, stage, and gate on the build. Edit before moving so a
-        failure before any git mv leaves a recoverable tree."""
-        headers = [s for s, _ in plan.moves if s.endswith(".h")]
+        """Patch build lists, then git mv the files, stage, and gate on
+        the build. The carve is a pure rename: every moved header is
+        internal, so no include is rewritten and moved files stay
+        byte-identical. Edit before moving so a failure before any git
+        mv leaves a recoverable tree."""
         moved_c = [os.path.basename(s) for s, _ in plan.moves
                    if s.endswith(".c")]
         lines = []
-        self._rewrite_includes(headers, plan.target)
         self._patch_build(moved_c, plan.target)
         self._patch_object_rules(moved_c, plan.target)
         for src, dst in plan.moves:
@@ -458,8 +487,11 @@ class MakeMesonEnforcer:
 
     def _patch_build(self, moved_c, target):
         """Full-line edit Makefile and meson.build for each moved .c.
-        Each edit preserves leading whitespace and must match exactly
-        once per name per file, else it is a loud error."""
+        The LIB_OBJS and meson source edits preserve leading whitespace
+        and must match exactly once per name per file, else it is a loud
+        error. The optional LOCALIZED_C_CORE edit re-paths po/git-core
+        sources; it exists for only some sources, so 0 or 1 match is
+        fine."""
         for path, pat_t, rep_t in [
             ("Makefile", r'^([ \t]*)LIB_OBJS \+= {n}\.o$',
              r'\1LIB_OBJS += ' + target + r'/{n}.o'),
@@ -477,6 +509,20 @@ class MakeMesonEnforcer:
                              f"for {n}, found {k}")
                 text = new
             open(p, "w", encoding="utf-8").write(text)
+        p = os.path.join(TOP, "Makefile")
+        text = open(p, encoding="utf-8").read()
+        for c in moved_c:
+            n = c[:-2]
+            pat = re.compile(
+                r'^([ \t]*)LOCALIZED_C_CORE \+= ' + re.escape(n)
+                + r'\.c$', re.M)
+            text, k = pat.subn(
+                r'\1LOCALIZED_C_CORE += ' + target + '/' + n + '.c',
+                text)
+            if k > 1:
+                sys.exit(f"reorg apply: Makefile: expected 0 or 1 "
+                         f"LOCALIZED_C_CORE line for {n}, found {k}")
+        open(p, "w", encoding="utf-8").write(text)
 
     def _patch_object_rules(self, moved_c, target):
         """Reparent per-object Makefile rules for the moved sources.
