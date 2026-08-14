@@ -350,7 +350,8 @@ class MakeMesonEnforcer:
         notes = self._notes(target, moves, sorted(kept_public))
         return Plan(target=target, moves=moves,
                     skipped=tuple(sorted(skipped)),
-                    steps=steps, notes=notes)
+                    steps=steps, notes=notes,
+                    kept_public=tuple(sorted(kept_public)))
 
     def _internal_headers(self, cands, moving_c):
         """The candidate headers all of whose includers co-move.
@@ -434,9 +435,9 @@ class MakeMesonEnforcer:
                 lines.append(self.recover_hint())
                 return ApplyResult(False, lines)
         git("add", "-u")
-        r = subprocess.run(self._build_cmd(), cwd=TOP)
-        if r.returncode:
-            lines.append("reorg apply: build failed; nothing "
+        v = self.validate()
+        if not v.ok:
+            lines.append(f"reorg apply: {v.reason}; nothing "
                          "committed.")
             lines.append(self.recover_hint())
             return ApplyResult(False, lines)
@@ -450,6 +451,85 @@ class MakeMesonEnforcer:
         else:
             lines.append("reorg apply: build passed; carve is "
                          "staged.")
+            lines.append("review, then commit, or "
+                         + self.recover_hint())
+        return ApplyResult(True, lines)
+
+    def validate(self):
+        """The validator provider: confirm the reorg preserved the
+        artifact's invariant. For git's C sources this is the build and
+        its tests; another domain plugs a different check here (a docs
+        enforcer would confirm that links resolve). A domain plugin, not
+        the core gate. Returns a Verdict."""
+        r = subprocess.run(self._build_cmd(), cwd=TOP)
+        if r.returncode:
+            return Verdict(False, "validator (build) failed")
+        return Verdict(True, "")
+
+    def _verify_pure_renames(self, plans):
+        """Core gate, git primitive: every moved file is a content-
+        preserving rename that git's rename detection scores R100.
+        Domain-agnostic; needs no build. Returns a Verdict."""
+        status = {}
+        for line in git("diff", "--cached", "-M",
+                        "--name-status").splitlines():
+            p = line.split("\t")
+            if p[0].startswith("R") and len(p) == 3:
+                status[p[2]] = p[0]
+            elif len(p) == 2:
+                status[p[1]] = p[0]
+        bad = [dst for pl in plans for _, dst in pl.moves
+               if status.get(dst) != "R100"]
+        if bad:
+            return Verdict(False, "not pure renames (R100): "
+                           + ", ".join(sorted(bad)[:5]))
+        return Verdict(True, "")
+
+    def apply_auto(self, plans, commit):
+        """Converge several subsystems as one gated operation. Create
+        each target dir, apply every build-list edit and git mv, then
+        gate: first the pure-rename check (a git primitive), then the
+        validator (a domain plugin). Leave the batch staged, or commit
+        it. On any failure the tree is recoverable with reset."""
+        lines = []
+        for plan in plans:
+            d = os.path.join(TOP, plan.target)
+            if not os.path.isdir(d):
+                os.makedirs(d)
+            moved_c = [os.path.basename(s) for s, _ in plan.moves
+                       if s.endswith(".c")]
+            self._patch_build(moved_c, plan.target)
+            self._patch_object_rules(moved_c, plan.target)
+            for src, dst in plan.moves:
+                r = subprocess.run(["git", "-C", TOP, "mv", src, dst],
+                                   capture_output=True, text=True)
+                if r.returncode:
+                    lines.append(f"reorg apply --auto: git mv {src} "
+                                 f"failed: {r.stderr.strip()}")
+                    lines.append(self.recover_hint())
+                    return ApplyResult(False, lines)
+        git("add", "-u")
+        v = self._verify_pure_renames(plans)
+        if not v.ok:
+            lines.append(f"reorg apply --auto: {v.reason}")
+            lines.append(self.recover_hint())
+            return ApplyResult(False, lines)
+        v = self.validate()
+        if not v.ok:
+            lines.append(f"reorg apply --auto: {v.reason}; nothing "
+                         "committed.")
+            lines.append(self.recover_hint())
+            return ApplyResult(False, lines)
+        n = sum(len(p.moves) for p in plans)
+        lines.append(f"reorg apply --auto: pure renames + validator "
+                     f"passed ({n} files, {len(plans)} subsystems).")
+        if commit:
+            subprocess.run(
+                ["git", "-C", TOP, "commit", "-m",
+                 f"reorg: converge {len(plans)} subsystems "
+                 f"({n} files)"], check=True)
+            lines.append("reorg apply --auto: committed.")
+        else:
             lines.append("review, then commit, or "
                          + self.recover_hint())
         return ApplyResult(True, lines)

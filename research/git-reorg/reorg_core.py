@@ -76,6 +76,7 @@ class Plan:
     skipped: tuple
     steps: tuple
     notes: tuple = ()
+    kept_public: tuple = ()
 
 
 @dataclass
@@ -286,6 +287,171 @@ def cmd_apply(signal, policy, enforcer, mapref, area, commit):
         sys.exit(1)
 
 
+def cmd_status(signal, policy, enforcer, mapref):
+    """Scope the reorg against the declared rules.
+
+    Per subsystem, split the remaining candidate files into auto-ready
+    and marked. Auto-ready means the rule moves the file as a pure
+    rename with its interface left in place, so it is trivially correct
+    to apply; the build gate confirms it on apply. Marked means the rule
+    cannot place the file mechanically (a program, or a per-object rule
+    the move would strand), so it needs a human or an LM. Richer markers,
+    where a file's own evidence disagrees with its rule, need the
+    cohesion cross-check and are not computed here."""
+    policy.load(mapref)
+    rows, markers = [], []
+    tot_auto = tot_marked = 0
+    for t in policy.ordered_targets():
+        files = _files_for(signal, policy, enforcer, t)
+        if not files:
+            continue
+        plan = enforcer.plan(t, files)
+        auto, marked = len(plan.moves), len(plan.skipped)
+        if not auto and not marked:
+            continue
+        state = "exists" if enforcer.target_ready(t) else "new"
+        rows.append((t, state, auto, marked, len(plan.kept_public)))
+        for f, reason in plan.skipped:
+            markers.append((t, f, reason))
+        tot_auto += auto
+        tot_marked += marked
+    print(f"reorg status against {policy.name()}\n")
+    print(f"  {'subsystem':<12}{'dir':<8}{'auto':>5}{'marked':>8}"
+          f"{'public':>8}")
+    for t, state, auto, marked, public in rows:
+        print(f"  {t + '/':<12}{state:<8}{auto:>5}{marked:>8}{public:>8}")
+    print(f"\nauto-ready (pure-rename moves, trivially correct): "
+          f"{tot_auto} files in {len(rows)} subsystems")
+    print(f"marked for judgment (cannot place mechanically): "
+          f"{tot_marked} files")
+    if markers:
+        print("\nmarkers:")
+        for t, f, reason in markers:
+            print(f"  {f}  ->  {t}/   blocked: {reason}")
+    print("\nauto-ready runs through the build gate on apply. "
+          "Contaminant,\noverreach, and signal-conflict markers need "
+          "the cohesion\ncross-check (--triple cohesion) and are not "
+          "listed here.")
+
+
+def _agree_verdicts(mapref):
+    """Cross-check the commit-label rule against the cohesion signal.
+
+    The three-way merge of the layout: base is the current tree, the
+    rule is one side, the cohesion evidence is the other. Returns
+    (git-c policy, contested-set, agree-by-area, unverified-by-area,
+    contested-list). A source is contested only when one different
+    rule-area is the strict majority of its cohesion-cluster neighbors
+    and outweighs its own; agreed when its own area leads or ties;
+    unverified when cohesion has no opinion, or when the cluster is too
+    scattered for any area to hold a majority. That majority test drops
+    co-consumption noise: a loose cluster whose members spread across
+    many unrelated areas names no majority, so it does not contest.
+    Ties among the majority areas break by name, so verdicts are
+    reproducible. Computed on sources; headers ride with their source.
+    Needs the cohesion triple."""
+    gs, gp, ge = get_triple("git-c")
+    if "cohesion" not in _TRIPLES:
+        sys.exit("reorg: the cohesion triple is not registered "
+                 "(needs research/lib-reorg on the path)")
+    cs = get_triple("cohesion")[0]
+    gp.load(mapref)
+    placed = _place_all(gs, gp, ge)
+    gc_area = {f: p.target for f, p in placed.items() if p.target}
+    remaining = {f: t for f, t in gc_area.items()
+                 if f.endswith(".c") and not ge.already_placed(f, t)}
+    cluster = {f: v.primary for f, v in cs.label(ge.scope()).items()
+               if v.primary}
+    members = {}
+    for f, c in cluster.items():
+        members.setdefault(c, set()).add(f)
+    agree, unver, contested = {}, {}, []
+    for f in sorted(remaining):
+        X = remaining[f]
+        neigh = {}
+        for g in members.get(cluster.get(f), set()):
+            ga = gc_area.get(g)
+            if g != f and ga:
+                neigh[ga] = neigh.get(ga, 0) + 1
+        if not neigh:
+            unver[X] = unver.get(X, 0) + 1
+            continue
+        best = max(neigh.values())
+        total = sum(neigh.values())
+        if neigh.get(X, 0) == best:
+            agree[X] = agree.get(X, 0) + 1
+        elif best * 2 <= total:
+            unver[X] = unver.get(X, 0) + 1        # no majority: scattered
+        else:
+            implied = min(a for a in neigh if neigh[a] == best)
+            contested.append((f, X, implied, cluster.get(f)))
+    return gp, {f for f, _, _, _ in contested}, agree, unver, contested
+
+
+def cmd_agree(mapref):
+    """Corroborate the commit-label rule with the cohesion signal:
+    agree (safe to automate), contested (needs a decision), unverified
+    (cohesion silent). See _agree_verdicts for the rule."""
+    gp, _cset, agree, unver, contested = _agree_verdicts(mapref)
+    print(f"reorg agree: cohesion corroboration of {gp.name()}\n")
+    print(f"  {'subsystem':<12}{'agree':>6}{'contested':>10}"
+          f"{'unverified':>12}")
+    for t in gp.ordered_targets():
+        nc = sum(1 for _, x, _, _ in contested if x == t)
+        if agree.get(t) or unver.get(t) or nc:
+            print(f"  {t + '/':<12}{agree.get(t, 0):>6}{nc:>10}"
+                  f"{unver.get(t, 0):>12}")
+    print(f"\ncorroborated (both signals agree, safe to automate): "
+          f"{sum(agree.values())}")
+    print(f"contested (signals disagree, needs a decision): "
+          f"{len(contested)}")
+    print(f"unverified (cohesion silent, rule stands alone): "
+          f"{sum(unver.values())}")
+    if contested:
+        print("\ncontested sources (rule -> cohesion suggests):")
+        for f, X, implied, c in sorted(contested):
+            print(f"  {f:<22} {X}/ -> groups with {implied}/ "
+                  f"(cohesion cluster '{c}')")
+
+
+def cmd_apply_auto(signal, policy, enforcer, mapref, commit):
+    """Converge every uncontested subsystem in one gated pass.
+
+    The reorg's terraform-apply. Uncontested means the rule and the
+    cohesion evidence do not disagree (agreed or cohesion-silent);
+    contested sources are held at the root as markers for a human or an
+    LM. All moves run as one operation, then the Enforcer gates them:
+    the pure-rename check (a git primitive, domain-agnostic) and the
+    validator (a domain plugin, the build for git's C sources). The
+    batch is staged, or committed with --commit."""
+    _gp, contested, _a, _u, _c = _agree_verdicts(mapref)
+    policy.load(mapref)
+    blockers = enforcer.preflight()
+    if blockers:
+        sys.exit("reorg apply --auto: " + "; ".join(blockers))
+    plans = []
+    for t in policy.ordered_targets():
+        files = {f for f in _files_for(signal, policy, enforcer, t)
+                 if f not in contested}
+        if not files:
+            continue
+        plan = enforcer.plan(t, files)
+        if plan.moves:
+            plans.append(plan)
+    if not plans:
+        print("reorg apply --auto: nothing uncontested to carve")
+        return
+    n = sum(len(p.moves) for p in plans)
+    print(f"converging {len(plans)} subsystems, {n} uncontested "
+          f"files; holding {len(contested)} contested sources at "
+          f"root\n")
+    result = enforcer.apply_auto(plans, commit)
+    for line in result.lines:
+        print(line)
+    if not result.ok:
+        sys.exit(1)
+
+
 def take_opt(args, name):
     """Pop '--name VALUE' from args, returning (value, args)."""
     if name not in args:
@@ -299,12 +465,21 @@ DOC = """reorg: enforce a declared source layout.
 Usage:
   reorg check [--map FILE]        report files whose area does not
                                   match the directory its area maps to
+  reorg status [--map FILE]       scope the reorg: per subsystem, how
+                                  many remaining files are auto-ready
+                                  versus marked for judgment
+  reorg agree [--map FILE]        corroborate the rule with the cohesion
+                                  signal: agree (safe to automate),
+                                  contested (needs a decision), unverified
   reorg plan [--area X] [--map FILE]
                                   dry run: show one area's moves and its
                                   include, build, and pairing effects
   reorg apply --area X [--commit]
                                   perform one area's carve, stop before
                                   commit unless --commit is given
+  reorg apply --auto [--commit]   converge every uncontested subsystem
+                                  in one pure-rename-and-validator-gated
+                                  pass; hold contested sources at root
 """
 
 
@@ -318,14 +493,22 @@ def main(default_triple, default_mapref):
         mapref = default_mapref
     area, args = take_opt(args, "--area")
     commit = "--commit" in args
-    args = [a for a in args if a != "--commit"]
+    auto = "--auto" in args
+    args = [a for a in args if a not in ("--commit", "--auto")]
     signal, policy, enforcer = get_triple(triple or default_triple)
     cmd = args[0] if args else "check"
     if cmd == "check":
         cmd_check(signal, policy, enforcer, mapref)
+    elif cmd == "status":
+        cmd_status(signal, policy, enforcer, mapref)
+    elif cmd == "agree":
+        cmd_agree(mapref)
     elif cmd == "plan":
         cmd_plan(signal, policy, enforcer, mapref, area)
     elif cmd == "apply":
-        cmd_apply(signal, policy, enforcer, mapref, area, commit)
+        if auto:
+            cmd_apply_auto(signal, policy, enforcer, mapref, commit)
+        else:
+            cmd_apply(signal, policy, enforcer, mapref, area, commit)
     else:
         sys.exit(DOC)
