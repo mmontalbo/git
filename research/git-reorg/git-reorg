@@ -62,23 +62,33 @@ def norm(p):
 
 def file_areas(scope):
     """Modal focus-weighted area label per file in scope, or None if
-    the history is thin or split."""
+    the history is thin or split.
+
+    Each commit contributes 1/total to each file it touches, where
+    total is the commit's full breadth (every path it changed), not
+    the in-scope subset. Weighting by full breadth makes a file's
+    label invariant to which other files are in scope, so a carve that
+    removes files from scope does not shift the remaining labels. It
+    also matches the design intent that a large sweep counts little
+    per file."""
     wt = defaultdict(lambda: defaultdict(float))
-    lab, touched = None, []
+    lab, touched, total = None, [], 0
     log = git("log", "--no-merges", "--name-only", "--format=%x00%s")
     for line in log.split("\n"):
         if line.startswith("\x00"):
             if lab and touched:
-                w = 1.0 / len(touched)
+                w = 1.0 / total
                 for f in set(touched):
                     wt[f][lab] += w
             m = PRE.match(line[1:])
             lab = norm(m.group(1)) if m else None
-            touched = []
-        elif line in scope:
-            touched.append(line)
+            touched, total = [], 0
+        elif line:
+            total += 1
+            if line in scope:
+                touched.append(line)
     if lab and touched:
-        w = 1.0 / len(touched)
+        w = 1.0 / total
         for f in set(touched):
             wt[f][lab] += w
     areas = {}
