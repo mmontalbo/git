@@ -19,3 +19,8 @@ CODE_OF_CONDUCT.md -whitespace
 /t/t????-*.sh conflict-marker-size=32
 /t/unit-tests/clar/test/expected/* whitespace=-blank-at-eof
 /templates/hooks/*.sample whitespace=indent,trail,space,incomplete text eol=lf
+/commit-graph.c  area=pack
+/commit-graph.h  area=pack
+/commit-reach.c  area=revision
+/commit-reach.h  area=revision
+/tree-diff.c     area=diff
