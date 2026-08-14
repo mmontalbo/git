@@ -1,0 +1,132 @@
+#!/usr/bin/env python3
+"""git-reorg: enforce a declared source layout (prototype: check only).
+
+Usage:
+  git reorg check [--map FILE]   report files whose area does not match
+                                 the directory its area maps to
+
+The map is "directory: area area ..." per line (see git-layout.map).
+Each file's area is the prefix its commits use most often, weighted so
+small commits count more than large sweeps. This prototype checks the
+flat root source files; plan and apply are not built yet.
+"""
+import os
+import re
+import sys
+import subprocess
+from collections import defaultdict
+
+TOP = subprocess.check_output(
+    ["git", "rev-parse", "--show-toplevel"], text=True).strip()
+
+
+def git(*a):
+    return subprocess.run(["git", "-C", TOP, *a],
+                          capture_output=True, text=True).stdout
+
+
+def load_map(path):
+    """token -> directory, from 'directory: area area ...' lines."""
+    owner = {}
+    for line in open(path):
+        line = line.split("#", 1)[0].strip()
+        if not line or ":" not in line:
+            continue
+        d, areas = line.split(":", 1)
+        for a in areas.split():
+            owner[a] = d.strip()
+    return owner
+
+
+PRE = re.compile(r"^([A-Za-z0-9][\w./-]*):")
+
+
+def norm(p):
+    p = p.lower()
+    return p[:-2] if p.endswith((".c", ".h")) else p
+
+
+def file_areas(scope):
+    """Modal focus-weighted area label per file in scope, or None if
+    the history is thin or split."""
+    wt = defaultdict(lambda: defaultdict(float))
+    lab, touched = None, []
+    log = git("log", "--no-merges", "--name-only", "--format=%x00%s")
+    for line in log.split("\n"):
+        if line.startswith("\x00"):
+            if lab and touched:
+                w = 1.0 / len(touched)
+                for f in set(touched):
+                    wt[f][lab] += w
+            m = PRE.match(line[1:])
+            lab = norm(m.group(1)) if m else None
+            touched = []
+        elif line in scope:
+            touched.append(line)
+    if lab and touched:
+        w = 1.0 / len(touched)
+        for f in set(touched):
+            wt[f][lab] += w
+    areas = {}
+    for f, c in wt.items():
+        l, w = max(c.items(), key=lambda kv: (kv[1], kv[0]))
+        tot = sum(c.values())
+        if tot >= 2.0 and w / tot >= 0.34:
+            areas[f] = l
+    return areas
+
+
+def cmd_check(mapfile):
+    owner = load_map(mapfile)
+    scope = {f for f in git("ls-files", "*.c", "*.h").split()
+             if "/" not in f}
+    areas = file_areas(scope)
+    misfiled, tocreate = [], defaultdict(list)
+    for f, area in sorted(areas.items()):
+        token = area.split("/")[0].split("-")[0]
+        target = owner.get(token)
+        if not target or os.path.dirname(f) == target:
+            continue
+        if os.path.isdir(os.path.join(TOP, target)):
+            misfiled.append((f, area, target))
+        else:
+            tocreate[target].append(f)
+    print(f"checked {len(areas)} labelled root files against "
+          f"{os.path.basename(mapfile)}\n")
+    if misfiled:
+        print(f"misfiled: {len(misfiled)} files whose area directory "
+              "already exists:")
+        for f, area, target in misfiled:
+            print(f"  {f}  ->  {target}/   (labelled '{area}:')")
+        print()
+    if tocreate:
+        n = sum(len(v) for v in tocreate.values())
+        print(f"would create: {n} files map to {len(tocreate)} "
+              "directories that do not exist yet:")
+        for target in dict.fromkeys(owner.values()):
+            if target in tocreate:
+                print(f"  {target}/   {len(tocreate[target])} files")
+    if not misfiled and not tocreate:
+        print("layout is clean: every labelled file is in its "
+              "area's dir.")
+
+
+def main():
+    args = sys.argv[1:]
+    here = os.path.dirname(os.path.abspath(__file__))
+    mapfile = os.path.join(here, "git-layout.map")
+    if "--map" in args:
+        i = args.index("--map")
+        mapfile = args[i + 1]
+        args = args[:i] + args[i + 2:]
+    cmd = args[0] if args else "check"
+    if cmd == "check":
+        cmd_check(mapfile)
+    elif cmd in ("plan", "apply"):
+        sys.exit(f"git reorg {cmd}: not implemented in this prototype")
+    else:
+        sys.exit(__doc__)
+
+
+if __name__ == "__main__":
+    main()

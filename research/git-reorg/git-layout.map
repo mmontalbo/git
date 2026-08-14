@@ -1,0 +1,17 @@
+# git source layout: "directory: area names it holds".
+# An area is the prefix a commit subject uses, for example "diff:".
+# This is the declared map. The tool applies it; it does not invent it.
+odb: object odb oid oidmap oidset oidtree loose blob tag commit tree replace match tmp fsck hash sha1dc
+refs: refs refspec reflog ref ls worktree
+pack: pack packfile midx delta prune reachable server bloom chunk pseudo repack
+diff: diff diffcore combine range userdiff xdiff patch pickaxe
+merge: merge rerere fmt
+revision: revision log bisect shallow blame line graph decorate list pretty
+index: read cache split sparse unpack name preload resolve statinfo entry parallel dir pathspec checkout symlinks fsmonitor wt
+setup: config setup environment repository repo ident alias version hook
+convert: attr convert ws whitespace
+transport: transport remote connect connected send fetch upload walker http protocol serve pkt sideband bundle promisor
+notes: notes
+submodule: submodule
+archive: archive
+sequencer: sequencer rebase replay apply add reset branch mailinfo mailmap
