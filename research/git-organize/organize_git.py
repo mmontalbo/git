@@ -2,7 +2,7 @@
 
 Provides CommitPrefixSignal (label from commit subject prefixes),
 MapPolicy (the area map with declared overrides), and
-MakeMesonEnforcer (root scope, the move cascade, the validator).
+GitTransformer (root scope, the move cascade, the validator).
 Importing this module registers the "git-c" triple. Every git, C,
 Makefile, meson, include, nix, and .gitattributes string lives here.
 """
@@ -232,7 +232,7 @@ INCLUDE = re.compile(
     r'^[ \t]*#[ \t]*include[ \t]+"([^"]+)"', re.M)
 
 
-class MakeMesonEnforcer:
+class GitTransformer:
     """The git and C and Make and meson cascade. Owns root scope, the
     relocatability verdict, the include rewrite, the build-list edits,
     the validator, and rollback."""
@@ -251,7 +251,7 @@ class MakeMesonEnforcer:
     def target_ready(self, target):
         return os.path.isdir(os.path.join(TOP, target))
 
-    def already_placed(self, f, target):
+    def already_at(self, f, target):
         return os.path.dirname(f) == target
 
     def is_source(self, f):
@@ -386,7 +386,7 @@ class MakeMesonEnforcer:
         is skipped; a flagged .h whose .c is present but not moving is
         skipped with a reason."""
         flagged = {f for f in files
-                   if not self.already_placed(f, target)}
+                   if not self.already_at(f, target)}
         move_set, kept_public, skipped = set(), set(), []
         moving_c = set()
         for c in sorted(f for f in flagged if f.endswith(".c")):
@@ -544,7 +544,7 @@ class MakeMesonEnforcer:
         """The validator provider: confirm the organize preserved the
         artifact's invariant. For git's C sources this is the build and
         its tests; another domain plugs a different check here (a docs
-        enforcer would confirm that links resolve). A domain plugin, not
+        transformer would confirm that links resolve). A domain plugin, not
         the core gate. Returns a Verdict."""
         r = subprocess.run(self._build_cmd(), cwd=TOP)
         if r.returncode:
@@ -746,7 +746,7 @@ class MakeMesonEnforcer:
 
 
 def _make_git_c():
-    return (CommitPrefixSignal(), MapPolicy(), MakeMesonEnforcer())
+    return (CommitPrefixSignal(), MapPolicy(), GitTransformer())
 
 
 organize_core.register("git-c", _make_git_c)

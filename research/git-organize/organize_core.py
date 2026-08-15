@@ -1,7 +1,7 @@
 """organize core: records, seams, orchestration, registry.
 
 Enforce a declared layout through three seams: a Signal labels files,
-a Policy maps a label to a target, an Enforcer owns membership and the
+a Policy maps a label to a target, an Transformer owns membership and the
 move cascade. This module orchestrates records and formats output.
 
 Contract of this module (the purity invariant):
@@ -10,7 +10,7 @@ Contract of this module (the purity invariant):
   string lives in an adapter.
 - FileId and DirId are opaque handles. This module never takes a
   destination, a parent directory, or an existence check off one. Any
-  such question routes through the Enforcer.
+  such question routes through the Transformer.
 """
 import sys
 from dataclasses import dataclass, field
@@ -56,7 +56,7 @@ class Verdict:
 class Step:
     """One cascade action as generic metadata plus an opaque payload.
 
-    kind is move, edit, gate, or stage. Only the Enforcer interprets
+    kind is move, edit, gate, or stage. Only the Transformer interprets
     payload; the core prints kind, summary, reads, writes, preview."""
     kind: str
     summary: str
@@ -116,14 +116,14 @@ class Policy(Protocol):
         """The map's targets in declared order, for stable output."""
 
 
-class Enforcer(Protocol):
+class Transformer(Protocol):
     def scope(self):
         """The set[FileId] this adapter governs (build membership)."""
 
     def target_ready(self, target):
         """Whether target exists and can receive files."""
 
-    def already_placed(self, f, target):
+    def already_at(self, f, target):
         """Whether file f already sits in target. The core must not
         answer this itself; it is path arithmetic on a handle."""
 
@@ -160,7 +160,7 @@ _TRIPLES = {}
 
 
 def register(name, make):
-    """Register a factory returning (Signal, Policy, Enforcer)."""
+    """Register a factory returning (Signal, Policy, Transformer)."""
     _TRIPLES[name] = make
 
 
@@ -178,13 +178,13 @@ def registered(name):
     return name in _TRIPLES
 
 
-def _place_all(signal, policy, enforcer):
+def _place_all(signal, policy, transformer):
     """scope through the three seams to {FileId: Placement}.
 
     Keeps every file the Signal or an override gave a label, so the
     labelled count is stable even when a label maps to no target. A
     caller drops the target-less placements."""
-    scope = enforcer.scope()
+    scope = transformer.scope()
     votes = signal.label(scope)
     over = policy.overrides(scope)
     placed = {}
@@ -197,11 +197,11 @@ def _place_all(signal, policy, enforcer):
     return placed
 
 
-def _files_for(signal, policy, enforcer, target):
+def _files_for(signal, policy, transformer, target):
     """The set of scope files the Policy placed into target. The
-    Enforcer decides which of these actually move (pairing,
+    Transformer decides which of these actually move (pairing,
     relocatability, already-there)."""
-    placed = _place_all(signal, policy, enforcer)
+    placed = _place_all(signal, policy, transformer)
     return {f for f, p in placed.items() if p.target == target}
 
 
@@ -214,20 +214,20 @@ def _resolve_target(policy, area):
     return policy.target_of(area)
 
 
-def _override_notices(policy, enforcer):
+def _override_notices(policy, transformer):
     """Adapter-supplied lint lines for the declared overrides, with a
     header, or an empty list. The core prints the strings verbatim; the
     adapter owns detecting an unresolved value or a duplicate line and
     naming the valid areas."""
     if not hasattr(policy, "override_notices"):
         return []
-    notices = policy.override_notices(enforcer.scope())
+    notices = policy.override_notices(transformer.scope())
     if not notices:
         return []
     return ["", "override lint:"] + notices
 
 
-def cmd_apply(signal, policy, enforcer, mapref, area, commit):
+def cmd_apply(signal, policy, transformer, mapref, area, commit):
     if area is None:
         sys.exit("organize apply: --area X is required")
     policy.load(mapref)
@@ -235,30 +235,30 @@ def cmd_apply(signal, policy, enforcer, mapref, area, commit):
     if not target:
         sys.exit(f"organize apply: unknown area '{area}'\n"
                  "known areas: " + ", ".join(policy.ordered_targets()))
-    blockers = enforcer.preflight()
+    blockers = transformer.preflight()
     if blockers:
         sys.exit("organize apply: " + "; ".join(blockers))
-    if not enforcer.target_ready(target):
+    if not transformer.target_ready(target):
         sys.exit(f"organize apply: target dir {target}/ is absent")
-    plan = enforcer.plan(target, _files_for(signal, policy,
-                                            enforcer, target))
+    plan = transformer.plan(target, _files_for(signal, policy,
+                                            transformer, target))
     if not plan.moves:
         print("organize apply: nothing to do")
         return
-    result = enforcer.apply(plan, commit)
+    result = transformer.apply(plan, commit)
     for line in result.lines:
         print(line)
     if not result.ok:
         sys.exit(1)
 
 
-def cmd_status(signal, policy, enforcer, mapref, area=None,
+def cmd_status(signal, policy, transformer, mapref, area=None,
                by_area=False, conflicts=False, exit_code=False,
                group_signal=None, group_label="a second signal"):
     """Scope the organize against the declared layout.
 
     The default groups the drift by state, the way git status groups by
-    change type, and every count comes from the Enforcer's plans, not
+    change type, and every count comes from the Transformer's plans, not
     from the second signal. renamed is what apply --unconflicted moves
     (the plan over the non-conflicted files); conflict is placement (a
     second signal disagrees with the rule) plus requirement (the domain
@@ -270,7 +270,7 @@ def cmd_status(signal, policy, enforcer, mapref, area=None,
     set, flagging the conflicts. Without a second signal there are no
     placement conflicts and renamed is the whole plan."""
     if conflicts:
-        _status_conflicts(signal, policy, enforcer, mapref,
+        _status_conflicts(signal, policy, transformer, mapref,
                           group_signal, group_label)
         return
     policy.load(mapref)
@@ -283,10 +283,10 @@ def cmd_status(signal, policy, enforcer, mapref, area=None,
     agree, unver, clist = {}, {}, []
     if have_group:
         contested, agree, unver, clist = _agreement(
-            signal, policy, enforcer, group_signal, mapref)
+            signal, policy, transformer, group_signal, mapref)
         implied = {f: imp for f, _x, imp, _c in clist}
     if area is not None:
-        _status_area(signal, policy, enforcer, area, contested, implied,
+        _status_area(signal, policy, transformer, area, contested, implied,
                      group_label)
         return
     cont_by = {}
@@ -296,24 +296,24 @@ def cmd_status(signal, policy, enforcer, mapref, area=None,
     tot = {"renamed": 0, "placement": 0, "requirement": 0,
            "organized": 0}
     for t in policy.ordered_targets():
-        files = _files_for(signal, policy, enforcer, t)
+        files = _files_for(signal, policy, transformer, t)
         if not files:
             continue
-        plan = enforcer.plan(t, files)
+        plan = transformer.plan(t, files)
         # renamed is what apply --unconflicted moves: the plan over the
-        # non-conflicted files (the Enforcer drops a held source's
+        # non-conflicted files (the Transformer drops a held source's
         # riders too). The plan, not the second signal, is the source of
         # truth for what moves, so a domain with no second signal reads
         # correctly.
         safe = files - contested
         renamed = (len(plan.moves) if safe == files
-                   else len(enforcer.plan(t, safe).moves))
+                   else len(transformer.plan(t, safe).moves))
         placement = cont_by.get(t, 0)
         requirement = len(plan.skipped)
         organized = len(plan.kept_public)
         if not (renamed or placement or requirement or organized):
             continue
-        state = "exists" if enforcer.target_ready(t) else "new"
+        state = "exists" if transformer.target_ready(t) else "new"
         rows.append((t, state, renamed, placement, requirement,
                      organized))
         tot["renamed"] += renamed
@@ -322,12 +322,12 @@ def cmd_status(signal, policy, enforcer, mapref, area=None,
         tot["organized"] += organized
     if by_area:
         _status_by_area(policy, rows)
-        for line in _override_notices(policy, enforcer):
+        for line in _override_notices(policy, transformer):
             print(line)                # first notice prints its header
         return
-    place_all = _place_all(signal, policy, enforcer)
-    scope_src = {f for f in enforcer.scope() if enforcer.is_source(f)}
-    placed_src = {f for f in place_all if enforcer.is_source(f)}
+    place_all = _place_all(signal, policy, transformer)
+    scope_src = {f for f in transformer.scope() if transformer.is_source(f)}
+    placed_src = {f for f in place_all if transformer.is_source(f)}
     untracked = len(scope_src - placed_src)
     renamed = tot["renamed"]
     conflict = tot["placement"] + tot["requirement"]
@@ -343,7 +343,7 @@ def cmd_status(signal, policy, enforcer, mapref, area=None,
           f"{conflict} conflicts.\norganize status --conflicts lists "
           "them; --by-area splits per subsystem;\nstatus <area> shows "
           "one.")
-    for line in _override_notices(policy, enforcer):
+    for line in _override_notices(policy, transformer):
         # first notice line prints its own header
         print(line)
     if exit_code:
@@ -362,7 +362,7 @@ def _status_by_area(policy, rows):
               f"{organized:>10}")
 
 
-def _status_area(signal, policy, enforcer, area, contested, implied,
+def _status_area(signal, policy, transformer, area, contested, implied,
                  group_label="a second signal"):
     """Show one subsystem's exact move set, the dry run plan used to
     print, now flagging which files apply --unconflicted would hold."""
@@ -370,7 +370,7 @@ def _status_area(signal, policy, enforcer, area, contested, implied,
     if not target:
         sys.exit(f"organize status: unknown area '{area}'\n"
                  "known areas: " + ", ".join(policy.ordered_targets()))
-    plan = enforcer.plan(target, _files_for(signal, policy, enforcer,
+    plan = transformer.plan(target, _files_for(signal, policy, transformer,
                                             target))
     nc = sum(1 for s, _ in plan.moves if s in contested)
     na = len(plan.moves) - nc
@@ -394,7 +394,7 @@ def _status_area(signal, policy, enforcer, area, contested, implied,
               "the decisions.")
 
 
-def _agreement(signal, policy, enforcer, group_signal, mapref):
+def _agreement(signal, policy, transformer, group_signal, mapref):
     """Cross-check the rule placement against a second signal that groups
     files.
 
@@ -415,13 +415,13 @@ def _agreement(signal, policy, enforcer, group_signal, mapref):
     if group_signal is None:
         return set(), {}, {}, []
     policy.load(mapref)
-    placed = _place_all(signal, policy, enforcer)
+    placed = _place_all(signal, policy, transformer)
     rule_area = {f: p.target for f, p in placed.items() if p.target}
     remaining = {f: t for f, t in rule_area.items()
-                 if enforcer.is_source(f)
-                 and not enforcer.already_placed(f, t)}
+                 if transformer.is_source(f)
+                 and not transformer.already_at(f, t)}
     group = {f: v.primary
-             for f, v in group_signal.label(enforcer.scope()).items()
+             for f, v in group_signal.label(transformer.scope()).items()
              if v.primary}
     members = {}
     for f, c in group.items():
@@ -449,30 +449,30 @@ def _agreement(signal, policy, enforcer, group_signal, mapref):
     return {f for f, _, _, _ in contested}, agree, unver, contested
 
 
-def cmd_apply_auto(signal, policy, enforcer, mapref, commit,
+def cmd_apply_auto(signal, policy, transformer, mapref, commit,
                    group_signal=None):
     """Converge every unconflicted subsystem in one gated pass.
 
     The organize's terraform-apply. Unconflicted means the rule and the
     second signal do not disagree (agreed or the second signal is
     silent); conflict sources are held at the root as a todo for a human
-    or an LM. All moves run as one operation, then the Enforcer gates
+    or an LM. All moves run as one operation, then the Transformer gates
     them: the pure-rename check (a git primitive, domain-agnostic) and
     the validator (a domain plugin, the build for a C tree). The batch is
     staged, or committed with --commit."""
-    contested = _agreement(signal, policy, enforcer,
+    contested = _agreement(signal, policy, transformer,
                            group_signal, mapref)[0]
     policy.load(mapref)
-    blockers = enforcer.preflight()
+    blockers = transformer.preflight()
     if blockers:
         sys.exit("organize apply --unconflicted: " + "; ".join(blockers))
     plans = []
     for t in policy.ordered_targets():
-        files = {f for f in _files_for(signal, policy, enforcer, t)
+        files = {f for f in _files_for(signal, policy, transformer, t)
                  if f not in contested}
         if not files:
             continue
-        plan = enforcer.plan(t, files)
+        plan = transformer.plan(t, files)
         if plan.moves:
             plans.append(plan)
     if not plans:
@@ -483,14 +483,14 @@ def cmd_apply_auto(signal, policy, enforcer, mapref, commit,
     print(f"converging {len(plans)} subsystems, {n} unconflicted "
           f"files; holding {len(contested)} conflict sources at "
           f"root\n")
-    result = enforcer.apply_auto(plans, commit)
+    result = transformer.apply_auto(plans, commit)
     for line in result.lines:
         print(line)
     if not result.ok:
         sys.exit(1)
 
 
-def _status_conflicts(signal, policy, enforcer, mapref,
+def _status_conflicts(signal, policy, transformer, mapref,
                       group_signal=None, group_label="a second signal"):
     """Emit the worklist of conflicts that need a human or an LM.
 
@@ -503,17 +503,17 @@ def _status_conflicts(signal, policy, enforcer, mapref,
     the second signal place in different subsystems; the resolver keeps
     it where the rule put it, or records an override that moves it to
     where the second signal points. A conflict (requirement) entry is a
-    source the rule would move but the Enforcer cannot place mechanically
+    source the rule would move but the Transformer cannot place mechanically
     (a program, a per-object rule); it is normally left at the root."""
     _cset, _a, _u, contested = _agreement(
-        signal, policy, enforcer, group_signal, mapref)
+        signal, policy, transformer, group_signal, mapref)
     policy.load(mapref)
     skips = []
     for t in policy.ordered_targets():
-        files = _files_for(signal, policy, enforcer, t)
+        files = _files_for(signal, policy, transformer, t)
         if not files:
             continue
-        for f, reason in enforcer.plan(t, files).skipped:
+        for f, reason in transformer.plan(t, files).skipped:
             skips.append((f, t, reason))
     print(f"organize status --conflicts: {len(contested) + len(skips)} "
           f"conflicts\n({len(contested)} rule vs evidence, {len(skips)} "
@@ -521,7 +521,7 @@ def _status_conflicts(signal, policy, enforcer, mapref,
     for f, X, implied, c in sorted(contested):
         tok = policy.token_for(implied)
         equiv = "" if tok == implied else f" (the token for {implied}/)"
-        header = enforcer.paired_internal_header(f)
+        header = transformer.paired_internal_header(f)
         print(f"[conflict] {f}")
         print(f"  rule says:      {X}/  (commit-subject label)")
         print(f"  {group_label}:   {implied}/  (group "
@@ -605,19 +605,19 @@ def main(default_triple, default_mapref, group_signal=None,
     if args and args[0] in ("--help", "-h", "help"):
         print(DOC)                     # explicit help exits 0
         return
-    signal, policy, enforcer = get_triple(triple or default_triple)
+    signal, policy, transformer = get_triple(triple or default_triple)
     cmd = args[0] if args else "status"
     if area is None and cmd == "status" and len(args) > 1:
         area = args[1]                 # organize status <area>
     if cmd == "status":
-        cmd_status(signal, policy, enforcer, mapref, area, by_area,
+        cmd_status(signal, policy, transformer, mapref, area, by_area,
                    conflicts, exit_code, group_signal, group_label)
     elif cmd == "apply":
         if auto:
-            cmd_apply_auto(signal, policy, enforcer, mapref, commit,
+            cmd_apply_auto(signal, policy, transformer, mapref, commit,
                            group_signal)
         else:
-            cmd_apply(signal, policy, enforcer, mapref, area, commit)
+            cmd_apply(signal, policy, transformer, mapref, area, commit)
     elif cmd == "check":
         sys.exit("organize check is now organize status --exit-code")
     elif cmd == "agree":

@@ -1,10 +1,10 @@
 """organize cohesion adapter: a Signal and Policy from include cohesion.
 
-A second component that reuses the git Enforcer unchanged. The Signal
+A second component that reuses the git Transformer unchanged. The Signal
 labels each root .c file by the include-cohesion cluster it lands in;
 the Policy treats a cluster name as its own target directory. This
 proves the Signal and Policy seams accept a different label vocabulary
-(cluster names, not git area tokens) over the same enforcer cascade.
+(cluster names, not git area tokens) over the same transformer cascade.
 
 The cohesion measure is reused from research/lib-reorg/cohlib.py by
 import. The agglomerative clustering is ported here as a compact
@@ -19,7 +19,7 @@ from itertools import combinations
 
 import organize_core
 from organize_core import Vote, Placement
-from organize_git import MakeMesonEnforcer
+from organize_git import GitTransformer
 
 _LIBREORG = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -113,7 +113,7 @@ def _cluster(inc):
 
 class CohesionSignal:
     """Label each root .c file by the include-cohesion cluster it lands
-    in. Headers get no vote; the enforcer pairs a header when its
+    in. Headers get no vote; the transformer pairs a header when its
     source moves, exactly as with the git signal. The label vocabulary
     is cluster names, a file stem, not the git area tokens."""
 
@@ -165,7 +165,7 @@ class ClusterPolicy:
 
 
 def _make_cohesion():
-    return (CohesionSignal(), ClusterPolicy(), MakeMesonEnforcer())
+    return (CohesionSignal(), ClusterPolicy(), GitTransformer())
 
 
 organize_core.register("cohesion", _make_cohesion)

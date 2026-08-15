@@ -1,4 +1,4 @@
-"""organize config adapter: a domain-neutral Signal, Policy, Enforcer.
+"""organize config adapter: a domain-neutral Signal, Policy, Transformer.
 
 One adapter that fills the three seams from a JSON config plus command
 call-outs, so a project reorganizes with no Python. It holds no domain
@@ -253,7 +253,7 @@ class ConfigPolicy:
         return target
 
 
-class ConfigEnforcer:
+class ConfigTransformer:
     """The generic move cascade: scope from member globs, relocatability
     from a command, and plan/apply built from the primitives.
 
@@ -290,7 +290,7 @@ class ConfigEnforcer:
     def target_ready(self, target):
         return os.path.isdir(os.path.join(self._root, target))
 
-    def already_placed(self, f, target):
+    def already_at(self, f, target):
         return os.path.dirname(f) == target
 
     def is_source(self, f):
@@ -335,7 +335,7 @@ class ConfigEnforcer:
         files become skipped requirement conflicts. Drops files already
         in target. No pairing and no build-list edit; the reference
         repoint runs in apply from the config patterns."""
-        flagged = {f for f in files if not self.already_placed(f, target)}
+        flagged = {f for f in files if not self.already_at(f, target)}
         blocked = self._relocatability(self.scope())
         move_set, skipped = set(), []
         for f in sorted(flagged):
@@ -543,8 +543,8 @@ def register_config(path):
     def build():
         policy = ConfigPolicy(cfg)
         signal = ConfigSignal(cfg, policy)
-        enforcer = ConfigEnforcer(cfg, policy)
-        return (signal, policy, enforcer)
+        transformer = ConfigTransformer(cfg, policy)
+        return (signal, policy, transformer)
 
     organize_core.register(name, build)
     return name, cfg
@@ -559,22 +559,22 @@ def register_config(path):
 # they defer to the core unchanged.
 
 
-def _config_status(signal, policy, enforcer, mapref):
+def _config_status(signal, policy, transformer, mapref):
     """The state summary for a config triple, built from the generic
     seams: renamed is the files a plan would move, conflict is the
     requirement conflicts the relocate command flags, clean is the
     files already in place. No second-signal cross-check."""
     policy.load(mapref)
     renamed, conflict, rows = 0, 0, []
-    scope = enforcer.scope()
-    placed = organize_core._place_all(signal, policy, enforcer)
+    scope = transformer.scope()
+    placed = organize_core._place_all(signal, policy, transformer)
     placed_files = set(placed)
     for t in policy.ordered_targets():
-        files = organize_core._files_for(signal, policy, enforcer, t)
+        files = organize_core._files_for(signal, policy, transformer, t)
         if not files:
             continue
-        plan = enforcer.plan(t, files)
-        state = "exists" if enforcer.target_ready(t) else "new"
+        plan = transformer.plan(t, files)
+        state = "exists" if transformer.target_ready(t) else "new"
         rows.append((t, state, len(plan.moves), len(plan.skipped)))
         renamed += len(plan.moves)
         conflict += len(plan.skipped)
@@ -595,23 +595,23 @@ def _config_status(signal, policy, enforcer, mapref):
           "validated pass; status <area> shows one area's move set.")
 
 
-def _config_apply_auto(signal, policy, enforcer, mapref):
+def _config_apply_auto(signal, policy, transformer, mapref):
     """All-areas apply for a config triple. Collect every area's plan,
     then run them as one operation through the generic apply_auto, so a
     cross-area reference repoints against the whole batch and validate
-    sees the fully moved tree. Routes through the enforcer directly,
+    sees the fully moved tree. Routes through the transformer directly,
     holding no conflict set because a config domain has no second
     signal."""
     policy.load(mapref)
-    blockers = enforcer.preflight()
+    blockers = transformer.preflight()
     if blockers:
         sys.exit("organize apply --unconflicted: " + "; ".join(blockers))
     plans = []
     for t in policy.ordered_targets():
-        files = organize_core._files_for(signal, policy, enforcer, t)
+        files = organize_core._files_for(signal, policy, transformer, t)
         if not files:
             continue
-        plan = enforcer.plan(t, files)
+        plan = transformer.plan(t, files)
         if plan.moves:
             plans.append(plan)
     if not plans:
@@ -621,7 +621,7 @@ def _config_apply_auto(signal, policy, enforcer, mapref):
     held = sum(len(p.skipped) for p in plans)
     print(f"converging {len(plans)} areas, {n} files; holding {held} "
           f"conflict sources at root\n")
-    result = enforcer.apply_auto(plans, False)
+    result = transformer.apply_auto(plans, False)
     for line in result.lines:
         print(line)
     if not result.ok:
@@ -644,16 +644,16 @@ def dispatch(name, mapref, argv):
     auto = "--unconflicted" in probe
     words = [a for a in probe if not a.startswith("-")]
     cmd = words[0] if words else "status"
-    signal, policy, enforcer = organize_core.get_triple(name)
+    signal, policy, transformer = organize_core.get_triple(name)
     flags = ("--by-area", "--conflicts", "--exit-code")
     named_area = area or (words[1] if cmd == "status" and len(words) > 1
                           else None)
     if cmd == "status" and named_area is None \
             and not any(f in probe for f in flags):
-        _config_status(signal, policy, enforcer, mapref)
+        _config_status(signal, policy, transformer, mapref)
         return
     if cmd == "apply" and auto:
-        _config_apply_auto(signal, policy, enforcer, mapref)
+        _config_apply_auto(signal, policy, transformer, mapref)
         return
     # Every other command (status <area>, apply --area X, status
     # --by-area) reads from the plan, so the core handles it with no
