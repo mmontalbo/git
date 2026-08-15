@@ -186,8 +186,8 @@ def _place_all(signal, policy, enforcer):
     """scope through the three seams to {FileId: Placement}.
 
     Keeps every file the Signal or an override gave a label, so the
-    labelled count is stable even when a label maps to no target.
-    classify later drops the target-less placements."""
+    labelled count is stable even when a label maps to no target. A
+    caller drops the target-less placements."""
     scope = enforcer.scope()
     votes = signal.label(scope)
     over = policy.overrides(scope)
@@ -207,72 +207,6 @@ def _files_for(signal, policy, enforcer, target):
     relocatability, already-there)."""
     placed = _place_all(signal, policy, enforcer)
     return {f for f, p in placed.items() if p.target == target}
-
-
-def classify(policy, enforcer, placed):
-    """Split placed files into (misfiled, tocreate).
-
-    misfiled: [(file, label, target)] whose target is ready and that
-    are not already there. tocreate: {target: [files]} whose target is
-    not ready. A target-less placement (no map opinion) is dropped.
-    Both the readiness and the already-there test route through the
-    Enforcer, so the core does no path arithmetic."""
-    misfiled, tocreate = [], {}
-    for f in sorted(placed):
-        p = placed[f]
-        target = p.target
-        if target is None or enforcer.already_placed(f, target):
-            continue
-        if enforcer.target_ready(target):
-            misfiled.append((f, p.label, target))
-        else:
-            tocreate.setdefault(target, []).append(f)
-    return misfiled, tocreate
-
-
-def cmd_check(signal, policy, enforcer, mapref, full=False):
-    """Report labelled root files whose area directory does not match.
-
-    Summary-first: counts and per-directory buckets by default; the full
-    misfiled file list is behind --full."""
-    policy.load(mapref)
-    placed = _place_all(signal, policy, enforcer)
-    misfiled, tocreate = classify(policy, enforcer, placed)
-    ncreate = sum(len(v) for v in tocreate.values())
-    print(f"organize check against {policy.name()}\n")
-    print(f"checked {len(placed)} labelled root files: {len(misfiled)} "
-          f"misfiled (area dir exists),\n{ncreate} would move to "
-          f"{len(tocreate)} dirs that do not exist yet.\n")
-    if misfiled:
-        by_target = {}
-        for f, label, target in misfiled:
-            by_target.setdefault(target, 0)
-            by_target[target] += 1
-        print(f"misfiled: {len(misfiled)} files whose area directory "
-              "already exists:")
-        for target in policy.ordered_targets():
-            if target in by_target:
-                print(f"  {target}/   {by_target[target]} files")
-        print()
-    if tocreate:
-        print(f"would create: {ncreate} files map to {len(tocreate)} "
-              "directories that do not exist yet:")
-        for target in policy.ordered_targets():
-            if target in tocreate:
-                print(f"  {target}/   {len(tocreate[target])} files")
-        print()
-    if not misfiled and not tocreate:
-        print("layout is clean: every labelled file is in its "
-              "area's dir.")
-        return
-    if full:
-        print("misfiled files (--full):")
-        for f, label, target in misfiled:
-            print(f"  {f}  ->  {target}/   (labelled '{label}:')")
-    else:
-        print("run organize check --full for the per-file misfiled "
-              "list,\nor organize status for the corroborated/"
-              "unverified/contested split.")
 
 
 def _resolve_target(policy, area):
@@ -322,33 +256,35 @@ def cmd_apply(signal, policy, enforcer, mapref, area, commit):
         sys.exit(1)
 
 
-def cmd_status(signal, policy, enforcer, mapref, area=None):
-    """Scope the organize against the declared rules.
+def cmd_status(signal, policy, enforcer, mapref, area=None,
+               by_area=False, conflicts=False, exit_code=False):
+    """Scope the organize against the declared layout.
 
-    With no area, per subsystem split the remaining candidate SOURCES by
-    signal agreement: corroborated (both the commit-label rule and the
-    cohesion evidence agree, safe to automate), unverified (cohesion is
-    silent, the rule stands alone), and contested (the two disagree, so
-    apply --auto holds the source for a human or an LM). Two mechanical
-    columns ride alongside: marked counts sources the rule cannot place
-    (a program, a per-object rule the move would strand), held at root
-    despite their label; public counts interface headers the carve
-    keeps at root. The source columns reconcile with organize agree,
-    which is the oracle: corroborated + unverified + contested equals
-    the sources routed to each area. Paired internal headers move with
-    their source, so the move total exceeds the source total; the
-    reconciliation note states the difference. With an area (a directory
-    name or an area token), show that subsystem's exact move set,
-    flagging the contested files; this is the dry run that plan used to
-    print. The split needs the cohesion triple; without it, contested is
-    0 and every source reads as unverified."""
+    The default groups the drift by state, the way git status groups by
+    change type. renamed sums the sources apply would move (agreed plus
+    declared-only); conflict sums the sources it cannot auto-apply
+    (placement, the rule and the includes disagree, plus requirement,
+    the move would break the build); untracked counts root .c that no
+    rule places; clean counts interface headers the carve keeps at root.
+    The renamed count reconciles with the include cross-check, whose
+    sources total is agreed + declared-only + placement. With --by-area,
+    print the same numbers as a per-subsystem table; with --conflicts,
+    print the conflict worklist; with --exit-code, exit 0 on a clean
+    layout and 1 otherwise, for CI. With an area (a directory name or an
+    area token), show that subsystem's exact move set, flagging the
+    conflicts; this is the dry run that plan used to print. The placement
+    split needs the include triple; without it placement reads 0 and
+    every source reads as declared-only."""
+    if conflicts:
+        _status_conflicts(signal, policy, enforcer, mapref)
+        return
     policy.load(mapref)
     have_cohesion = "cohesion" in _TRIPLES
     if not have_cohesion:
         why = _cohesion_absent_reason()
-        print("organize status: the cohesion triple is not registered, "
-              "so the\ncorroborated/contested split is unavailable; "
-              "every source reads\nas unverified. " + why + "\n")
+        print("organize status: the include triple is not registered, "
+              "so the\nagreed/placement split is unavailable; every "
+              "source reads\nas declared-only. " + why + "\n")
     contested, implied = set(), {}
     agree, unver, clist = {}, {}, []
     if have_cohesion:
@@ -360,75 +296,87 @@ def cmd_status(signal, policy, enforcer, mapref, area=None):
     cont_by = {}
     for _f, X, _imp, _c in clist:
         cont_by[X] = cont_by.get(X, 0) + 1
-    rows, skips = [], []
-    tot = {"corrob": 0, "unver": 0, "cont": 0, "marked": 0,
-           "public": 0, "moves": 0, "headers": 0}
+    rows = []
+    tot = {"agreed": 0, "declared": 0, "placement": 0, "requirement": 0,
+           "clean": 0, "moves": 0, "headers": 0}
     for t in policy.ordered_targets():
         files = _files_for(signal, policy, enforcer, t)
         if not files:
             continue
         plan = enforcer.plan(t, files)
-        corrob = agree.get(t, 0)
-        unv = unver.get(t, 0)
-        cont = cont_by.get(t, 0)
-        marked = len(plan.skipped)
-        public = len(plan.kept_public)
+        agreed = agree.get(t, 0)
+        declared = unver.get(t, 0)
+        placement = cont_by.get(t, 0)
+        requirement = len(plan.skipped)
+        clean = len(plan.kept_public)
         headers = plan.paired_headers
-        if not (corrob or unv or cont or marked or plan.moves):
+        if not (agreed or declared or placement or requirement
+                or plan.moves):
             continue
         state = "exists" if enforcer.target_ready(t) else "new"
-        rows.append((t, state, corrob, unv, cont, marked, public))
-        for f, reason in plan.skipped:
-            skips.append((t, f, reason))
-        tot["corrob"] += corrob
-        tot["unver"] += unv
-        tot["cont"] += cont
-        tot["marked"] += marked
-        tot["public"] += public
+        rows.append((t, state, agreed, declared, placement,
+                     requirement, clean))
+        tot["agreed"] += agreed
+        tot["declared"] += declared
+        tot["placement"] += placement
+        tot["requirement"] += requirement
+        tot["clean"] += clean
         tot["moves"] += len(plan.moves)
         tot["headers"] += headers
-    print(f"organize status against {policy.name()}\n")
-    print(f"  {'subsystem':<11}{'dir':<7}{'corrob':>7}{'unver':>6}"
-          f"{'contested':>10}{'marked':>7}{'public':>7}")
-    for t, state, corrob, unv, cont, marked, public in rows:
-        print(f"  {t + '/':<11}{state:<7}{corrob:>7}{unv:>6}{cont:>10}"
-              f"{marked:>7}{public:>7}")
-    sources = tot["corrob"] + tot["unver"] + tot["cont"]
-    print(f"\ncorroborated (both signals agree, safe to automate): "
-          f"{tot['corrob']} sources")
-    print(f"unverified (cohesion silent, rule stands alone): "
-          f"{tot['unver']} sources")
-    print(f"contested (rule vs cohesion disagree, held for a decision): "
-          f"{tot['cont']} sources")
-    print(f"marked (cannot place mechanically, held at root): "
-          f"{tot['marked']} files")
-    print("\nlegend: public = interface headers kept at root, not "
-          "moved.\ncorrob/unver/contested count SOURCES and reconcile "
-          "with organize\nagree; a paired internal header moves with "
-          "its source.")
-    print(f"reconcile: {sources} sources = {tot['corrob']} "
-          f"corroborated + {tot['unver']}\nunverified + "
-          f"{tot['cont']} contested; {tot['moves']} moves = the "
-          f"movable sources\nof those plus {tot['headers']} internal "
-          "headers riding along.")
-    if skips:
-        print("\nmarked (non-relocatable):")
-        for t, f, reason in skips:
-            print(f"  {f}  ->  {t}/   blocked: {reason}")
-    if have_cohesion:
-        print("\norganize status <area> shows a subsystem's exact "
-              "moves; apply\n--auto carves the corroborated and "
-              "unverified and holds the\ncontested; organize markers "
-              "gives each contested file's\npositions and the rule "
-              "edit to resolve it.")
+    if by_area:
+        _status_by_area(policy, rows)
+        for line in _override_notices(policy, enforcer):
+            print(line)                # first notice prints its header
+        return
+    place_all = _place_all(signal, policy, enforcer)
+    scope_c = {f for f in enforcer.scope() if f.endswith(".c")}
+    placed_c = {f for f in place_all if f.endswith(".c")}
+    untracked = len(scope_c - placed_c)
+    renamed = tot["agreed"] + tot["declared"]
+    conflict = tot["placement"] + tot["requirement"]
+    clean_layout = renamed == 0 and conflict == 0
+    banner = "(layout clean)" if clean_layout else "(layout not clean)"
+    print(f"organize status against {policy.name()}   {banner}\n")
+    print(f"renamed    {renamed:<5} will move on apply  (agreed "
+          f"{tot['agreed']}, declared-only {tot['declared']})")
+    print(f"conflict   {conflict:<5} cannot auto-apply:")
+    print(f"             placement    {tot['placement']:<5} rule vs "
+          "the includes disagree on the area")
+    print(f"             requirement  {tot['requirement']:<5} move "
+          "would break the build (program, per-object)")
+    print(f"untracked  {untracked:<5} no rule places these")
+    print(f"clean      {tot['clean']:<5} interface headers kept at "
+          "root")
+    print(f"\n{renamed} renamed = {tot['agreed']} agreed + "
+          f"{tot['declared']} declared-only; apply --unconflicted\n"
+          f"moves those plus {tot['headers']} internal headers and "
+          f"holds the {conflict} conflicts.")
+    print("\norganize status --conflicts lists each conflict; "
+          "--by-area splits\nthis per subsystem; status <area> shows "
+          "one subsystem's moves.")
     for line in _override_notices(policy, enforcer):
         # first notice line prints its own header
         print(line)
+    if exit_code:
+        sys.exit(0 if clean_layout else 1)
+
+
+def _status_by_area(policy, rows):
+    """Print the per-subsystem drift table: the same quantities the
+    default groups by state, laid out by area."""
+    print(f"organize status against {policy.name()}\n")
+    print(f"  {'subsystem':<11}{'dir':<7}{'agreed':>7}"
+          f"{'declared-only':>14}{'placement':>10}"
+          f"{'requirement':>12}{'clean':>7}")
+    for t, state, agreed, declared, placement, requirement, clean \
+            in rows:
+        print(f"  {t + '/':<11}{state:<7}{agreed:>7}{declared:>14}"
+              f"{placement:>10}{requirement:>12}{clean:>7}")
 
 
 def _status_area(signal, policy, enforcer, area, contested, implied):
     """Show one subsystem's exact move set, the dry run plan used to
-    print, now flagging which files apply --auto would hold."""
+    print, now flagging which files apply --unconflicted would hold."""
     target = _resolve_target(policy, area)
     if not target:
         sys.exit(f"organize status: unknown area '{area}'\n"
@@ -438,44 +386,44 @@ def _status_area(signal, policy, enforcer, area, contested, implied):
     nc = sum(1 for s, _ in plan.moves if s in contested)
     na = len(plan.moves) - nc
     print(f"organize status for {target}/  ({na} auto-ready, {nc} "
-          f"contested)\n")
+          f"conflict (placement))\n")
     print(f"moves: {len(plan.moves)} files")
     for src, dst in plan.moves:
-        tag = ("   * contested: cohesion says "
+        tag = ("   * conflict (placement): the includes say "
                f"{implied.get(src, '?')}/") if src in contested else ""
         print(f"  {src:<22}  ->  {dst}{tag}")
     for line in plan.notes:
         print(line)
     if plan.skipped:
-        print("\nnon-relocatable (held at root):")
+        print("\nconflict (requirement):")
         for f, reason in plan.skipped:
             print(f"  {f}  ({reason})")
     if nc:
-        print(f"\napply --auto moves the {na} auto-ready and holds the "
-              f"{nc} contested;\napply --area {area} would move all "
-              f"{len(plan.moves)}. See organize markers\nfor the "
-              "contested decisions.")
+        print(f"\napply --unconflicted moves the {na} auto-ready and "
+              f"holds the {nc} conflict (placement);\napply --area "
+              f"{area} would move all {len(plan.moves)}. See organize "
+              "status\n--conflicts for the conflict decisions.")
 
 
 def _agree_verdicts(mapref):
-    """Cross-check the commit-label rule against the cohesion signal.
+    """Cross-check the commit-label rule against the include signal.
 
     The three-way merge of the layout: base is the current tree, the
-    rule is one side, the cohesion evidence is the other. Returns
-    (git-c policy, contested-set, agree-by-area, unverified-by-area,
-    contested-list). A source is contested only when one different
-    rule-area is the strict majority of its cohesion-cluster neighbors
-    and outweighs its own; agreed when its own area leads or ties;
-    unverified when cohesion has no opinion, or when the cluster is too
-    scattered for any area to hold a majority. That majority test drops
-    co-consumption noise: a loose cluster whose members spread across
-    many unrelated areas names no majority, so it does not contest.
-    Ties among the majority areas break by name, so verdicts are
-    reproducible. Computed on sources; headers ride with their source.
-    Needs the cohesion triple."""
+    rule is one side, the include evidence is the other. Returns
+    (git-c policy, conflict-set, agreed-by-area, declared-only-by-area,
+    conflict-list). A source is a placement conflict only when one
+    different rule-area is the strict majority of its include-cluster
+    neighbors and outweighs its own; agreed when its own area leads or
+    ties; declared-only when the includes have no opinion, or when the
+    cluster is too scattered for any area to hold a majority. That
+    majority test drops co-consumption noise: a loose cluster whose
+    members spread across many unrelated areas names no majority, so it
+    does not conflict. Ties among the majority areas break by name, so
+    verdicts are reproducible. Computed on sources; headers ride with
+    their source. Needs the include triple."""
     gs, gp, ge = get_triple("git-c")
     if "cohesion" not in _TRIPLES:
-        sys.exit("organize: the cohesion triple is not registered "
+        sys.exit("organize: the include triple is not registered "
                  "(needs research/lib-reorg on the path)")
     cs = get_triple("cohesion")[0]
     gp.load(mapref)
@@ -511,38 +459,12 @@ def _agree_verdicts(mapref):
     return gp, {f for f, _, _, _ in contested}, agree, unver, contested
 
 
-def cmd_agree(mapref):
-    """Corroborate the commit-label rule with the cohesion signal:
-    agree (safe to automate), contested (needs a decision), unverified
-    (cohesion silent). See _agree_verdicts for the rule."""
-    gp, _cset, agree, unver, contested = _agree_verdicts(mapref)
-    print(f"organize agree: cohesion corroboration of {gp.name()}\n")
-    print(f"  {'subsystem':<12}{'agree':>6}{'contested':>10}"
-          f"{'unverified':>12}")
-    for t in gp.ordered_targets():
-        nc = sum(1 for _, x, _, _ in contested if x == t)
-        if agree.get(t) or unver.get(t) or nc:
-            print(f"  {t + '/':<12}{agree.get(t, 0):>6}{nc:>10}"
-                  f"{unver.get(t, 0):>12}")
-    print(f"\ncorroborated (both signals agree, safe to automate): "
-          f"{sum(agree.values())}")
-    print(f"contested (signals disagree, needs a decision): "
-          f"{len(contested)}")
-    print(f"unverified (cohesion silent, rule stands alone): "
-          f"{sum(unver.values())}")
-    if contested:
-        print("\ncontested sources (rule -> cohesion suggests):")
-        for f, X, implied, c in sorted(contested):
-            print(f"  {f:<22} {X}/ -> groups with {implied}/ "
-                  f"(cohesion cluster '{c}')")
-
-
 def cmd_apply_auto(signal, policy, enforcer, mapref, commit):
-    """Converge every uncontested subsystem in one gated pass.
+    """Converge every unconflicted subsystem in one gated pass.
 
-    The organize's terraform-apply. Uncontested means the rule and the
-    cohesion evidence do not disagree (agreed or cohesion-silent);
-    contested sources are held at the root as markers for a human or an
+    The organize's terraform-apply. Unconflicted means the rule and the
+    include evidence do not disagree (agreed or include-silent);
+    conflict sources are held at the root as a todo for a human or an
     LM. All moves run as one operation, then the Enforcer gates them:
     the pure-rename check (a git primitive, domain-agnostic) and the
     validator (a domain plugin, the build for git's C sources). The
@@ -551,7 +473,7 @@ def cmd_apply_auto(signal, policy, enforcer, mapref, commit):
     policy.load(mapref)
     blockers = enforcer.preflight()
     if blockers:
-        sys.exit("organize apply --auto: " + "; ".join(blockers))
+        sys.exit("organize apply --unconflicted: " + "; ".join(blockers))
     plans = []
     for t in policy.ordered_targets():
         files = {f for f in _files_for(signal, policy, enforcer, t)
@@ -562,11 +484,12 @@ def cmd_apply_auto(signal, policy, enforcer, mapref, commit):
         if plan.moves:
             plans.append(plan)
     if not plans:
-        print("organize apply --auto: nothing uncontested to carve")
+        print("organize apply --unconflicted: nothing unconflicted "
+              "to carve")
         return
     n = sum(len(p.moves) for p in plans)
-    print(f"converging {len(plans)} subsystems, {n} uncontested "
-          f"files; holding {len(contested)} contested sources at "
+    print(f"converging {len(plans)} subsystems, {n} unconflicted "
+          f"files; holding {len(contested)} conflict sources at "
           f"root\n")
     result = enforcer.apply_auto(plans, commit)
     for line in result.lines:
@@ -575,21 +498,21 @@ def cmd_apply_auto(signal, policy, enforcer, mapref, commit):
         sys.exit(1)
 
 
-def cmd_markers(signal, policy, enforcer, mapref):
-    """Emit the worklist of files that need a human or an LM to decide.
+def _status_conflicts(signal, policy, enforcer, mapref):
+    """Emit the worklist of conflicts that need a human or an LM.
 
     This is the flag-for-intervention artifact, the piece a converging
-    apply cannot do on its own. Each marker carries both positions and
+    apply cannot do on its own. Each entry carries both positions and
     the exact rule edit that records a decision, so the resolver has all
     the context and the loop stays declarative.
 
-    Two kinds. A signal-conflict marker is a source the commit-label
-    rule and the cohesion evidence place in different subsystems; the
-    resolver keeps it where the rule put it, or records an override that
-    moves it to where the evidence points. A non-relocatable marker is a
-    source the rule would move but the Enforcer cannot place
-    mechanically (a program, a per-object rule); it is normally left at
-    the root."""
+    Two reasons. A conflict (placement) entry is a source the
+    commit-label rule and the include evidence place in different
+    subsystems; the resolver keeps it where the rule put it, or records
+    an override that moves it to where the evidence points. A conflict
+    (requirement) entry is a source the rule would move but the Enforcer
+    cannot place mechanically (a program, a per-object rule); it is
+    normally left at the root."""
     gp, _cset, _a, _u, contested = _agree_verdicts(mapref)
     policy.load(mapref)
     skips = []
@@ -599,15 +522,15 @@ def cmd_markers(signal, policy, enforcer, mapref):
             continue
         for f, reason in enforcer.plan(t, files).skipped:
             skips.append((f, t, reason))
-    print(f"organize markers: {len(contested)} signal-conflict, "
-          f"{len(skips)} non-relocatable\n")
+    print(f"organize status --conflicts: {len(contested)} conflict "
+          f"(placement), {len(skips)} conflict (requirement)\n")
     for f, X, implied, c in sorted(contested):
         tok = gp.token_for(implied)
         equiv = "" if tok == implied else f" (the token for {implied}/)"
         header = enforcer.paired_internal_header(f)
-        print(f"[signal-conflict] {f}")
+        print(f"[conflict (placement)] {f}")
         print(f"  rule says:      {X}/  (commit-subject label)")
-        print(f"  evidence says:  {implied}/  (cohesion cluster "
+        print(f"  includes say:   {implied}/  (include cluster "
               f"'{c}', majority)")
         print(f"  to decide:      is {f} a member of {X}/, or only "
               f"coupled to {implied}/?")
@@ -619,7 +542,7 @@ def cmd_markers(signal, policy, enforcer, mapref):
                   f"/{header}  area={tok}")
         print()
     for f, X, reason in sorted(skips):
-        print(f"[non-relocatable] {f}")
+        print(f"[conflict (requirement)] {f}")
         print(f"  rule says:      {X}/")
         print(f"  blocker:        {reason}")
         print(f"  to decide:      leave at root, or restructure the "
@@ -639,32 +562,28 @@ def take_opt(args, name):
 DOC = """organize: enforce a declared source layout.
 
 Usage:
-  organize status [AREA] [--map FILE]
+  organize status [AREA] [--by-area] [--conflicts] [--exit-code]
+                  [--map FILE]
                                   the orientation view, and the default
-                                  with no command. With no area, per
-                                  subsystem split the sources into
-                                  corroborated, unverified, and contested,
-                                  plus marked and public; with an area (a
-                                  directory name or an area token), that
-                                  subsystem's exact move set with contested
-                                  files flagged (the dry run plan used to
-                                  give)
-  organize check [--full] [--map FILE]
-                                  summary of files whose area does not
-                                  match the directory its area maps to;
-                                  --full lists every misfiled file
-  organize agree [--map FILE]        corroborate the rule with the cohesion
-                                  signal: agree (safe to automate),
-                                  contested (needs a decision), unverified
-  organize markers [--map FILE]      emit the worklist of files needing a
-                                  human or LM decision, each with both
-                                  positions and the rule edit to record it
+                                  with no command. With no area, group
+                                  the drift by state: renamed, conflict
+                                  (placement and requirement), untracked,
+                                  and clean; --by-area lays the same
+                                  numbers out per subsystem; --conflicts
+                                  lists each conflict with the rule edit
+                                  to record a decision; --exit-code exits
+                                  0 on a clean layout and 1 otherwise, for
+                                  CI; with an area (a directory name or an
+                                  area token), that subsystem's exact move
+                                  set with conflicts flagged (the dry run
+                                  plan used to give)
   organize apply --area X [--commit]
                                   perform one area's carve, stop before
                                   commit unless --commit is given
-  organize apply --auto [--commit]   converge every uncontested subsystem
+  organize apply --unconflicted [--commit]
+                                  converge every unconflicted subsystem
                                   in one pure-rename-and-validator-gated
-                                  pass; hold contested sources at root
+                                  pass; hold conflict sources at root
 """
 
 
@@ -678,10 +597,13 @@ def main(default_triple, default_mapref):
         mapref = default_mapref
     area, args = take_opt(args, "--area")
     commit = "--commit" in args
-    auto = "--auto" in args
-    full = "--full" in args
+    auto = "--unconflicted" in args
+    by_area = "--by-area" in args
+    conflicts = "--conflicts" in args
+    exit_code = "--exit-code" in args
     args = [a for a in args
-            if a not in ("--commit", "--auto", "--full")]
+            if a not in ("--commit", "--unconflicted", "--by-area",
+                         "--conflicts", "--exit-code")]
     if args and args[0] in ("--help", "-h", "help"):
         print(DOC)                     # explicit help exits 0
         return
@@ -689,20 +611,22 @@ def main(default_triple, default_mapref):
     cmd = args[0] if args else "status"
     if area is None and cmd == "status" and len(args) > 1:
         area = args[1]                 # organize status <area>
-    if cmd == "check":
-        cmd_check(signal, policy, enforcer, mapref, full)
-    elif cmd == "status":
-        cmd_status(signal, policy, enforcer, mapref, area)
-    elif cmd == "agree":
-        cmd_agree(mapref)
-    elif cmd == "markers":
-        cmd_markers(signal, policy, enforcer, mapref)
-    elif cmd == "plan":
-        sys.exit("organize plan is now organize status <area>")
+    if cmd == "status":
+        cmd_status(signal, policy, enforcer, mapref, area, by_area,
+                   conflicts, exit_code)
     elif cmd == "apply":
         if auto:
             cmd_apply_auto(signal, policy, enforcer, mapref, commit)
         else:
             cmd_apply(signal, policy, enforcer, mapref, area, commit)
+    elif cmd == "check":
+        sys.exit("organize check is now organize status --exit-code")
+    elif cmd == "agree":
+        sys.exit("organize agree is now organize status --by-area and "
+                 "organize status --conflicts")
+    elif cmd == "todo":
+        sys.exit("organize todo is now organize status --conflicts")
+    elif cmd == "plan":
+        sys.exit("organize plan is now organize status <area>")
     else:
         sys.exit(DOC)                  # unknown command: nonzero + DOC

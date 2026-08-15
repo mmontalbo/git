@@ -50,13 +50,17 @@ With tags as the substrate, every rule is a statement about tags.
 - Placement. A file belongs in the directory whose tags match its
   effective area tag. This is one uniform match, files to directories,
   and it replaces the special-case map.
-- Adherence has three independent axes, each a tag predicate:
-  - Placement: is the file's current directory the one its effective
-    area names.
-  - Agreement: do two taggers of the same tag give the same value.
-  - Feasibility: does the kind tag permit a mechanical move.
-  A file can pass one axis and fail another; the axes are orthogonal,
-  and keeping them apart is what a status view should show.
+- Adherence reduces to two questions the core answers from tags, plus
+  conflicts a plugin may raise:
+  - Is the file in its declared area? If not, it is a would-be rename.
+  - Do the taggers of its area agree? If they disagree, the rename is
+    a placement conflict.
+  Beyond those, a would-be rename can be blocked by a conflict a domain
+  plugin flags: enforcing it would violate a domain invariant (a
+  requirement conflict, for example moving a program breaks the build),
+  or the operation cannot be performed (a mechanical conflict). The
+  core owns only the placement conflict; every other reason is supplied
+  by a plugin, and the core never speculates about domain feasibility.
 
 What tags do not express is how to make a move safe. Which references
 to rewrite, and whether the artifact still holds after a move, is the
@@ -132,6 +136,10 @@ amend the rule to the file.
 3. Tags are multi-valued at read time, keeping every tagger's opinion;
    precedence resolves the effective placement tag, and agreement
    compares the rest.
+4. There is one blocked state, conflict, carrying a reason. The core
+   computes the placement reason from tags; domain plugins flag their
+   own reasons (requirement, mechanical). The former held or pinned
+   state is now a conflict with a requirement reason.
 
 ## 7. The vocabulary, derived
 
@@ -161,17 +169,23 @@ emits on a source is renamed (see section 8).
 - renamed: the rules would relocate it, and apply stages it as a
   rename (git: renamed, short code R). This is the one change-type
   organize produces, shown with its target, "-> odb/". Was ready.
-- conflict: two taggers of the same tag disagree (git: unmerged, its
-  own status section, short code U). A file in this state is
-  conflicted, and apply --unconflicted skips it. Was contested.
+- conflict: the rule cannot be auto-applied to a would-be rename (git:
+  unmerged, its own status section, short code U); apply --unconflicted
+  skips every conflict. A conflict carries a reason:
+  - placement: the taggers of its area disagree (core-computed).
+    Resolve by deciding or overriding the area. Was contested.
+  - requirement: enforcing the move would violate a domain invariant,
+    for example moving a program breaks the build (a domain plugin
+    flags it). Resolve by restructuring, or leave. Was held or marked;
+    not skip-worktree, which names a different git bit.
+  - mechanical: the operation cannot be performed, for example a name
+    collision or a reference the adapter cannot rewrite. Resolve by
+    clearing the obstruction.
+  Reasons map to git's unmerged sub-types (both modified, added by us,
+  deleted by them), which also resolve differently.
 - untracked: no rule addresses the file, a gap a new rule could close
   (git: untracked, ??; at the attribute level its area is unspecified).
 - ignored: a rule deliberately excludes the file (git: ignored, !!).
-- pinned: the rules would relocate it but the machine cannot, because
-  its kind is non-relocatable, a program or a per-object rule. git
-  status has no word for this, since git can change any file, so pinned
-  is the single coined state. Was marked; not skip-worktree, which
-  names a different git bit.
 
 Agreement, the merge outcome of a renamed file:
 
@@ -186,8 +200,8 @@ Commands, each grounded in a primitive:
   and a versioned --porcelain machine format.
 - apply: run the primitives; --unconflicted for the safe subset (agreed
   plus declared-only), --area to scope one directory.
-- todo: the worklist of files needing a decision, conflicted or pinned,
-  each with the tag edit that records the decision (was markers, which
+- todo: the worklist of conflicts needing a decision, each with its
+  reason and the tag edit that records the decision (was markers, which
   named git's in-file conflict text).
 - resolve: settle a conflict, either --declared or --signal, or edit
   the tag. The flags name the two sides directly rather than reusing
@@ -230,10 +244,13 @@ can only ever say renamed. The incidental modified on Makefile and
 meson.build is the reference-rewrite side effect of a move, not a
 placement state.
 
-The one place the analogy breaks is pinned. git status has no "would
-change but cannot" state, because git can change any file. So five of
-the six states are direct git reuse (clean, renamed, unmerged,
-untracked, ignored) and pinned is the single coined term.
+All five states are direct git reuse: clean, renamed, unmerged
+(conflict), untracked, ignored. A conflict's reason maps to git's
+unmerged sub-types, which resolve differently (both modified, added by
+us, deleted by them). git has no sub-type for "the move would break the
+build", so the requirement and mechanical reasons are organize's
+extension of that sub-type idea; the mechanism is git's, the reasons
+are the domain's.
 
 The workflow maps the same way, status then add then commit:
 
