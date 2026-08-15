@@ -1,8 +1,8 @@
-"""reorg git adapter: the git and C and Make and meson triple.
+"""organize git adapter: the git and C and Make and meson triple.
 
 Provides CommitPrefixSignal (label from commit subject prefixes),
 MapPolicy (the area map with declared overrides), and
-MakeMesonEnforcer (root scope, the move cascade, the build gate).
+MakeMesonEnforcer (root scope, the move cascade, the validator).
 Importing this module registers the "git-c" triple. Every git, C,
 Makefile, meson, include, nix, and .gitattributes string lives here.
 """
@@ -12,8 +12,8 @@ import sys
 import subprocess
 from collections import Counter, defaultdict
 
-import reorg_core
-from reorg_core import (Vote, Placement, Verdict, Step, Plan,
+import organize_core
+from organize_core import (Vote, Placement, Verdict, Step, Plan,
                         ApplyResult)
 
 TOP = subprocess.check_output(
@@ -159,6 +159,18 @@ class MapPolicy:
     def ordered_targets(self):
         return list(dict.fromkeys(self._owner.values()))
 
+    def token_for(self, target):
+        """A label the map routes to target, for suggesting an override
+        in a marker. Prefers the target's own name when the map owns it
+        (odb, refs), else the first token that maps there (index has no
+        'index' token, so this returns one it does own)."""
+        if self._owner.get(target) == target:
+            return target
+        for tok, d in self._owner.items():
+            if d == target:
+                return tok
+        return target
+
 
 INCLUDE = re.compile(
     r'^[ \t]*#[ \t]*include[ \t]+"([^"]+)"', re.M)
@@ -167,7 +179,7 @@ INCLUDE = re.compile(
 class MakeMesonEnforcer:
     """The git and C and Make and meson cascade. Owns root scope, the
     relocatability verdict, the include rewrite, the build-list edits,
-    the build gate, and rollback."""
+    the validator, and rollback."""
 
     def __init__(self):
         self._lib = None       # Counter of LIB_OBJS += <stem>.o lines
@@ -430,14 +442,14 @@ class MakeMesonEnforcer:
             r = subprocess.run(["git", "-C", TOP, "mv", src, dst],
                                capture_output=True, text=True)
             if r.returncode:
-                lines.append(f"reorg apply: git mv {src} failed: "
+                lines.append(f"organize apply: git mv {src} failed: "
                              f"{r.stderr.strip()}")
                 lines.append(self.recover_hint())
                 return ApplyResult(False, lines)
         git("add", "-u")
         v = self.validate()
         if not v.ok:
-            lines.append(f"reorg apply: {v.reason}; nothing "
+            lines.append(f"organize apply: {v.reason}; nothing "
                          "committed.")
             lines.append(self.recover_hint())
             return ApplyResult(False, lines)
@@ -446,17 +458,17 @@ class MakeMesonEnforcer:
                 ["git", "-C", TOP, "commit", "-m",
                  f"{plan.target}: carve out {plan.target}/"],
                 check=True)
-            lines.append(f"reorg apply: committed the "
+            lines.append(f"organize apply: committed the "
                          f"{plan.target} carve.")
         else:
-            lines.append("reorg apply: build passed; carve is "
+            lines.append("organize apply: build passed; carve is "
                          "staged.")
             lines.append("review, then commit, or "
                          + self.recover_hint())
         return ApplyResult(True, lines)
 
     def validate(self):
-        """The validator provider: confirm the reorg preserved the
+        """The validator provider: confirm the organize preserved the
         artifact's invariant. For git's C sources this is the build and
         its tests; another domain plugs a different check here (a docs
         enforcer would confirm that links resolve). A domain plugin, not
@@ -504,31 +516,31 @@ class MakeMesonEnforcer:
                 r = subprocess.run(["git", "-C", TOP, "mv", src, dst],
                                    capture_output=True, text=True)
                 if r.returncode:
-                    lines.append(f"reorg apply --auto: git mv {src} "
+                    lines.append(f"organize apply --auto: git mv {src} "
                                  f"failed: {r.stderr.strip()}")
                     lines.append(self.recover_hint())
                     return ApplyResult(False, lines)
         git("add", "-u")
         v = self._verify_pure_renames(plans)
         if not v.ok:
-            lines.append(f"reorg apply --auto: {v.reason}")
+            lines.append(f"organize apply --auto: {v.reason}")
             lines.append(self.recover_hint())
             return ApplyResult(False, lines)
         v = self.validate()
         if not v.ok:
-            lines.append(f"reorg apply --auto: {v.reason}; nothing "
+            lines.append(f"organize apply --auto: {v.reason}; nothing "
                          "committed.")
             lines.append(self.recover_hint())
             return ApplyResult(False, lines)
         n = sum(len(p.moves) for p in plans)
-        lines.append(f"reorg apply --auto: pure renames + validator "
+        lines.append(f"organize apply --auto: pure renames + validator "
                      f"passed ({n} files, {len(plans)} subsystems).")
         if commit:
             subprocess.run(
                 ["git", "-C", TOP, "commit", "-m",
-                 f"reorg: converge {len(plans)} subsystems "
+                 f"organize: converge {len(plans)} subsystems "
                  f"({n} files)"], check=True)
-            lines.append("reorg apply --auto: committed.")
+            lines.append("organize apply --auto: committed.")
         else:
             lines.append("review, then commit, or "
                          + self.recover_hint())
@@ -544,12 +556,12 @@ class MakeMesonEnforcer:
         seen = set()
         for h in headers:
             if h in seen:
-                sys.exit(f"reorg apply: duplicate header {h}")
+                sys.exit(f"organize apply: duplicate header {h}")
             seen.add(h)
             present = git("grep", "-l", f'#include "{target}/{h}"',
                           allow=(0, 1)).split()
             if present:
-                sys.exit(f"reorg apply: '#include \"{target}/{h}\"' "
+                sys.exit(f"organize apply: '#include \"{target}/{h}\"' "
                          "already present; refusing double prefix")
         per_file = defaultdict(list)
         for h in headers:
@@ -585,7 +597,7 @@ class MakeMesonEnforcer:
                 pat = re.compile(pat_t.format(n=re.escape(n)), re.M)
                 new, k = pat.subn(rep_t.format(n=n), text)
                 if k != 1:
-                    sys.exit(f"reorg apply: {path}: expected 1 line "
+                    sys.exit(f"organize apply: {path}: expected 1 line "
                              f"for {n}, found {k}")
                 text = new
             open(p, "w", encoding="utf-8").write(text)
@@ -600,7 +612,7 @@ class MakeMesonEnforcer:
                 r'\1LOCALIZED_C_CORE += ' + target + '/' + n + '.c',
                 text)
             if k > 1:
-                sys.exit(f"reorg apply: Makefile: expected 0 or 1 "
+                sys.exit(f"organize apply: Makefile: expected 0 or 1 "
                          f"LOCALIZED_C_CORE line for {n}, found {k}")
         open(p, "w", encoding="utf-8").write(text)
 
@@ -636,7 +648,7 @@ class MakeMesonEnforcer:
         for c in moved_c:
             n = c[:-2]
             if self._root_object_rule(text, n):
-                sys.exit(f"reorg apply: Makefile: a per-object rule "
+                sys.exit(f"organize apply: Makefile: a per-object rule "
                          f"for {n}.o survives in a form this adapter "
                          f"does not reparent; refusing to move {n}.c")
         open(p, "w", encoding="utf-8").write(text)
@@ -664,4 +676,4 @@ def _make_git_c():
     return (CommitPrefixSignal(), MapPolicy(), MakeMesonEnforcer())
 
 
-reorg_core.register("git-c", _make_git_c)
+organize_core.register("git-c", _make_git_c)

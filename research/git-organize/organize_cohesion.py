@@ -1,4 +1,4 @@
-"""reorg cohesion adapter: a Signal and Policy from include cohesion.
+"""organize cohesion adapter: a Signal and Policy from include cohesion.
 
 A second component that reuses the git Enforcer unchanged. The Signal
 labels each root .c file by the include-cohesion cluster it lands in;
@@ -17,9 +17,9 @@ import sys
 from collections import defaultdict
 from itertools import combinations
 
-import reorg_core
-from reorg_core import Vote, Placement
-from reorg_git import MakeMesonEnforcer
+import organize_core
+from organize_core import Vote, Placement
+from organize_git import MakeMesonEnforcer
 
 _LIBREORG = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -168,4 +168,4 @@ def _make_cohesion():
     return (CohesionSignal(), ClusterPolicy(), MakeMesonEnforcer())
 
 
-reorg_core.register("cohesion", _make_cohesion)
+organize_core.register("cohesion", _make_cohesion)

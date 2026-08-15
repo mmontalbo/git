@@ -1,8 +1,8 @@
 # Framing: git primitives, domain plugins, and the Terraform resemblance
 
-This tool reorganizes a source tree toward a declared layout. It is
+This tool organizes a source tree toward a declared layout. It is
 built to rest on git's own primitives and to push everything
-domain-specific out to plugins, so the same engine can reorganize C
+domain-specific out to plugins, so the same engine can organize C
 sources, documentation, or any tree of line-based text.
 
 ## The primitive spine (core, domain-agnostic)
@@ -11,7 +11,7 @@ Git is domain-agnostic because it deals in trees, blobs, line-based
 text, rename detection, and merge, and never in "does it build." The
 tool rests on the same primitives:
 
-- Tree plus rename detection. A reorg is a transformation of git's
+- Tree plus rename detection. A organize is a transformation of git's
   tree. The primitive operation is a content-preserving relocation, and
   git's own rename detection proves it: a move is well-formed at the
   tree level exactly when it is an R100 rename. "Is this a pure rename?"
@@ -37,7 +37,7 @@ A project supplies these; the tool ships a code default (the
   LIB_OBJS. Docs: every `*.md`.
 - Signals: what evidence groups files. Code: commit-subject labels and
   include cohesion. Docs: frontmatter category and cross-link density.
-- Validator: does the reorg preserve the artifact's invariant. Code:
+- Validator: does the organize preserve the artifact's invariant. Code:
   build plus test. Docs: links resolve, or nothing. This is where
   "build" lives; it is a plugin, not the gate.
 

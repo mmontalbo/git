@@ -1,4 +1,4 @@
-# git-reorg: enforce a declared source layout
+# organize: enforce a declared source layout
 
 ## Goal
 
@@ -20,16 +20,16 @@ the project maintains the map.
     which overrides the inferred value for the cross-cutting files that
     history labels ambiguously.
 - the map: area name to directory. A tracked file, modelled on `.mailmap`,
-  its location set by a config key (for example `reorg.mapFile`, default
+  its location set by a config key (for example `organize.mapFile`, default
   `.git-layout`). See `git-layout.map` here for the format.
 
 ## Subcommands
 
-- `git reorg check`: read-only. Report files whose area does not match their
+- `git organize check`: read-only. Report files whose area does not match their
   directory. Language-agnostic. This is the CI linter and the low-risk first
   product.
-- `git reorg plan`: dry run. Show the moves it would make.
-- `git reorg apply [--area X]`: perform one area's moves, with the cascade,
+- `git organize plan`: dry run. Show the moves it would make.
+- `git organize apply [--area X]`: perform one area's moves, with the cascade,
   then build and commit. One area at a time keeps each step reviewable.
 
 ## The cascade (the real work)
@@ -48,13 +48,13 @@ This is language- and build-system-specific, so it lives in adapters, one per
 
 Not a core builtin. git core moves and tracks bytes; it does not know that
 `diff.c` belongs in `diff/`, and the cascade is C-and-build specific, which
-core stays out of. The command ships as an external `git-reorg` on PATH, so
-`git reorg` works, in `contrib/` if it earns it, the way `git-svn` and
+core stays out of. The command ships as an external `organize` on PATH, so
+`git organize` works, in `contrib/` if it earns it, the way `git-svn` and
 `scalar` began.
 
 ## Dogfooding git
 
-1. ship `git reorg check` and a layout map for git's own tree.
+1. ship `git organize check` and a layout map for git's own tree.
 2. run `check` in CI; it flags files whose commit label disagrees with their
    directory, and moves nothing.
 3. use `apply --area odb`, one area at a time, for the actual carves.
@@ -74,6 +74,6 @@ subsystem at a time. The linter flags; a human triggers each carve.
 
 ## Status
 
-Prototype on branch `mm/git-reorg`. `git-reorg check` is implemented here and
+Prototype on branch `mm/organize`. `organize check` is implemented here and
 reuses the area computation from `research/lib-reorg/subsystems.py`. `plan`
 and `apply`, and the cascade adapters, are not built yet.
