@@ -279,9 +279,9 @@ def cmd_status(signal, policy, enforcer, mapref, area=None,
     policy.load(mapref)
     have_group = group_signal is not None
     if not have_group:
-        print("organize status: no second signal is configured, so the\n"
-              "agreed/placement split is unavailable; every source reads\n"
-              "as declared-only.\n")
+        print("organize status: no second signal is configured, so a\n"
+              "rule-vs-evidence conflict is not detected; a file either\n"
+              "moves or is held.\n")
     contested, implied = set(), {}
     agree, unver, clist = {}, {}, []
     if have_group:
@@ -336,23 +336,17 @@ def cmd_status(signal, policy, enforcer, mapref, area=None,
     clean_layout = renamed == 0 and conflict == 0
     banner = "(organized)" if clean_layout else "(not organized)"
     print(f"organize status against {policy.name()}   {banner}\n")
-    print(f"renamed    {renamed:<5} will move on apply  (agreed "
-          f"{tot['agreed']}, declared-only {tot['declared']})")
-    print(f"conflict   {conflict:<5} cannot auto-apply:")
-    print(f"             placement    {tot['placement']:<5} rule vs "
-          f"{group_label} disagree on the area")
-    print(f"             requirement  {tot['requirement']:<5} move "
-          "would break the build (program, per-object)")
+    print(f"renamed    {renamed:<5} will move on apply")
+    print(f"conflict   {conflict:<5} cannot auto-apply, needs a "
+          "decision")
     print(f"untracked  {untracked:<5} no rule places these")
-    print(f"clean      {tot['clean']:<5} interface headers kept at "
+    print(f"organized  {tot['clean']:<5} interface headers kept at "
           "root")
-    print(f"\n{renamed} renamed = {tot['agreed']} agreed + "
-          f"{tot['declared']} declared-only; apply --unconflicted\n"
-          f"moves those plus {tot['headers']} internal headers and "
-          f"holds the {conflict} conflicts.")
-    print("\norganize status --conflicts lists each conflict; "
-          "--by-area splits\nthis per subsystem; status <area> shows "
-          "one subsystem's moves.")
+    print(f"\napply --unconflicted moves the {renamed} renamed (plus "
+          f"{tot['headers']} internal\nheaders) and holds the "
+          f"{conflict} conflicts. organize status --conflicts\nlists "
+          "them; --by-area splits per subsystem; status <area> shows "
+          "one.")
     for line in _override_notices(policy, enforcer):
         # first notice line prints its own header
         print(line)
@@ -364,13 +358,14 @@ def _status_by_area(policy, rows):
     """Print the per-subsystem drift table: the same quantities the
     default groups by state, laid out by area."""
     print(f"organize status against {policy.name()}\n")
-    print(f"  {'subsystem':<11}{'dir':<7}{'agreed':>7}"
-          f"{'declared-only':>14}{'placement':>10}"
-          f"{'requirement':>12}{'clean':>7}")
+    print(f"  {'subsystem':<11}{'dir':<7}{'renamed':>8}"
+          f"{'conflict':>9}{'organized':>10}")
     for t, state, agreed, declared, placement, requirement, clean \
             in rows:
-        print(f"  {t + '/':<11}{state:<7}{agreed:>7}{declared:>14}"
-              f"{placement:>10}{requirement:>12}{clean:>7}")
+        renamed = agreed + declared
+        conflict = placement + requirement
+        print(f"  {t + '/':<11}{state:<7}{renamed:>8}{conflict:>9}"
+              f"{clean:>10}")
 
 
 def _status_area(signal, policy, enforcer, area, contested, implied,
@@ -385,24 +380,24 @@ def _status_area(signal, policy, enforcer, area, contested, implied,
                                             target))
     nc = sum(1 for s, _ in plan.moves if s in contested)
     na = len(plan.moves) - nc
-    print(f"organize status for {target}/  ({na} auto-ready, {nc} "
-          f"conflict (placement))\n")
+    print(f"organize status for {target}/  ({na} will move, {nc} in "
+          f"conflict)\n")
     print(f"moves: {len(plan.moves)} files")
     for src, dst in plan.moves:
-        tag = (f"   * conflict (placement): {group_label} say "
+        tag = (f"   * conflict: {group_label} say "
                f"{implied.get(src, '?')}/") if src in contested else ""
         print(f"  {src:<22}  ->  {dst}{tag}")
     for line in plan.notes:
         print(line)
     if plan.skipped:
-        print("\nconflict (requirement):")
+        print("\ncannot move (held at root):")
         for f, reason in plan.skipped:
             print(f"  {f}  ({reason})")
     if nc:
-        print(f"\napply --unconflicted moves the {na} auto-ready and "
-              f"holds the {nc} conflict (placement);\napply --area "
-              f"{area} would move all {len(plan.moves)}. See organize "
-              "status\n--conflicts for the conflict decisions.")
+        print(f"\napply --unconflicted moves the {na} and holds the "
+              f"{nc} in conflict;\napply --area {area} would move all "
+              f"{len(plan.moves)}. See organize status\n--conflicts for "
+              "the decisions.")
 
 
 def _agreement(signal, policy, enforcer, group_signal, mapref):
@@ -526,13 +521,14 @@ def _status_conflicts(signal, policy, enforcer, mapref,
             continue
         for f, reason in enforcer.plan(t, files).skipped:
             skips.append((f, t, reason))
-    print(f"organize status --conflicts: {len(contested)} conflict "
-          f"(placement), {len(skips)} conflict (requirement)\n")
+    print(f"organize status --conflicts: {len(contested) + len(skips)} "
+          f"conflicts\n({len(contested)} rule vs evidence, {len(skips)} "
+          "cannot move)\n")
     for f, X, implied, c in sorted(contested):
         tok = policy.token_for(implied)
         equiv = "" if tok == implied else f" (the token for {implied}/)"
         header = enforcer.paired_internal_header(f)
-        print(f"[conflict (placement)] {f}")
+        print(f"[conflict] {f}")
         print(f"  rule says:      {X}/  (commit-subject label)")
         print(f"  {group_label}:   {implied}/  (group "
               f"'{c}', majority)")
@@ -546,7 +542,7 @@ def _status_conflicts(signal, policy, enforcer, mapref,
                   f"/{header}  area={tok}")
         print()
     for f, X, reason in sorted(skips):
-        print(f"[conflict (requirement)] {f}")
+        print(f"[conflict] {f}")
         print(f"  rule says:      {X}/")
         print(f"  blocker:        {reason}")
         print(f"  to decide:      leave at root, or restructure the "
