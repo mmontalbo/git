@@ -258,20 +258,17 @@ def cmd_status(signal, policy, enforcer, mapref, area=None,
     """Scope the organize against the declared layout.
 
     The default groups the drift by state, the way git status groups by
-    change type. renamed sums the sources apply would move (agreed plus
-    declared-only); conflict sums the sources it cannot auto-apply
-    (placement, the rule and the second signal disagree, plus
-    requirement, the move would break the build); untracked counts root
-    sources that no rule places; clean counts interface headers the carve
-    keeps at root. The renamed count reconciles with the second-signal
-    cross-check, whose sources total is agreed + declared-only +
-    placement. With --by-area, print the same numbers as a per-subsystem
-    table; with --conflicts, print the conflict worklist; with
-    --exit-code, exit 0 on a clean layout and 1 otherwise, for CI. With
-    an area (a directory name or an area token), show that subsystem's
-    exact move set, flagging the conflicts; this is the dry run that plan
-    used to print. The placement split needs a second signal; without one
-    placement reads 0 and every source reads as declared-only."""
+    change type, and every count comes from the Enforcer's plans, not
+    from the second signal. renamed is what apply --unconflicted moves
+    (the plan over the non-conflicted files); conflict is placement (a
+    second signal disagrees with the rule) plus requirement (the domain
+    cannot move it); untracked is the sources no rule places; organized
+    is the files the plan keeps in place. With --by-area, print the same
+    counts per subsystem; with --conflicts, print the conflict worklist;
+    with --exit-code, exit 0 when nothing renames or conflicts and 1
+    otherwise, for CI. With an area, show that subsystem's exact move
+    set, flagging the conflicts. Without a second signal there are no
+    placement conflicts and renamed is the whole plan."""
     if conflicts:
         _status_conflicts(signal, policy, enforcer, mapref,
                           group_signal, group_label)
@@ -296,32 +293,33 @@ def cmd_status(signal, policy, enforcer, mapref, area=None,
     for _f, X, _imp, _c in clist:
         cont_by[X] = cont_by.get(X, 0) + 1
     rows = []
-    tot = {"agreed": 0, "declared": 0, "placement": 0, "requirement": 0,
-           "clean": 0, "moves": 0, "headers": 0}
+    tot = {"renamed": 0, "placement": 0, "requirement": 0,
+           "organized": 0}
     for t in policy.ordered_targets():
         files = _files_for(signal, policy, enforcer, t)
         if not files:
             continue
         plan = enforcer.plan(t, files)
-        agreed = agree.get(t, 0)
-        declared = unver.get(t, 0)
+        # renamed is what apply --unconflicted moves: the plan over the
+        # non-conflicted files (the Enforcer drops a held source's
+        # riders too). The plan, not the second signal, is the source of
+        # truth for what moves, so a domain with no second signal reads
+        # correctly.
+        safe = files - contested
+        renamed = (len(plan.moves) if safe == files
+                   else len(enforcer.plan(t, safe).moves))
         placement = cont_by.get(t, 0)
         requirement = len(plan.skipped)
-        clean = len(plan.kept_public)
-        headers = plan.paired_headers
-        if not (agreed or declared or placement or requirement
-                or plan.moves):
+        organized = len(plan.kept_public)
+        if not (renamed or placement or requirement or organized):
             continue
         state = "exists" if enforcer.target_ready(t) else "new"
-        rows.append((t, state, agreed, declared, placement,
-                     requirement, clean))
-        tot["agreed"] += agreed
-        tot["declared"] += declared
+        rows.append((t, state, renamed, placement, requirement,
+                     organized))
+        tot["renamed"] += renamed
         tot["placement"] += placement
         tot["requirement"] += requirement
-        tot["clean"] += clean
-        tot["moves"] += len(plan.moves)
-        tot["headers"] += headers
+        tot["organized"] += organized
     if by_area:
         _status_by_area(policy, rows)
         for line in _override_notices(policy, enforcer):
@@ -331,27 +329,25 @@ def cmd_status(signal, policy, enforcer, mapref, area=None,
     scope_src = {f for f in enforcer.scope() if enforcer.is_source(f)}
     placed_src = {f for f in place_all if enforcer.is_source(f)}
     untracked = len(scope_src - placed_src)
-    renamed = tot["agreed"] + tot["declared"]
+    renamed = tot["renamed"]
     conflict = tot["placement"] + tot["requirement"]
-    clean_layout = renamed == 0 and conflict == 0
-    banner = "(organized)" if clean_layout else "(not organized)"
+    is_organized = renamed == 0 and conflict == 0
+    banner = "(organized)" if is_organized else "(not organized)"
     print(f"organize status against {policy.name()}   {banner}\n")
     print(f"renamed    {renamed:<5} will move on apply")
     print(f"conflict   {conflict:<5} cannot auto-apply, needs a "
           "decision")
     print(f"untracked  {untracked:<5} no rule places these")
-    print(f"organized  {tot['clean']:<5} interface headers kept at "
-          "root")
-    print(f"\napply --unconflicted moves the {renamed} renamed (plus "
-          f"{tot['headers']} internal\nheaders) and holds the "
-          f"{conflict} conflicts. organize status --conflicts\nlists "
-          "them; --by-area splits per subsystem; status <area> shows "
+    print(f"organized  {tot['organized']:<5} already in place")
+    print(f"\napply --unconflicted moves the {renamed} and holds the "
+          f"{conflict} conflicts.\norganize status --conflicts lists "
+          "them; --by-area splits per subsystem;\nstatus <area> shows "
           "one.")
     for line in _override_notices(policy, enforcer):
         # first notice line prints its own header
         print(line)
     if exit_code:
-        sys.exit(0 if clean_layout else 1)
+        sys.exit(0 if is_organized else 1)
 
 
 def _status_by_area(policy, rows):
@@ -360,12 +356,10 @@ def _status_by_area(policy, rows):
     print(f"organize status against {policy.name()}\n")
     print(f"  {'subsystem':<11}{'dir':<7}{'renamed':>8}"
           f"{'conflict':>9}{'organized':>10}")
-    for t, state, agreed, declared, placement, requirement, clean \
-            in rows:
-        renamed = agreed + declared
+    for t, state, renamed, placement, requirement, organized in rows:
         conflict = placement + requirement
         print(f"  {t + '/':<11}{state:<7}{renamed:>8}{conflict:>9}"
-              f"{clean:>10}")
+              f"{organized:>10}")
 
 
 def _status_area(signal, policy, enforcer, area, contested, implied,
