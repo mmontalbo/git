@@ -1,0 +1,9 @@
+{
+  "name": "git-config",
+  "root": "../../..",
+  "map": "../git-layout.map",
+  "members": ["*.c", "*.h"],
+  "overridesCmd": "./git-overrides.sh",
+  "references": ["#include \"{path}\""],
+  "validate": "make"
+}

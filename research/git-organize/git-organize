@@ -16,6 +16,7 @@ if _HERE not in sys.path:
 
 import organize_core                       # noqa: E402
 import organize_git                        # noqa: E402  registers git-c
+import config_adapter                       # noqa: E402  the config triple
 try:                                    # optional: the cohesion
     import organize_cohesion               # noqa: E402  triple needs the
 except ImportError as e:                # untracked research/lib-reorg,
@@ -28,8 +29,27 @@ except ImportError as e:                # untracked research/lib-reorg,
             f"cohesion module error: {e}.")
 
 
+def _take_config(argv):
+    """Pop '--config FILE' from argv, returning (path, argv). Additive:
+    without it the launcher behaves exactly as before."""
+    if "--config" not in argv:
+        return None, argv
+    i = argv.index("--config")
+    return argv[i + 1], argv[:i] + argv[i + 2:]
+
+
 def main():
     mapref = os.path.join(_HERE, "git-layout.map")
+    cfg_path, sys.argv[1:] = _take_config(sys.argv[1:])
+    if cfg_path is not None:
+        # Load the config triple and dispatch it through the config
+        # adapter, which routes the git-coupled commands (the default
+        # status summary and apply --unconflicted) around the git-c-wired
+        # cross-check and defers the rest to the core. The config supplies
+        # every domain string; the launcher stays domain-neutral.
+        name, cfg = config_adapter.register_config(cfg_path)
+        config_adapter.dispatch(name, cfg["map"], sys.argv[1:])
+        return
     organize_core.main(default_triple="git-c", default_mapref=mapref)
 
 

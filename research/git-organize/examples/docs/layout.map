@@ -1,0 +1,5 @@
+# docs layout: "directory: area names it holds".
+# Each page declares its area in a frontmatter "area:" line; the map
+# routes an area to the directory that owns it.
+guides: guide
+reference: reference
