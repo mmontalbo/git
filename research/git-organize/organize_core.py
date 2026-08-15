@@ -127,6 +127,12 @@ class Enforcer(Protocol):
         """Whether file f already sits in target. The core must not
         answer this itself; it is path arithmetic on a handle."""
 
+    def is_source(self, f):
+        """Whether f is a primary placement unit, not a rider. The core
+        counts and cross-checks sources; a rider moves with its source.
+        The adapter owns which files are sources; the core names no
+        language."""
+
     def paired_internal_header(self, f):
         """The same-stem header that would co-move with source f, or
         None when there is none or it is a public header kept at root.
@@ -256,7 +262,7 @@ def cmd_status(signal, policy, enforcer, mapref, area=None,
     declared-only); conflict sums the sources it cannot auto-apply
     (placement, the rule and the second signal disagree, plus
     requirement, the move would break the build); untracked counts root
-    .c that no rule places; clean counts interface headers the carve
+    sources that no rule places; clean counts interface headers the carve
     keeps at root. The renamed count reconciles with the second-signal
     cross-check, whose sources total is agreed + declared-only +
     placement. With --by-area, print the same numbers as a per-subsystem
@@ -322,13 +328,13 @@ def cmd_status(signal, policy, enforcer, mapref, area=None,
             print(line)                # first notice prints its header
         return
     place_all = _place_all(signal, policy, enforcer)
-    scope_c = {f for f in enforcer.scope() if f.endswith(".c")}
-    placed_c = {f for f in place_all if f.endswith(".c")}
-    untracked = len(scope_c - placed_c)
+    scope_src = {f for f in enforcer.scope() if enforcer.is_source(f)}
+    placed_src = {f for f in place_all if enforcer.is_source(f)}
+    untracked = len(scope_src - placed_src)
     renamed = tot["agreed"] + tot["declared"]
     conflict = tot["placement"] + tot["requirement"]
     clean_layout = renamed == 0 and conflict == 0
-    banner = "(layout clean)" if clean_layout else "(layout not clean)"
+    banner = "(organized)" if clean_layout else "(not organized)"
     print(f"organize status against {policy.name()}   {banner}\n")
     print(f"renamed    {renamed:<5} will move on apply  (agreed "
           f"{tot['agreed']}, declared-only {tot['declared']})")
@@ -423,7 +429,8 @@ def _agreement(signal, policy, enforcer, group_signal, mapref):
     placed = _place_all(signal, policy, enforcer)
     rule_area = {f: p.target for f, p in placed.items() if p.target}
     remaining = {f: t for f, t in rule_area.items()
-                 if f.endswith(".c") and not enforcer.already_placed(f, t)}
+                 if enforcer.is_source(f)
+                 and not enforcer.already_placed(f, t)}
     group = {f: v.primary
              for f, v in group_signal.label(enforcer.scope()).items()
              if v.primary}

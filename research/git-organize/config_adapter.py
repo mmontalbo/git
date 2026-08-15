@@ -293,6 +293,11 @@ class ConfigEnforcer:
     def already_placed(self, f, target):
         return os.path.dirname(f) == target
 
+    def is_source(self, f):
+        """Every member is a source; the generic adapter has no riders.
+        A domain that pairs files supplies a plugin."""
+        return True
+
     def paired_internal_header(self, f):
         """No paired-file convention in the generic adapter; a domain
         that pairs files (a source and its header) supplies a plugin."""

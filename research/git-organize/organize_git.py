@@ -254,6 +254,10 @@ class MakeMesonEnforcer:
     def already_placed(self, f, target):
         return os.path.dirname(f) == target
 
+    def is_source(self, f):
+        """A source unit is a .c file; a header rides with its source."""
+        return f.endswith(".c")
+
     def preflight(self):
         """Tracked-dirty is the one blocker. Untracked files do not
         block, so apply runs with untracked research dirs present and
