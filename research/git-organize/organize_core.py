@@ -70,13 +70,16 @@ class Step:
 class Plan:
     """One area's carve. moves are (src, dst) handle pairs. skipped are
     (file, reason). steps are the opaque cascade. notes are display
-    lines the core prints verbatim (counts, stale references)."""
+    lines the core prints verbatim (counts, stale references).
+    paired_headers is how many moves are headers riding with their
+    source; the adapter counts it so the core does no path math."""
     target: DirId
     moves: tuple
     skipped: tuple
     steps: tuple
     notes: tuple = ()
     kept_public: tuple = ()
+    paired_headers: int = 0
 
 
 @dataclass
@@ -124,6 +127,11 @@ class Enforcer(Protocol):
         """Whether file f already sits in target. The core must not
         answer this itself; it is path arithmetic on a handle."""
 
+    def paired_internal_header(self, f):
+        """The same-stem header that would co-move with source f, or
+        None when there is none or it is a public header kept at root.
+        The core prints this handle; the adapter owns the path check."""
+
     def preflight(self):
         """Blocking reasons (list[str]); empty means clear to apply."""
 
@@ -143,6 +151,23 @@ class Enforcer(Protocol):
 
 # Registry of named triples. An adapter registers itself on import.
 _TRIPLES = {}
+
+# The launcher records why the optional cohesion import failed, so the
+# status banner can name the cause. The core prints this string
+# verbatim; it never composes an install path or module name itself.
+_COHESION_ABSENT_REASON = ""
+
+
+def note_cohesion_absent(reason):
+    """The launcher calls this with an adapter string naming why the
+    cohesion triple is unavailable, for the status banner."""
+    global _COHESION_ABSENT_REASON
+    _COHESION_ABSENT_REASON = reason
+
+
+def _cohesion_absent_reason():
+    """The launcher-supplied cause string, or a generic fallback."""
+    return _COHESION_ABSENT_REASON or "the triple did not load."
 
 
 def register(name, make):
@@ -205,28 +230,49 @@ def classify(policy, enforcer, placed):
     return misfiled, tocreate
 
 
-def cmd_check(signal, policy, enforcer, mapref):
+def cmd_check(signal, policy, enforcer, mapref, full=False):
+    """Report labelled root files whose area directory does not match.
+
+    Summary-first: counts and per-directory buckets by default; the full
+    misfiled file list is behind --full."""
     policy.load(mapref)
     placed = _place_all(signal, policy, enforcer)
     misfiled, tocreate = classify(policy, enforcer, placed)
-    print(f"checked {len(placed)} labelled root files against "
-          f"{policy.name()}\n")
+    ncreate = sum(len(v) for v in tocreate.values())
+    print(f"organize check against {policy.name()}\n")
+    print(f"checked {len(placed)} labelled root files: {len(misfiled)} "
+          f"misfiled (area dir exists),\n{ncreate} would move to "
+          f"{len(tocreate)} dirs that do not exist yet.\n")
     if misfiled:
+        by_target = {}
+        for f, label, target in misfiled:
+            by_target.setdefault(target, 0)
+            by_target[target] += 1
         print(f"misfiled: {len(misfiled)} files whose area directory "
               "already exists:")
-        for f, label, target in misfiled:
-            print(f"  {f}  ->  {target}/   (labelled '{label}:')")
+        for target in policy.ordered_targets():
+            if target in by_target:
+                print(f"  {target}/   {by_target[target]} files")
         print()
     if tocreate:
-        n = sum(len(v) for v in tocreate.values())
-        print(f"would create: {n} files map to {len(tocreate)} "
+        print(f"would create: {ncreate} files map to {len(tocreate)} "
               "directories that do not exist yet:")
         for target in policy.ordered_targets():
             if target in tocreate:
                 print(f"  {target}/   {len(tocreate[target])} files")
+        print()
     if not misfiled and not tocreate:
         print("layout is clean: every labelled file is in its "
               "area's dir.")
+        return
+    if full:
+        print("misfiled files (--full):")
+        for f, label, target in misfiled:
+            print(f"  {f}  ->  {target}/   (labelled '{label}:')")
+    else:
+        print("run organize check --full for the per-file misfiled "
+              "list,\nor organize status for the corroborated/"
+              "unverified/contested split.")
 
 
 def _resolve_target(policy, area):
@@ -238,8 +284,21 @@ def _resolve_target(policy, area):
     return policy.target_of(area)
 
 
+def _override_notices(policy, enforcer):
+    """Adapter-supplied lint lines for the declared overrides, with a
+    header, or an empty list. The core prints the strings verbatim; the
+    adapter owns detecting an unresolved value or a duplicate line and
+    naming the valid areas."""
+    if not hasattr(policy, "override_notices"):
+        return []
+    notices = policy.override_notices(enforcer.scope())
+    if not notices:
+        return []
+    return ["", "override lint:"] + notices
+
+
 def cmd_apply(signal, policy, enforcer, mapref, area, commit):
-    if not area:
+    if area is None:
         sys.exit("organize apply: --area X is required")
     policy.load(mapref)
     target = _resolve_target(policy, area)
@@ -266,69 +325,105 @@ def cmd_apply(signal, policy, enforcer, mapref, area, commit):
 def cmd_status(signal, policy, enforcer, mapref, area=None):
     """Scope the organize against the declared rules.
 
-    With no area, per subsystem split the remaining candidate files into
-    auto-ready, contested, and marked. Auto-ready means the rule would
-    move the file as a pure rename and the cohesion evidence does not
-    object, so it is trivially correct to apply; the pure-rename and
-    validator gates confirm it. Contested means the rule and the
-    cohesion evidence place the file in different subsystems, so apply
-    --auto holds it for a human or an LM. Marked means the rule cannot
-    place the file mechanically (a program, or a per-object rule the
-    move would strand). With an area (a directory name or an area
-    token), show that subsystem's exact move set, flagging the contested
-    files; this is the dry run that plan used to print. The contested
-    split needs the cohesion triple; without it, contested is 0 and
-    every movable file reads as auto-ready."""
+    With no area, per subsystem split the remaining candidate SOURCES by
+    signal agreement: corroborated (both the commit-label rule and the
+    cohesion evidence agree, safe to automate), unverified (cohesion is
+    silent, the rule stands alone), and contested (the two disagree, so
+    apply --auto holds the source for a human or an LM). Two mechanical
+    columns ride alongside: marked counts sources the rule cannot place
+    (a program, a per-object rule the move would strand), held at root
+    despite their label; public counts interface headers the carve
+    keeps at root. The source columns reconcile with organize agree,
+    which is the oracle: corroborated + unverified + contested equals
+    the sources routed to each area. Paired internal headers move with
+    their source, so the move total exceeds the source total; the
+    reconciliation note states the difference. With an area (a directory
+    name or an area token), show that subsystem's exact move set,
+    flagging the contested files; this is the dry run that plan used to
+    print. The split needs the cohesion triple; without it, contested is
+    0 and every source reads as unverified."""
     policy.load(mapref)
+    have_cohesion = "cohesion" in _TRIPLES
+    if not have_cohesion:
+        why = _cohesion_absent_reason()
+        print("organize status: the cohesion triple is not registered, "
+              "so the\ncorroborated/contested split is unavailable; "
+              "every source reads\nas unverified. " + why + "\n")
     contested, implied = set(), {}
-    if "cohesion" in _TRIPLES:
-        _gp, contested, _a, _u, clist = _agree_verdicts(mapref)
+    agree, unver, clist = {}, {}, []
+    if have_cohesion:
+        _gp, contested, agree, unver, clist = _agree_verdicts(mapref)
         implied = {f: imp for f, _x, imp, _c in clist}
     if area is not None:
         _status_area(signal, policy, enforcer, area, contested, implied)
         return
+    cont_by = {}
+    for _f, X, _imp, _c in clist:
+        cont_by[X] = cont_by.get(X, 0) + 1
     rows, skips = [], []
-    tot_auto = tot_cont = tot_marked = 0
+    tot = {"corrob": 0, "unver": 0, "cont": 0, "marked": 0,
+           "public": 0, "moves": 0, "headers": 0}
     for t in policy.ordered_targets():
         files = _files_for(signal, policy, enforcer, t)
         if not files:
             continue
         plan = enforcer.plan(t, files)
-        cont = sum(1 for s, _ in plan.moves if s in contested)
-        auto, marked = len(plan.moves) - cont, len(plan.skipped)
-        if not (auto or cont or marked):
+        corrob = agree.get(t, 0)
+        unv = unver.get(t, 0)
+        cont = cont_by.get(t, 0)
+        marked = len(plan.skipped)
+        public = len(plan.kept_public)
+        headers = plan.paired_headers
+        if not (corrob or unv or cont or marked or plan.moves):
             continue
         state = "exists" if enforcer.target_ready(t) else "new"
-        rows.append((t, state, auto, cont, marked,
-                     len(plan.kept_public)))
+        rows.append((t, state, corrob, unv, cont, marked, public))
         for f, reason in plan.skipped:
             skips.append((t, f, reason))
-        tot_auto += auto
-        tot_cont += cont
-        tot_marked += marked
+        tot["corrob"] += corrob
+        tot["unver"] += unv
+        tot["cont"] += cont
+        tot["marked"] += marked
+        tot["public"] += public
+        tot["moves"] += len(plan.moves)
+        tot["headers"] += headers
     print(f"organize status against {policy.name()}\n")
-    print(f"  {'subsystem':<11}{'dir':<7}{'auto':>5}{'contested':>10}"
-          f"{'marked':>8}{'public':>8}")
-    for t, state, auto, cont, marked, public in rows:
-        print(f"  {t + '/':<11}{state:<7}{auto:>5}{cont:>10}{marked:>8}"
-              f"{public:>8}")
-    print(f"\nauto-ready (pure rename, cohesion does not object): "
-          f"{tot_auto} files in {len(rows)} subsystems")
+    print(f"  {'subsystem':<11}{'dir':<7}{'corrob':>7}{'unver':>6}"
+          f"{'contested':>10}{'marked':>7}{'public':>7}")
+    for t, state, corrob, unv, cont, marked, public in rows:
+        print(f"  {t + '/':<11}{state:<7}{corrob:>7}{unv:>6}{cont:>10}"
+              f"{marked:>7}{public:>7}")
+    sources = tot["corrob"] + tot["unver"] + tot["cont"]
+    print(f"\ncorroborated (both signals agree, safe to automate): "
+          f"{tot['corrob']} sources")
+    print(f"unverified (cohesion silent, rule stands alone): "
+          f"{tot['unver']} sources")
     print(f"contested (rule vs cohesion disagree, held for a decision): "
-          f"{tot_cont} files")
-    print(f"marked (cannot place mechanically): {tot_marked} files")
+          f"{tot['cont']} sources")
+    print(f"marked (cannot place mechanically, held at root): "
+          f"{tot['marked']} files")
+    print("\nlegend: public = interface headers kept at root, not "
+          "moved.\ncorrob/unver/contested count SOURCES and reconcile "
+          "with organize\nagree; a paired internal header moves with "
+          "its source.")
+    print(f"reconcile: {sources} sources = {tot['corrob']} "
+          f"corroborated + {tot['unver']}\nunverified + "
+          f"{tot['cont']} contested; {tot['moves']} moves = the "
+          f"movable sources\nof those plus {tot['headers']} internal "
+          "headers riding along.")
     if skips:
         print("\nmarked (non-relocatable):")
         for t, f, reason in skips:
             print(f"  {f}  ->  {t}/   blocked: {reason}")
-    if "cohesion" not in _TRIPLES:
-        print("\nnote: contested is 0 because the cohesion triple is "
-              "not\navailable, so movable files all read as auto-ready.")
-    else:
+    if have_cohesion:
         print("\norganize status <area> shows a subsystem's exact "
-              "moves; apply\n--auto carves the auto-ready and holds the "
-              "contested; organize\nmarkers gives each contested file's "
-              "positions and the rule edit\nto resolve it.")
+              "moves; apply\n--auto carves the corroborated and "
+              "unverified and holds the\ncontested; organize markers "
+              "gives each contested file's\npositions and the rule "
+              "edit to resolve it.")
+    for line in _override_notices(policy, enforcer):
+        # first notice line prints its own header
+        print(line)
 
 
 def _status_area(signal, policy, enforcer, area, contested, implied):
@@ -508,6 +603,8 @@ def cmd_markers(signal, policy, enforcer, mapref):
           f"{len(skips)} non-relocatable\n")
     for f, X, implied, c in sorted(contested):
         tok = gp.token_for(implied)
+        equiv = "" if tok == implied else f" (the token for {implied}/)"
+        header = enforcer.paired_internal_header(f)
         print(f"[signal-conflict] {f}")
         print(f"  rule says:      {X}/  (commit-subject label)")
         print(f"  evidence says:  {implied}/  (cohesion cluster "
@@ -516,7 +613,10 @@ def cmd_markers(signal, policy, enforcer, mapref):
               f"coupled to {implied}/?")
         print(f"  keep:           no action")
         print(f"  move:           add to .gitattributes: "
-              f"/{f}  area={tok}")
+              f"/{f}  area={tok}{equiv}")
+        if header:
+            print(f"                  and its internal header: "
+                  f"/{header}  area={tok}")
         print()
     for f, X, reason in sorted(skips):
         print(f"[non-relocatable] {f}")
@@ -539,15 +639,20 @@ def take_opt(args, name):
 DOC = """organize: enforce a declared source layout.
 
 Usage:
-  organize check [--map FILE]        report files whose area does not
-                                  match the directory its area maps to
   organize status [AREA] [--map FILE]
-                                  with no area, per subsystem how many
-                                  files are auto-ready, contested, or
-                                  marked; with an area (a directory name
-                                  or an area token), that subsystem's
-                                  exact move set with contested files
-                                  flagged (the dry run plan used to give)
+                                  the orientation view, and the default
+                                  with no command. With no area, per
+                                  subsystem split the sources into
+                                  corroborated, unverified, and contested,
+                                  plus marked and public; with an area (a
+                                  directory name or an area token), that
+                                  subsystem's exact move set with contested
+                                  files flagged (the dry run plan used to
+                                  give)
+  organize check [--full] [--map FILE]
+                                  summary of files whose area does not
+                                  match the directory its area maps to;
+                                  --full lists every misfiled file
   organize agree [--map FILE]        corroborate the rule with the cohesion
                                   signal: agree (safe to automate),
                                   contested (needs a decision), unverified
@@ -574,13 +679,18 @@ def main(default_triple, default_mapref):
     area, args = take_opt(args, "--area")
     commit = "--commit" in args
     auto = "--auto" in args
-    args = [a for a in args if a not in ("--commit", "--auto")]
+    full = "--full" in args
+    args = [a for a in args
+            if a not in ("--commit", "--auto", "--full")]
+    if args and args[0] in ("--help", "-h", "help"):
+        print(DOC)                     # explicit help exits 0
+        return
     signal, policy, enforcer = get_triple(triple or default_triple)
-    cmd = args[0] if args else "check"
+    cmd = args[0] if args else "status"
     if area is None and cmd == "status" and len(args) > 1:
         area = args[1]                 # organize status <area>
     if cmd == "check":
-        cmd_check(signal, policy, enforcer, mapref)
+        cmd_check(signal, policy, enforcer, mapref, full)
     elif cmd == "status":
         cmd_status(signal, policy, enforcer, mapref, area)
     elif cmd == "agree":
@@ -595,4 +705,4 @@ def main(default_triple, default_mapref):
         else:
             cmd_apply(signal, policy, enforcer, mapref, area, commit)
     else:
-        sys.exit(DOC)
+        sys.exit(DOC)                  # unknown command: nonzero + DOC

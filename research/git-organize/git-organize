@@ -18,8 +18,14 @@ import organize_core                       # noqa: E402
 import organize_git                        # noqa: E402  registers git-c
 try:                                    # optional: the cohesion
     import organize_cohesion               # noqa: E402  triple needs the
-except ImportError:                     # untracked research/lib-reorg,
-    pass                                # so git-c works without it
+except ImportError as e:                # untracked research/lib-reorg,
+    _libreorg = os.path.join(_HERE, "..", "lib-reorg")
+    if not os.path.isdir(_libreorg):    # so git-c works without it,
+        organize_core.note_cohesion_absent(
+            "install research/lib-reorg to enable it.")
+    else:
+        organize_core.note_cohesion_absent(
+            f"cohesion module error: {e}.")
 
 
 def main():

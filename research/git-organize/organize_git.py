@@ -42,6 +42,30 @@ def stem(path):
     return base[:-2] if base.endswith((".c", ".h")) else base
 
 
+def _duplicate_area_paths():
+    """{path: count} for each path that carries more than one 'area='
+    entry in the root .gitattributes. Counts lines whose first token is
+    a path and whose attributes include an 'area=' assignment; a
+    leading '/' anchors the path, which we strip to match scope names.
+    Absent file or no such line yields an empty map."""
+    p = os.path.join(TOP, ".gitattributes")
+    counts = Counter()
+    try:
+        fh = open(p, encoding="utf-8")
+    except FileNotFoundError:
+        return counts
+    for line in fh:
+        line = line.split("#", 1)[0].strip()
+        if not line or "area=" not in line:
+            continue
+        parts = line.split()
+        if len(parts) < 2:
+            continue
+        if any(a.startswith("area=") for a in parts[1:]):
+            counts[parts[0].lstrip("/")] += 1
+    return counts
+
+
 PRE = re.compile(r"^([A-Za-z0-9][\w./-]*):")
 
 
@@ -102,7 +126,11 @@ class MapPolicy:
     def load(self, mapref):
         self._name = os.path.basename(mapref)
         owner = {}
-        for line in open(mapref, encoding="utf-8"):
+        try:
+            fh = open(mapref, encoding="utf-8")
+        except FileNotFoundError:
+            sys.exit(f"organize: no such map file: {mapref}")
+        for line in fh:
             line = line.split("#", 1)[0].strip()
             if not line or ":" not in line:
                 continue
@@ -154,10 +182,38 @@ class MapPolicy:
                          label=label, reason=reason)
 
     def target_of(self, label):
+        """A label to its target dir. Accepts a map token (read), a
+        multi-segment label (read/cache), or the destination directory
+        name itself (index), so an override may name the directory. A
+        value that resolves to nothing returns None (the caller drops
+        or reports it)."""
+        if label in self._owner.values():
+            return label
         return self._owner.get(self.token_of(label))
 
     def ordered_targets(self):
         return list(dict.fromkeys(self._owner.values()))
+
+    def override_notices(self, scope):
+        """Display lines for override lint, for the core to print
+        verbatim. Two kinds: an override whose value resolves to no
+        target (a typo such as area=packs), naming the file, the value,
+        and the valid area names; and a path carrying more than one
+        area= line in the root .gitattributes (a duplicate the resolver
+        should collapse). Empty when every override is clean."""
+        lines = []
+        valid = ", ".join(self.ordered_targets())
+        for f, value in sorted(self.overrides(scope).items()):
+            if self.target_of(value) is None:
+                lines.append(
+                    f"  {f}: area={value} resolves to no area; the "
+                    f"file stays at root.\n    valid areas: {valid}")
+        for f, n in sorted(_duplicate_area_paths().items()):
+            if n > 1:
+                lines.append(
+                    f"  {f}: {n} area= lines in .gitattributes; keep "
+                    "one.")
+        return lines
 
     def token_for(self, target):
         """A label the map routes to target, for suggesting an override
@@ -363,7 +419,8 @@ class MakeMesonEnforcer:
         return Plan(target=target, moves=moves,
                     skipped=tuple(sorted(skipped)),
                     steps=steps, notes=notes,
-                    kept_public=tuple(sorted(kept_public)))
+                    kept_public=tuple(sorted(kept_public)),
+                    paired_headers=len(headers))
 
     def _internal_headers(self, cands, moving_c):
         """The candidate headers all of whose includers co-move.
@@ -383,6 +440,18 @@ class MakeMesonEnforcer:
                     internal.add(h)
                     changed = True
         return internal
+
+    def paired_internal_header(self, c):
+        """The same-stem .h of source c, when it exists and is internal
+        (every file that includes it co-moves with c), else None. A
+        public interface header the policy keeps at root returns None,
+        so a marker never suggests moving one."""
+        h = stem(c) + ".h"
+        if not exists(h):
+            return None
+        if h in self._internal_headers({h}, {c}):
+            return h
+        return None
 
     def _skip_note(self, c):
         v = self._relocatable(c)
