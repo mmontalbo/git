@@ -229,47 +229,23 @@ def cmd_check(signal, policy, enforcer, mapref):
               "area's dir.")
 
 
-def cmd_plan(signal, policy, enforcer, mapref, area):
-    policy.load(mapref)
-    if not area:
-        placed = _place_all(signal, policy, enforcer)
-        misfiled, tocreate = classify(policy, enforcer, placed)
-        by_dir = {}
-        for _, _, t in misfiled:
-            by_dir[t] = by_dir.get(t, 0) + 1
-        for t, fs in tocreate.items():
-            by_dir[t] = by_dir.get(t, 0) + len(fs)
-        print("plan summary (candidate root files before pairing; "
-              "pass --area X\nfor the exact move set):\n")
-        for t in policy.ordered_targets():
-            if by_dir.get(t):
-                print(f"  {t}/   {by_dir[t]} files")
-        return
-    target = policy.target_of(area)
-    if not target:
-        sys.exit(f"organize plan: unknown area '{area}'")
-    plan = enforcer.plan(target, _files_for(signal, policy,
-                                            enforcer, target))
-    print(f"plan for area {area}  (dir {plan.target}/)\n")
-    print(f"moves: {len(plan.moves)} files")
-    for step in plan.steps:
-        if step.kind == "move":
-            print(step.summary)
-    for line in plan.notes:
-        print(line)
-    if plan.skipped:
-        print("\nskipped:")
-        for f, reason in plan.skipped:
-            print(f"  {f}  ({reason})")
+def _resolve_target(policy, area):
+    """The target directory for an area argument, which may be the
+    directory name that status prints (index) or an area label token
+    (read). Returns the directory or None."""
+    if area in policy.ordered_targets():
+        return area
+    return policy.target_of(area)
 
 
 def cmd_apply(signal, policy, enforcer, mapref, area, commit):
     if not area:
         sys.exit("organize apply: --area X is required")
     policy.load(mapref)
-    target = policy.target_of(area)
+    target = _resolve_target(policy, area)
     if not target:
-        sys.exit(f"organize apply: unknown area '{area}'")
+        sys.exit(f"organize apply: unknown area '{area}'\n"
+                 "known areas: " + ", ".join(policy.ordered_targets()))
     blockers = enforcer.preflight()
     if blockers:
         sys.exit("organize apply: " + "; ".join(blockers))
@@ -287,23 +263,30 @@ def cmd_apply(signal, policy, enforcer, mapref, area, commit):
         sys.exit(1)
 
 
-def cmd_status(signal, policy, enforcer, mapref):
+def cmd_status(signal, policy, enforcer, mapref, area=None):
     """Scope the organize against the declared rules.
 
-    Per subsystem, split the remaining candidate files into auto-ready,
-    contested, and marked. Auto-ready means the rule would move the file
-    as a pure rename and the cohesion evidence does not object, so it is
-    trivially correct to apply; the pure-rename and validator gates
-    confirm it. Contested means the rule and the cohesion evidence place
-    the file in different subsystems, so apply --auto holds it for a
-    human or an LM (organize markers gives each one's positions and the
-    rule edit that resolves it). Marked means the rule cannot place the
-    file mechanically (a program, or a per-object rule the move would
-    strand). The contested split needs the cohesion triple; without it,
-    contested is 0 and every movable file reads as auto-ready."""
+    With no area, per subsystem split the remaining candidate files into
+    auto-ready, contested, and marked. Auto-ready means the rule would
+    move the file as a pure rename and the cohesion evidence does not
+    object, so it is trivially correct to apply; the pure-rename and
+    validator gates confirm it. Contested means the rule and the
+    cohesion evidence place the file in different subsystems, so apply
+    --auto holds it for a human or an LM. Marked means the rule cannot
+    place the file mechanically (a program, or a per-object rule the
+    move would strand). With an area (a directory name or an area
+    token), show that subsystem's exact move set, flagging the contested
+    files; this is the dry run that plan used to print. The contested
+    split needs the cohesion triple; without it, contested is 0 and
+    every movable file reads as auto-ready."""
     policy.load(mapref)
-    contested = _agree_verdicts(mapref)[1] if "cohesion" in _TRIPLES \
-        else set()
+    contested, implied = set(), {}
+    if "cohesion" in _TRIPLES:
+        _gp, contested, _a, _u, clist = _agree_verdicts(mapref)
+        implied = {f: imp for f, _x, imp, _c in clist}
+    if area is not None:
+        _status_area(signal, policy, enforcer, area, contested, implied)
+        return
     rows, skips = [], []
     tot_auto = tot_cont = tot_marked = 0
     for t in policy.ordered_targets():
@@ -342,9 +325,41 @@ def cmd_status(signal, policy, enforcer, mapref):
         print("\nnote: contested is 0 because the cohesion triple is "
               "not\navailable, so movable files all read as auto-ready.")
     else:
-        print("\napply --auto carves the auto-ready and holds the "
-              "contested;\nrun organize markers for each contested "
-              "file's positions and\nthe rule edit that resolves it.")
+        print("\norganize status <area> shows a subsystem's exact "
+              "moves; apply\n--auto carves the auto-ready and holds the "
+              "contested; organize\nmarkers gives each contested file's "
+              "positions and the rule edit\nto resolve it.")
+
+
+def _status_area(signal, policy, enforcer, area, contested, implied):
+    """Show one subsystem's exact move set, the dry run plan used to
+    print, now flagging which files apply --auto would hold."""
+    target = _resolve_target(policy, area)
+    if not target:
+        sys.exit(f"organize status: unknown area '{area}'\n"
+                 "known areas: " + ", ".join(policy.ordered_targets()))
+    plan = enforcer.plan(target, _files_for(signal, policy, enforcer,
+                                            target))
+    nc = sum(1 for s, _ in plan.moves if s in contested)
+    na = len(plan.moves) - nc
+    print(f"organize status for {target}/  ({na} auto-ready, {nc} "
+          f"contested)\n")
+    print(f"moves: {len(plan.moves)} files")
+    for src, dst in plan.moves:
+        tag = ("   * contested: cohesion says "
+               f"{implied.get(src, '?')}/") if src in contested else ""
+        print(f"  {src:<22}  ->  {dst}{tag}")
+    for line in plan.notes:
+        print(line)
+    if plan.skipped:
+        print("\nnon-relocatable (held at root):")
+        for f, reason in plan.skipped:
+            print(f"  {f}  ({reason})")
+    if nc:
+        print(f"\napply --auto moves the {na} auto-ready and holds the "
+              f"{nc} contested;\napply --area {area} would move all "
+              f"{len(plan.moves)}. See organize markers\nfor the "
+              "contested decisions.")
 
 
 def _agree_verdicts(mapref):
@@ -526,18 +541,19 @@ DOC = """organize: enforce a declared source layout.
 Usage:
   organize check [--map FILE]        report files whose area does not
                                   match the directory its area maps to
-  organize status [--map FILE]       scope the organize: per subsystem, how
-                                  many remaining files are auto-ready
-                                  versus marked for judgment
+  organize status [AREA] [--map FILE]
+                                  with no area, per subsystem how many
+                                  files are auto-ready, contested, or
+                                  marked; with an area (a directory name
+                                  or an area token), that subsystem's
+                                  exact move set with contested files
+                                  flagged (the dry run plan used to give)
   organize agree [--map FILE]        corroborate the rule with the cohesion
                                   signal: agree (safe to automate),
                                   contested (needs a decision), unverified
   organize markers [--map FILE]      emit the worklist of files needing a
                                   human or LM decision, each with both
                                   positions and the rule edit to record it
-  organize plan [--area X] [--map FILE]
-                                  dry run: show one area's moves and its
-                                  include, build, and pairing effects
   organize apply --area X [--commit]
                                   perform one area's carve, stop before
                                   commit unless --commit is given
@@ -561,16 +577,18 @@ def main(default_triple, default_mapref):
     args = [a for a in args if a not in ("--commit", "--auto")]
     signal, policy, enforcer = get_triple(triple or default_triple)
     cmd = args[0] if args else "check"
+    if area is None and cmd == "status" and len(args) > 1:
+        area = args[1]                 # organize status <area>
     if cmd == "check":
         cmd_check(signal, policy, enforcer, mapref)
     elif cmd == "status":
-        cmd_status(signal, policy, enforcer, mapref)
+        cmd_status(signal, policy, enforcer, mapref, area)
     elif cmd == "agree":
         cmd_agree(mapref)
     elif cmd == "markers":
         cmd_markers(signal, policy, enforcer, mapref)
     elif cmd == "plan":
-        cmd_plan(signal, policy, enforcer, mapref, area)
+        sys.exit("organize plan is now organize status <area>")
     elif cmd == "apply":
         if auto:
             cmd_apply_auto(signal, policy, enforcer, mapref, commit)
