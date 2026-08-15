@@ -152,23 +152,6 @@ class Enforcer(Protocol):
 # Registry of named triples. An adapter registers itself on import.
 _TRIPLES = {}
 
-# The launcher records why the optional cohesion import failed, so the
-# status banner can name the cause. The core prints this string
-# verbatim; it never composes an install path or module name itself.
-_COHESION_ABSENT_REASON = ""
-
-
-def note_cohesion_absent(reason):
-    """The launcher calls this with an adapter string naming why the
-    cohesion triple is unavailable, for the status banner."""
-    global _COHESION_ABSENT_REASON
-    _COHESION_ABSENT_REASON = reason
-
-
-def _cohesion_absent_reason():
-    """The launcher-supplied cause string, or a generic fallback."""
-    return _COHESION_ABSENT_REASON or "the triple did not load."
-
 
 def register(name, make):
     """Register a factory returning (Signal, Policy, Enforcer)."""
@@ -180,6 +163,13 @@ def get_triple(name):
     if not make:
         sys.exit(f"organize: no such triple '{name}'")
     return make()
+
+
+def registered(name):
+    """Whether a triple named name is registered. The launcher asks this
+    to decide whether a second signal is available; the core names no
+    triple itself."""
+    return name in _TRIPLES
 
 
 def _place_all(signal, policy, enforcer):
@@ -257,41 +247,44 @@ def cmd_apply(signal, policy, enforcer, mapref, area, commit):
 
 
 def cmd_status(signal, policy, enforcer, mapref, area=None,
-               by_area=False, conflicts=False, exit_code=False):
+               by_area=False, conflicts=False, exit_code=False,
+               group_signal=None, group_label="a second signal"):
     """Scope the organize against the declared layout.
 
     The default groups the drift by state, the way git status groups by
     change type. renamed sums the sources apply would move (agreed plus
     declared-only); conflict sums the sources it cannot auto-apply
-    (placement, the rule and the includes disagree, plus requirement,
-    the move would break the build); untracked counts root .c that no
-    rule places; clean counts interface headers the carve keeps at root.
-    The renamed count reconciles with the include cross-check, whose
-    sources total is agreed + declared-only + placement. With --by-area,
-    print the same numbers as a per-subsystem table; with --conflicts,
-    print the conflict worklist; with --exit-code, exit 0 on a clean
-    layout and 1 otherwise, for CI. With an area (a directory name or an
-    area token), show that subsystem's exact move set, flagging the
-    conflicts; this is the dry run that plan used to print. The placement
-    split needs the include triple; without it placement reads 0 and
-    every source reads as declared-only."""
+    (placement, the rule and the second signal disagree, plus
+    requirement, the move would break the build); untracked counts root
+    .c that no rule places; clean counts interface headers the carve
+    keeps at root. The renamed count reconciles with the second-signal
+    cross-check, whose sources total is agreed + declared-only +
+    placement. With --by-area, print the same numbers as a per-subsystem
+    table; with --conflicts, print the conflict worklist; with
+    --exit-code, exit 0 on a clean layout and 1 otherwise, for CI. With
+    an area (a directory name or an area token), show that subsystem's
+    exact move set, flagging the conflicts; this is the dry run that plan
+    used to print. The placement split needs a second signal; without one
+    placement reads 0 and every source reads as declared-only."""
     if conflicts:
-        _status_conflicts(signal, policy, enforcer, mapref)
+        _status_conflicts(signal, policy, enforcer, mapref,
+                          group_signal, group_label)
         return
     policy.load(mapref)
-    have_cohesion = "cohesion" in _TRIPLES
-    if not have_cohesion:
-        why = _cohesion_absent_reason()
-        print("organize status: the include triple is not registered, "
-              "so the\nagreed/placement split is unavailable; every "
-              "source reads\nas declared-only. " + why + "\n")
+    have_group = group_signal is not None
+    if not have_group:
+        print("organize status: no second signal is configured, so the\n"
+              "agreed/placement split is unavailable; every source reads\n"
+              "as declared-only.\n")
     contested, implied = set(), {}
     agree, unver, clist = {}, {}, []
-    if have_cohesion:
-        _gp, contested, agree, unver, clist = _agree_verdicts(mapref)
+    if have_group:
+        contested, agree, unver, clist = _agreement(
+            signal, policy, enforcer, group_signal, mapref)
         implied = {f: imp for f, _x, imp, _c in clist}
     if area is not None:
-        _status_area(signal, policy, enforcer, area, contested, implied)
+        _status_area(signal, policy, enforcer, area, contested, implied,
+                     group_label)
         return
     cont_by = {}
     for _f, X, _imp, _c in clist:
@@ -341,7 +334,7 @@ def cmd_status(signal, policy, enforcer, mapref, area=None,
           f"{tot['agreed']}, declared-only {tot['declared']})")
     print(f"conflict   {conflict:<5} cannot auto-apply:")
     print(f"             placement    {tot['placement']:<5} rule vs "
-          "the includes disagree on the area")
+          f"{group_label} disagree on the area")
     print(f"             requirement  {tot['requirement']:<5} move "
           "would break the build (program, per-object)")
     print(f"untracked  {untracked:<5} no rule places these")
@@ -374,7 +367,8 @@ def _status_by_area(policy, rows):
               f"{placement:>10}{requirement:>12}{clean:>7}")
 
 
-def _status_area(signal, policy, enforcer, area, contested, implied):
+def _status_area(signal, policy, enforcer, area, contested, implied,
+                 group_label="a second signal"):
     """Show one subsystem's exact move set, the dry run plan used to
     print, now flagging which files apply --unconflicted would hold."""
     target = _resolve_target(policy, area)
@@ -389,7 +383,7 @@ def _status_area(signal, policy, enforcer, area, contested, implied):
           f"conflict (placement))\n")
     print(f"moves: {len(plan.moves)} files")
     for src, dst in plan.moves:
-        tag = ("   * conflict (placement): the includes say "
+        tag = (f"   * conflict (placement): {group_label} say "
                f"{implied.get(src, '?')}/") if src in contested else ""
         print(f"  {src:<22}  ->  {dst}{tag}")
     for line in plan.notes:
@@ -405,43 +399,43 @@ def _status_area(signal, policy, enforcer, area, contested, implied):
               "status\n--conflicts for the conflict decisions.")
 
 
-def _agree_verdicts(mapref):
-    """Cross-check the commit-label rule against the include signal.
+def _agreement(signal, policy, enforcer, group_signal, mapref):
+    """Cross-check the rule placement against a second signal that groups
+    files.
 
     The three-way merge of the layout: base is the current tree, the
-    rule is one side, the include evidence is the other. Returns
-    (git-c policy, conflict-set, agreed-by-area, declared-only-by-area,
-    conflict-list). A source is a placement conflict only when one
-    different rule-area is the strict majority of its include-cluster
-    neighbors and outweighs its own; agreed when its own area leads or
-    ties; declared-only when the includes have no opinion, or when the
-    cluster is too scattered for any area to hold a majority. That
-    majority test drops co-consumption noise: a loose cluster whose
-    members spread across many unrelated areas names no majority, so it
-    does not conflict. Ties among the majority areas break by name, so
-    verdicts are reproducible. Computed on sources; headers ride with
-    their source. Needs the include triple."""
-    gs, gp, ge = get_triple("git-c")
-    if "cohesion" not in _TRIPLES:
-        sys.exit("organize: the include triple is not registered "
-                 "(needs research/lib-reorg on the path)")
-    cs = get_triple("cohesion")[0]
-    gp.load(mapref)
-    placed = _place_all(gs, gp, ge)
-    gc_area = {f: p.target for f, p in placed.items() if p.target}
-    remaining = {f: t for f, t in gc_area.items()
-                 if f.endswith(".c") and not ge.already_placed(f, t)}
-    cluster = {f: v.primary for f, v in cs.label(ge.scope()).items()
-               if v.primary}
+    rule's placement is one side, the second signal's grouping is the
+    other. group_signal labels each file with a group; a file's neighbors
+    are the other files sharing its group. Returns (conflict-set,
+    agreed-by-area, declared-only-by-area, conflict-list). A source is a
+    placement conflict only when one different rule-area is the strict
+    majority of its group neighbors and outweighs its own; agreed when
+    its own area leads or ties; declared-only when the group has no
+    opinion, or when the group is too scattered for any area to hold a
+    majority. That majority test drops co-membership noise: a loose group
+    whose members spread across many unrelated areas names no majority,
+    so it does not conflict. Ties among the majority areas break by name,
+    so verdicts are reproducible. Computed on sources; a paired file
+    rides with its source. Absent a second signal, returns empties."""
+    if group_signal is None:
+        return set(), {}, {}, []
+    policy.load(mapref)
+    placed = _place_all(signal, policy, enforcer)
+    rule_area = {f: p.target for f, p in placed.items() if p.target}
+    remaining = {f: t for f, t in rule_area.items()
+                 if f.endswith(".c") and not enforcer.already_placed(f, t)}
+    group = {f: v.primary
+             for f, v in group_signal.label(enforcer.scope()).items()
+             if v.primary}
     members = {}
-    for f, c in cluster.items():
+    for f, c in group.items():
         members.setdefault(c, set()).add(f)
     agree, unver, contested = {}, {}, []
     for f in sorted(remaining):
         X = remaining[f]
         neigh = {}
-        for g in members.get(cluster.get(f), set()):
-            ga = gc_area.get(g)
+        for g in members.get(group.get(f), set()):
+            ga = rule_area.get(g)
             if g != f and ga:
                 neigh[ga] = neigh.get(ga, 0) + 1
         if not neigh:
@@ -455,21 +449,23 @@ def _agree_verdicts(mapref):
             unver[X] = unver.get(X, 0) + 1        # no majority: scattered
         else:
             implied = min(a for a in neigh if neigh[a] == best)
-            contested.append((f, X, implied, cluster.get(f)))
-    return gp, {f for f, _, _, _ in contested}, agree, unver, contested
+            contested.append((f, X, implied, group.get(f)))
+    return {f for f, _, _, _ in contested}, agree, unver, contested
 
 
-def cmd_apply_auto(signal, policy, enforcer, mapref, commit):
+def cmd_apply_auto(signal, policy, enforcer, mapref, commit,
+                   group_signal=None):
     """Converge every unconflicted subsystem in one gated pass.
 
     The organize's terraform-apply. Unconflicted means the rule and the
-    include evidence do not disagree (agreed or include-silent);
-    conflict sources are held at the root as a todo for a human or an
-    LM. All moves run as one operation, then the Enforcer gates them:
-    the pure-rename check (a git primitive, domain-agnostic) and the
-    validator (a domain plugin, the build for git's C sources). The
-    batch is staged, or committed with --commit."""
-    _gp, contested, _a, _u, _c = _agree_verdicts(mapref)
+    second signal do not disagree (agreed or the second signal is
+    silent); conflict sources are held at the root as a todo for a human
+    or an LM. All moves run as one operation, then the Enforcer gates
+    them: the pure-rename check (a git primitive, domain-agnostic) and
+    the validator (a domain plugin, the build for a C tree). The batch is
+    staged, or committed with --commit."""
+    contested = _agreement(signal, policy, enforcer,
+                           group_signal, mapref)[0]
     policy.load(mapref)
     blockers = enforcer.preflight()
     if blockers:
@@ -498,7 +494,8 @@ def cmd_apply_auto(signal, policy, enforcer, mapref, commit):
         sys.exit(1)
 
 
-def _status_conflicts(signal, policy, enforcer, mapref):
+def _status_conflicts(signal, policy, enforcer, mapref,
+                      group_signal=None, group_label="a second signal"):
     """Emit the worklist of conflicts that need a human or an LM.
 
     This is the flag-for-intervention artifact, the piece a converging
@@ -506,14 +503,14 @@ def _status_conflicts(signal, policy, enforcer, mapref):
     the exact rule edit that records a decision, so the resolver has all
     the context and the loop stays declarative.
 
-    Two reasons. A conflict (placement) entry is a source the
-    commit-label rule and the include evidence place in different
-    subsystems; the resolver keeps it where the rule put it, or records
-    an override that moves it to where the evidence points. A conflict
-    (requirement) entry is a source the rule would move but the Enforcer
-    cannot place mechanically (a program, a per-object rule); it is
-    normally left at the root."""
-    gp, _cset, _a, _u, contested = _agree_verdicts(mapref)
+    Two reasons. A conflict (placement) entry is a source the rule and
+    the second signal place in different subsystems; the resolver keeps
+    it where the rule put it, or records an override that moves it to
+    where the second signal points. A conflict (requirement) entry is a
+    source the rule would move but the Enforcer cannot place mechanically
+    (a program, a per-object rule); it is normally left at the root."""
+    _cset, _a, _u, contested = _agreement(
+        signal, policy, enforcer, group_signal, mapref)
     policy.load(mapref)
     skips = []
     for t in policy.ordered_targets():
@@ -525,12 +522,12 @@ def _status_conflicts(signal, policy, enforcer, mapref):
     print(f"organize status --conflicts: {len(contested)} conflict "
           f"(placement), {len(skips)} conflict (requirement)\n")
     for f, X, implied, c in sorted(contested):
-        tok = gp.token_for(implied)
+        tok = policy.token_for(implied)
         equiv = "" if tok == implied else f" (the token for {implied}/)"
         header = enforcer.paired_internal_header(f)
         print(f"[conflict (placement)] {f}")
         print(f"  rule says:      {X}/  (commit-subject label)")
-        print(f"  includes say:   {implied}/  (include cluster "
+        print(f"  {group_label}:   {implied}/  (group "
               f"'{c}', majority)")
         print(f"  to decide:      is {f} a member of {X}/, or only "
               f"coupled to {implied}/?")
@@ -587,9 +584,13 @@ Usage:
 """
 
 
-def main(default_triple, default_mapref):
+def main(default_triple, default_mapref, group_signal=None,
+         group_label="a second signal"):
     """Parse args, select a triple, dispatch. default_mapref is an
-    adapter string the core passes through without interpreting."""
+    adapter string the core passes through without interpreting.
+    group_signal is the optional second signal for the cross-check, and
+    group_label is the launcher-supplied word the summary uses to name
+    it; the core names no signal itself."""
     args = sys.argv[1:]
     triple, args = take_opt(args, "--triple")
     mapref, args = take_opt(args, "--map")
@@ -613,10 +614,11 @@ def main(default_triple, default_mapref):
         area = args[1]                 # organize status <area>
     if cmd == "status":
         cmd_status(signal, policy, enforcer, mapref, area, by_area,
-                   conflicts, exit_code)
+                   conflicts, exit_code, group_signal, group_label)
     elif cmd == "apply":
         if auto:
-            cmd_apply_auto(signal, policy, enforcer, mapref, commit)
+            cmd_apply_auto(signal, policy, enforcer, mapref, commit,
+                           group_signal)
         else:
             cmd_apply(signal, policy, enforcer, mapref, area, commit)
     elif cmd == "check":

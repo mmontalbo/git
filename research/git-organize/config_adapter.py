@@ -545,22 +545,20 @@ def register_config(path):
     return name, cfg
 
 
-# The generic dispatch. The core's default status summary and its
-# apply --unconflicted route through _agree_verdicts, which is wired to
-# the git-c and cohesion triples (organize_core.py:424, :472). That
-# cross-check is the include-vs-history agreement, a git specific, so a
-# domain with neither triple cannot use it. Rather than edit the core,
-# the launcher hands a config triple to the generic seams directly:
-# _place_all, _files_for, and the Enforcer, none of which name git-c.
-# status <area> and apply --area X already avoid _agree_verdicts, so
-# those defer to the core unchanged.
+# The generic dispatch. The core's default status summary derives its
+# renamed count from the agreed + declared-only counters, which the
+# second-signal cross-check (_agreement) fills; a config domain supplies
+# no second signal, so those counters stay empty and the summary would
+# read 0 renamed. The config adapter instead derives renamed from the
+# plans directly. status <area> and apply --area X read from the plan, so
+# they defer to the core unchanged.
 
 
 def _config_status(signal, policy, enforcer, mapref):
     """The state summary for a config triple, built from the generic
     seams: renamed is the files a plan would move, conflict is the
     requirement conflicts the relocate command flags, clean is the
-    files already in place. No agreement cross-check, so no git-c."""
+    files already in place. No second-signal cross-check."""
     policy.load(mapref)
     renamed, conflict, rows = 0, 0, []
     scope = enforcer.scope()
@@ -596,8 +594,9 @@ def _config_apply_auto(signal, policy, enforcer, mapref):
     """All-areas apply for a config triple. Collect every area's plan,
     then run them as one operation through the generic apply_auto, so a
     cross-area reference repoints against the whole batch and validate
-    sees the fully moved tree. The git-coupled cmd_apply_auto is bypassed
-    because its _agree_verdicts hardcodes git-c."""
+    sees the fully moved tree. Routes through the enforcer directly,
+    holding no conflict set because a config domain has no second
+    signal."""
     policy.load(mapref)
     blockers = enforcer.preflight()
     if blockers:
@@ -652,6 +651,7 @@ def dispatch(name, mapref, argv):
         _config_apply_auto(signal, policy, enforcer, mapref)
         return
     # Every other command (status <area>, apply --area X, status
-    # --by-area) avoids _agree_verdicts, so the core handles it. The core
-    # re-reads sys.argv, so leave it untouched and pass the defaults.
+    # --by-area) reads from the plan, so the core handles it with no
+    # second signal. The core re-reads sys.argv, so leave it untouched
+    # and pass the defaults.
     organize_core.main(default_triple=name, default_mapref=mapref)

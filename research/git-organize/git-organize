@@ -15,18 +15,19 @@ if _HERE not in sys.path:
     sys.path.insert(0, _HERE)
 
 import organize_core                       # noqa: E402
-import organize_git                        # noqa: E402  registers git-c
 import config_adapter                       # noqa: E402  the config triple
-try:                                    # optional: the cohesion
-    import organize_cohesion               # noqa: E402  triple needs the
-except ImportError as e:                # untracked research/lib-reorg,
-    _libreorg = os.path.join(_HERE, "..", "lib-reorg")
-    if not os.path.isdir(_libreorg):    # so git-c works without it,
-        organize_core.note_cohesion_absent(
-            "install research/lib-reorg to enable it.")
-    else:
-        organize_core.note_cohesion_absent(
-            f"cohesion module error: {e}.")
+
+
+def _load_git():
+    """Import the git-c adapter and, if present, cohesion. Deferred so a
+    --config domain never triggers the git adapter's toplevel lookup,
+    which lets a non-git project run with no git at all."""
+    import organize_git                     # noqa: E402  registers git-c
+    try:                                    # optional: the cohesion
+        import organize_cohesion            # noqa: E402  triple needs the
+    except ImportError:                     # untracked research/lib-reorg.
+        pass                                # git-c works without it; the
+        # core names no signal, so it needs no absent-reason string.
 
 
 def _take_config(argv):
@@ -50,7 +51,14 @@ def main():
         name, cfg = config_adapter.register_config(cfg_path)
         config_adapter.dispatch(name, cfg["map"], sys.argv[1:])
         return
-    organize_core.main(default_triple="git-c", default_mapref=mapref)
+    _load_git()
+    # The cohesion triple, when present, is git-c's second signal for the
+    # placement cross-check; the launcher names it, the core does not. The
+    # label is the word the status summary uses for that signal.
+    group = (organize_core.get_triple("cohesion")[0]
+             if organize_core.registered("cohesion") else None)
+    organize_core.main(default_triple="git-c", default_mapref=mapref,
+                       group_signal=group, group_label="the includes")
 
 
 if __name__ == "__main__":
