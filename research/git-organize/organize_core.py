@@ -290,50 +290,61 @@ def cmd_apply(signal, policy, enforcer, mapref, area, commit):
 def cmd_status(signal, policy, enforcer, mapref):
     """Scope the organize against the declared rules.
 
-    Per subsystem, split the remaining candidate files into auto-ready
-    and marked. Auto-ready means the rule moves the file as a pure
-    rename with its interface left in place, so it is trivially correct
-    to apply; the pure-rename and validator gates confirm it. Marked
-    means the rule
-    cannot place the file mechanically (a program, or a per-object rule
-    the move would strand), so it needs a human or an LM. Richer markers,
-    where a file's own evidence disagrees with its rule, need the
-    cohesion cross-check and are not computed here."""
+    Per subsystem, split the remaining candidate files into auto-ready,
+    contested, and marked. Auto-ready means the rule would move the file
+    as a pure rename and the cohesion evidence does not object, so it is
+    trivially correct to apply; the pure-rename and validator gates
+    confirm it. Contested means the rule and the cohesion evidence place
+    the file in different subsystems, so apply --auto holds it for a
+    human or an LM (organize markers gives each one's positions and the
+    rule edit that resolves it). Marked means the rule cannot place the
+    file mechanically (a program, or a per-object rule the move would
+    strand). The contested split needs the cohesion triple; without it,
+    contested is 0 and every movable file reads as auto-ready."""
     policy.load(mapref)
-    rows, markers = [], []
-    tot_auto = tot_marked = 0
+    contested = _agree_verdicts(mapref)[1] if "cohesion" in _TRIPLES \
+        else set()
+    rows, skips = [], []
+    tot_auto = tot_cont = tot_marked = 0
     for t in policy.ordered_targets():
         files = _files_for(signal, policy, enforcer, t)
         if not files:
             continue
         plan = enforcer.plan(t, files)
-        auto, marked = len(plan.moves), len(plan.skipped)
-        if not auto and not marked:
+        cont = sum(1 for s, _ in plan.moves if s in contested)
+        auto, marked = len(plan.moves) - cont, len(plan.skipped)
+        if not (auto or cont or marked):
             continue
         state = "exists" if enforcer.target_ready(t) else "new"
-        rows.append((t, state, auto, marked, len(plan.kept_public)))
+        rows.append((t, state, auto, cont, marked,
+                     len(plan.kept_public)))
         for f, reason in plan.skipped:
-            markers.append((t, f, reason))
+            skips.append((t, f, reason))
         tot_auto += auto
+        tot_cont += cont
         tot_marked += marked
     print(f"organize status against {policy.name()}\n")
-    print(f"  {'subsystem':<12}{'dir':<8}{'auto':>5}{'marked':>8}"
-          f"{'public':>8}")
-    for t, state, auto, marked, public in rows:
-        print(f"  {t + '/':<12}{state:<8}{auto:>5}{marked:>8}{public:>8}")
-    print(f"\nauto-ready (pure-rename moves, trivially correct): "
+    print(f"  {'subsystem':<11}{'dir':<7}{'auto':>5}{'contested':>10}"
+          f"{'marked':>8}{'public':>8}")
+    for t, state, auto, cont, marked, public in rows:
+        print(f"  {t + '/':<11}{state:<7}{auto:>5}{cont:>10}{marked:>8}"
+              f"{public:>8}")
+    print(f"\nauto-ready (pure rename, cohesion does not object): "
           f"{tot_auto} files in {len(rows)} subsystems")
-    print(f"marked for judgment (cannot place mechanically): "
-          f"{tot_marked} files")
-    if markers:
-        print("\nmarkers:")
-        for t, f, reason in markers:
+    print(f"contested (rule vs cohesion disagree, held for a decision): "
+          f"{tot_cont} files")
+    print(f"marked (cannot place mechanically): {tot_marked} files")
+    if skips:
+        print("\nmarked (non-relocatable):")
+        for t, f, reason in skips:
             print(f"  {f}  ->  {t}/   blocked: {reason}")
-    print("\nauto-ready is gated on apply by the pure-rename check (a "
-          "git\nprimitive) and the validator (the build for git's C "
-          "sources).\nContaminant, overreach, and signal-conflict "
-          "markers need the\ncohesion cross-check; run organize agree "
-          "or organize markers.")
+    if "cohesion" not in _TRIPLES:
+        print("\nnote: contested is 0 because the cohesion triple is "
+              "not\navailable, so movable files all read as auto-ready.")
+    else:
+        print("\napply --auto carves the auto-ready and holds the "
+              "contested;\nrun organize markers for each contested "
+              "file's positions and\nthe rule edit that resolves it.")
 
 
 def _agree_verdicts(mapref):
