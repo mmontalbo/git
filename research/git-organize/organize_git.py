@@ -13,7 +13,7 @@ import subprocess
 from collections import Counter, defaultdict
 
 import organize_core
-from organize_core import (Vote, Placement, Verdict, Rename, Patch, Diff,
+from organize_core import (Verdict, Rename, Patch, Diff,
                         ApplyResult, ROOT)
 
 TOP = subprocess.check_output(
@@ -221,16 +221,16 @@ class GitInterpreter:
         - A flagged header-only .h (no .c): internal (all includers
           co-move) targets its dir; public (not internal) is absent, so
           no rule places it and it is counted nowhere."""
-        votes = self._label(scope)
+        labels = self._label(scope)
         over = self._overrides(scope)
 
         def base_place(f):
             """The label-or-override target for f, or None. Ignores role;
             the role logic below adds it."""
-            vote, ov = votes.get(f), over.get(f)
-            if (vote is None or vote.primary is None) and ov is None:
+            label, ov = labels.get(f), over.get(f)
+            if label is None and ov is None:
                 return None
-            return self._place(f, vote, ov).target
+            return self._place(f, label, ov)
 
         # The .c placements. A source with a label or override that
         # resolves to a target targets that dir, program or not. A
@@ -290,14 +290,14 @@ class GitInterpreter:
         attributes command emits exactly these, independent of the role
         and pairing that targets() folds in. A file with no label or
         override, or one whose value resolves to no target, is absent."""
-        votes = self._label(scope)
+        labels = self._label(scope)
         over = self._overrides(scope)
         out = {}
         for f in scope:
-            vote, ov = votes.get(f), over.get(f)
-            if (vote is None or vote.primary is None) and ov is None:
+            label, ov = labels.get(f), over.get(f)
+            if label is None and ov is None:
                 continue
-            target = self._place(f, vote, ov).target
+            target = self._place(f, label, ov)
             if target is not None:
                 out[f] = target
         return out
@@ -368,8 +368,8 @@ class GitInterpreter:
 
     def _label(self, scope):
         """Label each file by the modal commit-subject prefix over its
-        history. Returns one Vote per confidently labelled file; a file
-        below either threshold is absent."""
+        history. Returns {file: label} for each confidently labelled
+        file; a file below either threshold is absent."""
         wt = defaultdict(lambda: defaultdict(float))
         lab, touched, total = None, [], 0
         log = git("log", "--no-merges", "--name-only",
@@ -391,14 +391,13 @@ class GitInterpreter:
             w = 1.0 / total
             for f in set(touched):
                 wt[f][lab] += w
-        votes = {}
+        labels = {}
         for f, c in wt.items():
             best, w = max(c.items(), key=lambda kv: (kv[1], kv[0]))
             tot = sum(c.values())
             if tot >= 2.0 and w / tot >= 0.34:
-                votes[f] = Vote(dist=dict(c), primary=best,
-                                confidence=w / tot, status="labelled")
-        return votes
+                labels[f] = best
+        return labels
 
     def _token_of(self, label):
         """The map token for a label: the first hyphen-free segment of
@@ -431,27 +430,17 @@ class GitInterpreter:
                 over[path] = value
         return over
 
-    def _place(self, f, vote, override):
+    def _place(self, f, label, override):
+        """The target directory an override or a label resolves to, an
+        override winning, or None when neither is set or the value
+        resolves to no target."""
         if override is not None:
-            label, reason = override, "override"
-        elif vote is not None and vote.primary is not None:
-            label, reason = vote.primary, "label"
+            chosen = override
+        elif label is not None:
+            chosen = label
         else:
-            return Placement(target=None, label=None, reason="none")
-        return Placement(target=self.target_of(label),
-                         label=label, reason=reason)
-
-    def token_for(self, target):
-        """A label the map routes to target, for suggesting an override
-        in a marker. Prefers the target's own name when the map owns it
-        (odb, refs), else the first token that maps there (index has no
-        'index' token, so this returns one it does own)."""
-        if self._owner.get(target) == target:
-            return target
-        for tok, d in self._owner.items():
-            if d == target:
-                return tok
-        return target
+            return None
+        return self.target_of(chosen)
 
 
 class GitTransformer:
@@ -525,15 +514,6 @@ class GitTransformer:
 
     def _include_edits(self, h):
         return self._model.include_edits(h)
-
-    def _nonsource_refs(self, h):
-        """Tracked '#include \"h\"' references in files that are not
-        *.c/*.h (docs, patch fixtures). The rewrite leaves these."""
-        allf = set(git("grep", "-l", f'#include "{h}"',
-                       allow=(0, 1)).split())
-        src = set(git("grep", "-l", f'#include "{h}"',
-                      "--", "*.c", "*.h", allow=(0, 1)).split())
-        return len(allf - src)
 
     # diff
 

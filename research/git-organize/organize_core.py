@@ -20,7 +20,7 @@ Contract of this module (the purity invariant):
 """
 import sys
 from dataclasses import dataclass, field
-from typing import NewType, Optional, Protocol
+from typing import NewType, Protocol
 
 # Opaque handles. This module never interprets their text.
 FileId = NewType("FileId", str)
@@ -32,33 +32,6 @@ Label = str
 # target path equals its basename. The core passes this handle through
 # to the Transformer, which owns the path arithmetic.
 ROOT = DirId("")
-
-
-@dataclass(frozen=True)
-class Vote:
-    """A generic helper record for an adapter's opinion on one file, as
-    a distribution over labels. Not part of the Interpreter contract;
-    the adapter uses it inside its private label logic.
-
-    dist is nonempty when the file is labelled. primary is the argmax
-    label or None for no opinion. confidence is dist[primary] or 0.0.
-    status is a short adapter word (labelled, thin, ambiguous)."""
-    dist: dict
-    primary: Optional[Label]
-    confidence: float
-    status: str
-
-
-@dataclass(frozen=True)
-class Placement:
-    """A generic helper record an adapter uses inside its private place
-    logic. target None means no opinion, so the file stays in place.
-    reason is UX prose naming which input won (override, label, name).
-    Not part of the Interpreter contract; the adapter maps it to a
-    target directory."""
-    target: Optional[DirId]
-    label: Optional[Label]
-    reason: str
 
 
 @dataclass(frozen=True)
@@ -102,20 +75,6 @@ class Verdict:
     reason: str
 
 
-@dataclass(frozen=True)
-class Step:
-    """One cascade action as generic metadata plus an opaque payload.
-
-    kind is move, edit, gate, or stage. Only the Transformer interprets
-    payload; the core prints kind, summary, reads, writes, preview."""
-    kind: str
-    summary: str
-    reads: tuple
-    writes: tuple
-    preview: Optional[str]
-    payload: object
-
-
 @dataclass
 class ApplyResult:
     """The outcome of an apply: ok plus lines the core prints."""
@@ -128,12 +87,12 @@ class Interpreter(Protocol):
         """scope: set[FileId] -> dict[FileId, DirId]. The target
         directory for each file the rules address. A file no rule
         addresses is ABSENT (untracked). A file that should stay at the
-        root (a public interface header) maps to ROOT. Placement
-        (subsystem from label or override) and role (public header ->
-        ROOT, internal header -> its source's dir) and pairing live
-        here. A program pin does NOT live here: a program gets its
-        subsystem dir like any file; the transformer's diff() decides it
-        cannot move."""
+        root (a public interface header) maps to ROOT. The target dir
+        from a label or override, plus role (public header -> ROOT,
+        internal header -> its source's dir) and pairing, live here. A
+        program pin does NOT live here: a program gets its subsystem dir
+        like any file; the transformer's diff() decides it cannot
+        move."""
 
     def load(self, mapref):
         """Load the area map named by mapref, an adapter string."""
@@ -207,11 +166,6 @@ def get_pair(name):
     if not make:
         sys.exit(f"organize: no such project '{name}'")
     return make()
-
-
-def registered(name):
-    """Whether a pair named name is registered."""
-    return name in _PAIRS
 
 
 def _targets(interp, transformer):
@@ -626,14 +580,5 @@ def main(default_pair, default_mapref):
             cmd_apply(interp, transformer, mapref, area, commit)
     elif cmd == "attributes":
         cmd_attributes(interp, transformer, mapref)
-    elif cmd == "check":
-        sys.exit("organize check is now organize status --exit-code")
-    elif cmd == "agree":
-        sys.exit("organize agree is now organize status --by-area and "
-                 "organize status --conflicts")
-    elif cmd == "todo":
-        sys.exit("organize todo is now organize status --conflicts")
-    elif cmd == "plan":
-        sys.exit("organize plan is now organize status --plan")
     else:
         sys.exit(DOC)                  # unknown command: nonzero + DOC

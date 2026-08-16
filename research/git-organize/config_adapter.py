@@ -42,7 +42,7 @@ import sys
 from pathlib import Path
 
 import organize_core
-from organize_core import (Vote, Placement, Verdict, Rename, Patch, Diff,
+from organize_core import (Verdict, Rename, Patch, Diff,
                           ApplyResult, ROOT)
 
 
@@ -111,8 +111,8 @@ class ConfigInterpreter:
 
     The tag command speaks the tag protocol: for each file it emits zero
     or more "path<TAB>key=value" lines with keys area, role, kind. The
-    area key is the placement label; role and kind ride in the vote's
-    distribution. With no tag command, a file's area is the first map
+    area key is the placement label; role and kind are accepted but not
+    yet read. With no tag command, a file's area is the first map
     token whose name appears as a path component, so a plain map is
     enough for a flat tree. The map is "directory: token token" per
     line, the same format the git adapter's layout map uses; a token
@@ -136,15 +136,15 @@ class ConfigInterpreter:
         target is present; one with neither, or one whose value resolves
         to no target, is absent. There is no role or pin: every member
         is a source, so a target is a plain subsystem directory."""
-        votes = self._label(scope)
+        labels = self._label(scope)
         over = self._overrides(scope)
         out = {}
         for f in scope:
-            vote = votes.get(f)
+            label = labels.get(f)
             ov = over.get(f)
-            if (vote is None or vote.primary is None) and ov is None:
+            if label is None and ov is None:
                 continue
-            target = self._place(f, vote, ov).target
+            target = self._place(f, label, ov)
             if target is not None:
                 out[f] = target
         return out
@@ -179,17 +179,6 @@ class ConfigInterpreter:
     def ordered_targets(self):
         return list(dict.fromkeys(self._owner.values()))
 
-    def token_for(self, target):
-        """A label the map routes to target, for suggesting an override.
-        Prefers the target's own name when the map owns it, else the
-        first token that maps there."""
-        if self._owner.get(target) == target:
-            return target
-        for tok, d in self._owner.items():
-            if d == target:
-                return tok
-        return target
-
     # the label, override, and place internals
 
     def _tag_lines(self, scope):
@@ -203,28 +192,24 @@ class ConfigInterpreter:
         return tags
 
     def _label(self, scope):
-        votes = {}
+        """{file: label} for each labelled file. With a tag command the
+        label is the file's area key; with none it is the first map
+        token that appears in the file's path."""
+        labels = {}
         if self._tag_cmd:
             for f, kv in self._tag_lines(scope).items():
                 if f not in scope:
                     continue
                 area = kv.get("area")
-                if not area:
-                    continue
-                dist = {area: 1.0}
-                for k in ("role", "kind"):
-                    if kv.get(k):
-                        dist[f"{k}:{kv[k]}"] = 1.0
-                votes[f] = Vote(dist=dist, primary=area,
-                                confidence=1.0, status="labelled")
-            return votes
+                if area:
+                    labels[f] = area
+            return labels
         # Fallback: the map token that appears in the file's path.
         for f in scope:
             token = self._token_in_path(f)
             if token:
-                votes[f] = Vote(dist={token: 1.0}, primary=token,
-                                confidence=1.0, status="labelled")
-        return votes
+                labels[f] = token
+        return labels
 
     def _token_of(self, label):
         """The map token for a label: the first hyphen-free segment of
@@ -256,15 +241,17 @@ class ConfigInterpreter:
                 over[path] = value.strip()
         return over
 
-    def _place(self, f, vote, override):
+    def _place(self, f, label, override):
+        """The target directory an override or a label resolves to, an
+        override winning, or None when neither is set or the value
+        resolves to no target."""
         if override is not None:
-            label, reason = override, "override"
-        elif vote is not None and vote.primary is not None:
-            label, reason = vote.primary, "label"
+            chosen = override
+        elif label is not None:
+            chosen = label
         else:
-            return Placement(target=None, label=None, reason="none")
-        return Placement(target=self.target_of(label),
-                         label=label, reason=reason)
+            return None
+        return self.target_of(chosen)
 
 
 class ConfigTransformer:
@@ -740,6 +727,6 @@ def dispatch(name, mapref, argv):
         return
     # Every other command (status <area>, apply --area X, status
     # --by-area, status --plan) reads from the diff, so the core handles
-    # it with no second signal. The core re-reads sys.argv, so leave it
+    # it from the tree diff. The core re-reads sys.argv, so leave it
     # untouched and pass the defaults.
     organize_core.main(default_pair=name, default_mapref=mapref)
