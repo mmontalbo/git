@@ -363,28 +363,25 @@ def cmd_status(interp, transformer, mapref, area=None,
 
 
 def _area_rows(interp, transformer, targets, diff):
-    """Per-subsystem (target, state, renamed, conflict, organized) rows
-    from the diff, one per target the interpreter declares that has any
-    addressed file. Every count derives from the Diff and the targets,
-    the same quantities the default groups by state."""
-    renamed_srcs = {r.src for r in diff.renames}
-    ok_by_area, conflict_by_area, organized_by_area = {}, {}, {}
+    """Per-subsystem (target, state, renamed, conflict) rows from the
+    diff, one per target the interpreter declares that has a rename.
+    Organized files (target == current) are a global count in the
+    summary, not a per-subsystem quantity: a public header kept at root
+    belongs to no single subsystem's directory, so the by-area table
+    shows only the actionable columns."""
+    ok_by_area, conflict_by_area = {}, {}
     for r in diff.renames:
         area = _area_of(interp, transformer, targets, r)
         bucket = ok_by_area if r.ok else conflict_by_area
         bucket[area] = bucket.get(area, 0) + 1
-    for f, t in targets.items():
-        if f not in renamed_srcs:
-            organized_by_area[t] = organized_by_area.get(t, 0) + 1
     rows = []
     for t in interp.ordered_targets():
         renamed = ok_by_area.get(t, 0)
         conflict = conflict_by_area.get(t, 0)
-        organized = organized_by_area.get(t, 0)
-        if not (renamed or conflict or organized):
+        if not (renamed or conflict):
             continue
         state = "exists" if transformer.target_ready(t) else "new"
-        rows.append((t, state, renamed, conflict, organized))
+        rows.append((t, state, renamed, conflict))
     return rows
 
 
@@ -392,12 +389,10 @@ def _status_by_area(interp, transformer, targets, diff):
     """Print the per-subsystem drift table: the same quantities the
     default groups by state, laid out by area."""
     print(f"organize status against {interp.name()}\n")
-    print(f"  {'subsystem':<11}{'dir':<7}{'renamed':>8}"
-          f"{'conflict':>9}{'organized':>10}")
-    for t, state, renamed, conflict, organized in _area_rows(
+    print(f"  {'subsystem':<11}{'dir':<7}{'renamed':>8}{'conflict':>9}")
+    for t, state, renamed, conflict in _area_rows(
             interp, transformer, targets, diff):
-        print(f"  {t + '/':<11}{state:<7}{renamed:>8}{conflict:>9}"
-              f"{organized:>10}")
+        print(f"  {t + '/':<11}{state:<7}{renamed:>8}{conflict:>9}")
 
 
 def _status_area(interp, transformer, area):
