@@ -165,24 +165,24 @@ class Transformer(Protocol):
 
 
 # Registry of named pairs. An adapter registers itself on import.
-_TRIPLES = {}
+_PAIRS = {}
 
 
 def register(name, make):
     """Register a factory returning (Interpreter, Transformer)."""
-    _TRIPLES[name] = make
+    _PAIRS[name] = make
 
 
-def get_triple(name):
-    make = _TRIPLES.get(name)
+def get_pair(name):
+    make = _PAIRS.get(name)
     if not make:
-        sys.exit(f"organize: no such triple '{name}'")
+        sys.exit(f"organize: no such project '{name}'")
     return make()
 
 
 def registered(name):
     """Whether a pair named name is registered."""
-    return name in _TRIPLES
+    return name in _PAIRS
 
 
 def _desires(interp, transformer):
@@ -466,11 +466,10 @@ def cmd_attributes(interp, transformer, mapref):
             print(line)
 
 
-def main(default_triple, default_mapref):
+def main(default_pair, default_mapref):
     """Parse args, select a pair, dispatch. default_mapref is an
     adapter string the core passes through without interpreting."""
     args = sys.argv[1:]
-    triple, args = take_opt(args, "--triple")
     mapref, args = take_opt(args, "--map")
     if mapref is None:
         mapref = default_mapref
@@ -486,7 +485,7 @@ def main(default_triple, default_mapref):
     if args and args[0] in ("--help", "-h", "help"):
         print(DOC)                     # explicit help exits 0
         return
-    interp, transformer = get_triple(triple or default_triple)
+    interp, transformer = get_pair(default_pair)
     cmd = args[0] if args else "status"
     if area is None and cmd == "status" and len(args) > 1:
         area = args[1]                 # organize status <area>

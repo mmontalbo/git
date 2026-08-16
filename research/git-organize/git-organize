@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """organize: enforce a declared source layout.
 
-A thin launcher. Put this directory on sys.path, import the adapters
-(importing each registers its triple: git-c, cohesion), then hand
-control to the core with git-c as the default triple and
-git-layout.map as the default map. Run as:
-python3 research/git-organize/git-organize check
+A thin launcher. Put this directory on sys.path, import the git adapter
+(which registers the git-c pair), then hand control to the core with
+git-c as the default pair and git-layout.map as the default map. Run as:
+python3 research/git-organize/git-organize status
 """
 import os
 import sys
@@ -15,19 +14,14 @@ if _HERE not in sys.path:
     sys.path.insert(0, _HERE)
 
 import organize_core                       # noqa: E402
-import config_adapter                       # noqa: E402  the config triple
+import config_adapter                       # noqa: E402  the config pair
 
 
 def _load_git():
-    """Import the git-c adapter and, if present, cohesion. Deferred so a
-    --config domain never triggers the git adapter's toplevel lookup,
-    which lets a non-git project run with no git at all."""
+    """Import the git adapter, which registers the git-c pair. Deferred
+    so a --config domain never triggers the git adapter's toplevel
+    lookup, which lets a non-git project run with no git at all."""
     import organize_git                     # noqa: E402  registers git-c
-    try:                                    # optional: the cohesion
-        import organize_cohesion            # noqa: E402  triple needs the
-    except ImportError:                     # untracked research/lib-reorg.
-        pass                                # git-c works without it; the
-        # core names no signal, so it needs no absent-reason string.
 
 
 def _take_config(argv):
@@ -52,7 +46,7 @@ def main():
         config_adapter.dispatch(name, cfg["map"], sys.argv[1:])
         return
     _load_git()
-    organize_core.main(default_triple="git-c", default_mapref=mapref)
+    organize_core.main(default_pair="git-c", default_mapref=mapref)
 
 
 if __name__ == "__main__":

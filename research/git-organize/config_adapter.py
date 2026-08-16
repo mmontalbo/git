@@ -12,7 +12,7 @@ the filesystem, compiles regexes, reads JSON, and expands globs. What
 it never does is name a domain: read the config for that.
 
 The config keys (JSON):
-  name          the adapter (triple) name to register.
+  name          the adapter (pair) name to register.
   map           path to a "dir: token token" layout map file.
   members       list of globs for the files in scope.
   tagCmd        optional command implementing the tag protocol; stdin
@@ -545,9 +545,9 @@ class ConfigTransformer:
 
 
 def register_config(path):
-    """Load a config file and register its triple under the config's
+    """Load a config file and register its pair under the config's
     name. The launcher calls this for --config FILE; the core then
-    dispatches to it like any other triple."""
+    dispatches to it like any other pair."""
     cfg = _load_config(path)
     name = cfg.get("name", "config")
 
@@ -649,7 +649,7 @@ def dispatch(name, mapref, argv):
     auto = "--unconflicted" in probe
     words = [a for a in probe if not a.startswith("-")]
     cmd = words[0] if words else "status"
-    interp, transformer = organize_core.get_triple(name)
+    interp, transformer = organize_core.get_pair(name)
     flags = ("--by-area", "--conflicts", "--exit-code")
     named_area = area or (words[1] if cmd == "status" and len(words) > 1
                           else None)
@@ -664,4 +664,4 @@ def dispatch(name, mapref, argv):
     # --by-area) reads from the plan, so the core handles it with no
     # second signal. The core re-reads sys.argv, so leave it untouched
     # and pass the defaults.
-    organize_core.main(default_triple=name, default_mapref=mapref)
+    organize_core.main(default_pair=name, default_mapref=mapref)
