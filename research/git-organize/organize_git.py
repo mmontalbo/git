@@ -42,12 +42,13 @@ def stem(path):
     return base[:-2] if base.endswith((".c", ".h")) else base
 
 
-def _duplicate_area_paths():
-    """{path: count} for each path that carries more than one 'area='
-    entry in the root .gitattributes. Counts lines whose first token is
-    a path and whose attributes include an 'area=' assignment; a
-    leading '/' anchors the path, which we strip to match scope names.
-    Absent file or no such line yields an empty map."""
+def _duplicate_subsystem_paths():
+    """{path: count} for each path that carries more than one
+    'organize.subsystem=' entry in the root .gitattributes. Counts lines
+    whose first token is a path and whose attributes include an
+    'organize.subsystem=' assignment; a leading '/' anchors the path,
+    which we strip to match scope names. Absent file or no such line
+    yields an empty map."""
     p = os.path.join(TOP, ".gitattributes")
     counts = Counter()
     try:
@@ -56,12 +57,12 @@ def _duplicate_area_paths():
         return counts
     for line in fh:
         line = line.split("#", 1)[0].strip()
-        if not line or "area=" not in line:
+        if not line or "organize.subsystem=" not in line:
             continue
         parts = line.split()
         if len(parts) < 2:
             continue
-        if any(a.startswith("area=") for a in parts[1:]):
+        if any(a.startswith("organize.subsystem=") for a in parts[1:]):
             counts[parts[0].lstrip("/")] += 1
     return counts
 
@@ -82,9 +83,9 @@ class GitInterpreter:
     history, weighted by full commit breadth so a large sweep counts
     little per file; evidence-quality thresholds (at least 2.0 support,
     a 0.34 modal share) live in _label. The map is 'directory: area
-    area ...' per line, plus per-path 'area=' overrides; a declared
-    override beats the inferred label, and a label resolves to a target
-    through its map token."""
+    area ...' per line, plus per-path 'organize.subsystem=' overrides; a
+    declared override beats the inferred label, and a label resolves to a
+    target through its map token."""
 
     def __init__(self):
         self._owner = {}
@@ -147,22 +148,24 @@ class GitInterpreter:
     def override_notices(self, scope):
         """Display lines for override lint, for the core to print
         verbatim. Two kinds: an override whose value resolves to no
-        target (a typo such as area=packs), naming the file, the value,
-        and the valid area names; and a path carrying more than one
-        area= line in the root .gitattributes (a duplicate the resolver
-        should collapse). Empty when every override is clean."""
+        target (a typo such as organize.subsystem=packs), naming the
+        file, the value, and the valid area names; and a path carrying
+        more than one organize.subsystem= line in the root .gitattributes
+        (a duplicate the resolver should collapse). Empty when every
+        override is clean."""
         lines = []
         valid = ", ".join(self.ordered_targets())
         for f, value in sorted(self._overrides(scope).items()):
             if self.target_of(value) is None:
                 lines.append(
-                    f"  {f}: area={value} resolves to no area; the "
-                    f"file stays at root.\n    valid areas: {valid}")
-        for f, n in sorted(_duplicate_area_paths().items()):
+                    f"  {f}: organize.subsystem={value} resolves to no "
+                    f"area; the file stays at root.\n    valid areas: "
+                    f"{valid}")
+        for f, n in sorted(_duplicate_subsystem_paths().items()):
             if n > 1:
                 lines.append(
-                    f"  {f}: {n} area= lines in .gitattributes; keep "
-                    "one.")
+                    f"  {f}: {n} organize.subsystem= lines in "
+                    ".gitattributes; keep one.")
         return lines
 
     def resolution(self, f, place):
@@ -212,21 +215,23 @@ class GitInterpreter:
         return label.split("/")[0].split("-")[0]
 
     def _overrides(self, scope):
-        """path -> declared 'area=' value for scope paths that set it.
+        """path -> declared 'organize.subsystem' value for scope paths
+        that set it.
 
-        Batches one 'git check-attr area --stdin -z'. The NUL stream is
-        path, attr, value triples; keep values set and not
+        Batches one 'git check-attr organize.subsystem --stdin -z'. The
+        NUL stream is path, attr, value triples; keep values set and not
         'unspecified'."""
         files = sorted(scope)
         if not files:
             return {}
         r = subprocess.run(
-            ["git", "-C", TOP, "check-attr", "area",
+            ["git", "-C", TOP, "check-attr", "organize.subsystem",
              "--stdin", "-z"],
             input="\0".join(files) + "\0",
             capture_output=True, text=True)
         if r.returncode != 0:
-            sys.exit(f"git check-attr area: {r.stderr.strip()}")
+            sys.exit(f"git check-attr organize.subsystem: "
+                     f"{r.stderr.strip()}")
         fields = r.stdout.split("\0")
         over = {}
         for i in range(0, len(fields) - 2, 3):
