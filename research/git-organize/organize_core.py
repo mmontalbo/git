@@ -195,11 +195,13 @@ def _desires(interp, transformer):
 
 
 def _files_for(interp, transformer, target):
-    """The set of scope files the interpreter desires in target. The
-    Transformer decides which of these actually move (pairing,
-    relocatability, already-there)."""
+    """The set of scope files that will move into target: the interpreter
+    desires them there and holds none of them. A held file (a pinned
+    program, a public header kept at root) stays put, so the Transformer
+    never sees it. The Transformer only drops files already in target."""
     placed = _desires(interp, transformer)
-    return {f for f, d in placed.items() if d.place == target}
+    return {f for f, d in placed.items()
+            if d.place == target and d.hold is None}
 
 
 def _resolve_target(interp, area):
@@ -254,15 +256,17 @@ def cmd_status(interp, transformer, mapref, area=None,
     """Scope the organize against the declared layout.
 
     The default groups the drift by state, the way git status groups by
-    change type, and every count comes from the Transformer's plans.
-    renamed is what apply --unconflicted moves (the plan over each area's
-    desired files); conflict is the requirement blocks the Transformer
-    reports in plan.skipped (a program, a per-object rule); untracked is
-    the sources no rule places; organized is the files the plan keeps in
-    place. With --by-area, print the same counts per subsystem; with
-    --conflicts, print the conflict worklist; with --exit-code, exit 0
-    when nothing renames or conflicts and 1 otherwise, for CI. With an
-    area, show that subsystem's exact move set."""
+    change type. Every count derives from the interpreter's Desires:
+    renamed is a placed file the interpreter holds free that is not yet
+    in its target (what apply moves); organized is a placed file the
+    interpreter either holds at root (a pinned program, a public header)
+    or that already sits in its target; untracked is a source the
+    interpreter places nowhere. conflict is 0: the mechanical-conflict
+    notion is not implemented yet. With --by-area, print the same counts
+    per subsystem; with --conflicts, print the (now empty) conflict
+    worklist; with --exit-code, exit 0 when nothing renames and 1
+    otherwise, for CI. With an area, show that subsystem's exact move
+    set."""
     if conflicts:
         _status_conflicts(interp, transformer, mapref)
         return
@@ -270,16 +274,20 @@ def cmd_status(interp, transformer, mapref, area=None,
     if area is not None:
         _status_area(interp, transformer, area)
         return
+    desired = _desires(interp, transformer)
     rows = []
     tot = {"renamed": 0, "conflict": 0, "organized": 0}
     for t in interp.ordered_targets():
-        files = _files_for(interp, transformer, t)
-        if not files:
+        placed = {f: d for f, d in desired.items() if d.place == t}
+        if not placed:
             continue
-        plan = transformer.plan(t, files)
-        renamed = len(plan.moves)
-        conflict = len(plan.skipped)
-        organized = len(plan.kept_public)
+        renamed = sum(1 for f, d in placed.items()
+                      if d.hold is None
+                      and not transformer.already_at(f, t))
+        organized = sum(1 for f, d in placed.items()
+                        if d.hold is not None
+                        or transformer.already_at(f, t))
+        conflict = 0
         if not (renamed or conflict or organized):
             continue
         state = "exists" if transformer.target_ready(t) else "new"
@@ -292,13 +300,14 @@ def cmd_status(interp, transformer, mapref, area=None,
         for line in _override_notices(interp, transformer):
             print(line)                # first notice prints its header
         return
-    desired = _desires(interp, transformer)
     scope_src = {f for f in transformer.scope() if transformer.is_source(f)}
-    placed_src = {f for f in desired if transformer.is_source(f)}
+    placed_src = {f for f in desired
+                  if transformer.is_source(f)
+                  and desired[f].place is not None}
     untracked = len(scope_src - placed_src)
     renamed = tot["renamed"]
     conflict = tot["conflict"]
-    is_organized = renamed == 0 and conflict == 0
+    is_organized = renamed == 0
     banner = "(organized)" if is_organized else "(not organized)"
     print(f"organize status against {interp.name()}   {banner}\n")
     print(f"renamed    {renamed:<5} will move on apply")
@@ -306,10 +315,9 @@ def cmd_status(interp, transformer, mapref, area=None,
           "decision")
     print(f"untracked  {untracked:<5} no rule places these")
     print(f"organized  {tot['organized']:<5} already in place")
-    print(f"\napply --unconflicted moves the {renamed} and holds the "
-          f"{conflict} conflicts.\norganize status --conflicts lists "
-          "them; --by-area splits per subsystem;\nstatus <area> shows "
-          "one.")
+    print(f"\napply moves the {renamed}."
+          "\norganize status --by-area splits per subsystem; "
+          "status <area> shows one.")
     for line in _override_notices(interp, transformer):
         # first notice line prints its own header
         print(line)
@@ -344,14 +352,6 @@ def _status_area(interp, transformer, area):
         print(f"  {src:<22}  ->  {dst}")
     for line in plan.notes:
         print(line)
-    if plan.skipped:
-        print("\ncannot move (held at root):")
-        for f, reason in plan.skipped:
-            print(f"  {f}  ({reason})")
-    if plan.skipped:
-        print(f"\napply --unconflicted moves the {len(plan.moves)} and "
-              f"holds the {len(plan.skipped)} it cannot move. See "
-              f"organize status\n--conflicts for the decisions.")
 
 
 def cmd_apply_auto(interp, transformer, mapref, commit):
@@ -395,32 +395,13 @@ def cmd_apply_auto(interp, transformer, mapref, commit):
 def _status_conflicts(interp, transformer, mapref):
     """Emit the worklist of conflicts that need a human or an LM.
 
-    This is the flag-for-intervention artifact, the piece a converging
-    apply cannot do on its own. Each entry carries the rule position, the
-    blocker, and the decision, so the resolver has all the context and
-    the loop stays declarative.
-
-    Every conflict is a requirement block: a source the rule would move
-    but the Transformer cannot place mechanically (a program, a
-    per-object rule); it is normally left at the root."""
+    A conflict was a placed source the tool could not move mechanically.
+    That notion no longer exists: the interpreter folds a program pin and
+    a public header into a hold, so a held file is organized, not
+    conflicted. The mechanical-conflict notion is not implemented yet, so
+    there are no conflicts to list."""
     interp.load(mapref)
-    skips = []
-    for t in interp.ordered_targets():
-        files = _files_for(interp, transformer, t)
-        if not files:
-            continue
-        for f, reason in transformer.plan(t, files).skipped:
-            skips.append((f, t, reason))
-    print(f"organize status --conflicts: {len(skips)} conflicts\n"
-          "(all cannot move)\n")
-    for f, X, reason in sorted(skips):
-        print(f"[conflict] {f}")
-        print(f"  rule says:      {X}/")
-        print(f"  blocker:        {reason}")
-        print(f"  to decide:      leave at root, or restructure the "
-              f"build so it can move")
-        print(f"  leave:          no action (expected for this kind)")
-        print()
+    print("organize status --conflicts: 0 conflicts")
 
 
 def take_opt(args, name):
@@ -468,14 +449,20 @@ def cmd_attributes(interp, transformer, mapref):
     file, sorted. The interpreter owns the attribute name and returns the
     line through resolution; the core prints it verbatim and names none.
     The output is what git check-attr reads back to reproduce the carve,
-    so a maintainer can record the layout with it."""
+    so a maintainer can record the layout with it.
+
+    The lines record each file's OWN declared placement, not the role,
+    pin, and pairing that desires() folds in for status; an interpreter
+    exposes that set through declared(), falling back to desires()."""
     interp.load(mapref)
-    desired = _desires(interp, transformer)
-    for f in sorted(desired):
-        place = desired[f].place
-        if place is None:
-            continue
-        for line in interp.resolution(f, place):
+    if hasattr(interp, "declared"):
+        placed = interp.declared(transformer.scope())
+    else:
+        placed = {f: d.place for f, d in
+                  _desires(interp, transformer).items()
+                  if d.place is not None}
+    for f in sorted(placed):
+        for line in interp.resolution(f, placed[f]):
             print(line)
 
 

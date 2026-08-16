@@ -75,9 +75,109 @@ def norm(p):
     return p[:-2] if p.endswith((".c", ".h")) else p
 
 
+INCLUDE = re.compile(
+    r'^[ \t]*#[ \t]*include[ \t]+"([^"]+)"', re.M)
+
+# The two project reasons a placed file holds at root instead of moving.
+HOLD_PROGRAM = "built as a program, not a libgit object"
+HOLD_PUBLIC = "public interface header, kept at root"
+
+
+class GitCModel:
+    """The git/C/Make analysis both seams share: the Makefile
+    membership check and the include-graph reader.
+
+    The Interpreter reads this to fold role (public/internal), pin
+    (program), and pairing (header rides its source) into each file's
+    Desire; the Transformer reads the same helpers so a plan and a
+    marker agree. The Makefile text and its LIB_OBJS index are cached on
+    first use. No behavior differs from the prior per-Transformer copy;
+    this only lifts it to a single owner."""
+
+    def __init__(self):
+        self._lib = None       # Counter of LIB_OBJS += <stem>.o lines
+        self._make = None      # cached Makefile text
+
+    def _makefile(self):
+        if self._make is None:
+            self._make = open(os.path.join(TOP, "Makefile"),
+                              encoding="utf-8").read()
+        return self._make
+
+    def is_lib_object(self, c):
+        """Whether the Makefile builds c as exactly one libgit object,
+        that is one 'LIB_OBJS += <stem>.o' line."""
+        if self._lib is None:
+            self._lib = Counter(re.findall(
+                r'^[ \t]*LIB_OBJS \+= (\S+)\.o$',
+                self._makefile(), re.M))
+        return self._lib[stem(c)] == 1
+
+    def has_localized_core(self, c):
+        """Whether the Makefile lists the root source c in
+        LOCALIZED_C_CORE (feeds po/git-core.pot). Present for only some
+        sources, so absence is fine."""
+        pat = re.compile(
+            r'^[ \t]*LOCALIZED_C_CORE \+= '
+            + re.escape(os.path.basename(c)) + r'$', re.M)
+        return bool(pat.search(self._makefile()))
+
+    def _binds_to_root(self, f, arg, h):
+        """Whether '#include \"arg\"' in file f binds to the repo root
+        header h. A quote include resolves against the includer's own
+        directory first, then the root via -I. A local shadow such as
+        reftable/tree.h does not count."""
+        if os.path.basename(arg) != h:
+            return False
+        local = os.path.normpath(
+            os.path.join(os.path.dirname(f), arg))
+        if exists(local):
+            return local == h
+        return os.path.normpath(arg) == h
+
+    def include_edits(self, h):
+        """[(file, arg)] for every tracked *.c/*.h include that binds
+        to the root header h. Covers bare 'h' and relative '../h', and
+        excludes a local shadow and the doc or patch fixtures. The
+        candidate grep pattern matches the INCLUDE regex, including the
+        spaced form '# include', so no binding is missed."""
+        cand = git("grep", "-lE",
+                   r'#[ \t]*include[ \t]+"([^"]*/)?'
+                   + re.escape(h) + '"',
+                   "--", "*.c", "*.h", allow=(0, 1)).split()
+        edits = []
+        for f in cand:
+            text = open(os.path.join(TOP, f),
+                        encoding="utf-8").read()
+            for m in INCLUDE.finditer(text):
+                if self._binds_to_root(f, m.group(1), h):
+                    edits.append((f, m.group(1)))
+        return edits
+
+    def internal_headers(self, cands, moving_c):
+        """The candidate headers all of whose includers co-move.
+
+        A candidate H is internal when every file that includes H (by
+        full path via include_edits) is in the moving set: the moving
+        .c files plus any other internal header. A header may include a
+        header, so grow the internal set by fixpoint until it stops."""
+        includers = {h: {f for f, _ in self.include_edits(h)}
+                     for h in cands}
+        internal = set()
+        changed = True
+        while changed:
+            changed = False
+            for h in cands - internal:
+                if includers[h] <= (moving_c | internal):
+                    internal.add(h)
+                    changed = True
+        return internal
+
+
 class GitInterpreter:
     """State each root .c/.h file's Desire by folding the commit-subject
-    label and the declared area map into one placement.
+    label, the declared area map, and the git/C role, pin, and pairing
+    into one placement.
 
     The label comes from the modal commit-subject prefix over a file's
     history, weighted by full commit breadth so a large sweep counts
@@ -85,32 +185,132 @@ class GitInterpreter:
     a 0.34 modal share) live in _label. The map is 'directory: area
     area ...' per line, plus per-path 'organize.subsystem=' overrides; a
     declared override beats the inferred label, and a label resolves to a
-    target through its map token."""
+    target through its map token.
 
-    def __init__(self):
+    On top of the placement this interpreter reads the Makefile and the
+    include graph (through GitCModel) to set the Desire.hold that marks a
+    file as staying at root: a program .c is pinned; a same-stem .h is
+    either internal (it rides its source's Desire) or public (held); a
+    header whose source .c is unmanaged is itself unmanaged."""
+
+    def __init__(self, model=None):
         self._owner = {}
         self._name = ""
+        self._model = model or GitCModel()
 
     # the Interpreter contract
 
     def desires(self, scope):
         """{FileId: Desire} for the files the label or an override names.
 
-        A file with a confident label or a declared override is present;
-        one with neither is absent, so the unmanaged count stays stable.
-        A named file whose label resolves to no target is present with
-        Desire(place=None). hold stays None; a requirement block is the
-        Transformer's plan.skipped, not a hold here."""
+        A source .c with a confident label or a declared override is
+        present; one with neither is absent, so the unmanaged count stays
+        stable. A named source whose label resolves to no target is
+        present with Desire(place=None).
+
+        The Desire.hold folds in role, pin, and pairing:
+        - A single-LIB_OBJS .c: Desire(place=T, hold=None).
+        - A program .c (not a single LIB_OBJS object):
+          Desire(place=<derived T or None>, hold=HOLD_PROGRAM); pinned.
+        - A same-stem .h whose source .c is placed: internal (every
+          includer co-moves) -> it rides the source's Desire; public ->
+          Desire(place=<source's place>, hold=HOLD_PUBLIC).
+        - A same-stem .h whose source .c is unmanaged: unmanaged.
+        - A flagged header-only .h (no .c): internal (all includers
+          co-move) rides into T with hold=None, else it is public."""
+        votes = self._label(scope)
+        over = self._overrides(scope)
+
+        def base_place(f):
+            """The label-or-override target for f, or None. Ignores role;
+            the hold logic below adds it."""
+            vote, ov = votes.get(f), over.get(f)
+            if (vote is None or vote.primary is None) and ov is None:
+                return None
+            return self._place(f, vote, ov).target
+
+        # The .c placements, with the program pin folded in. A source
+        # with a label or override but no resolving target is present
+        # with place None (named, but placed nowhere), so the unmanaged
+        # count stays stable; a source with neither is absent.
+        c_desire = {}
+        for c in scope:
+            if not c.endswith(".c"):
+                continue
+            vote, ov = votes.get(c), over.get(c)
+            named = not ((vote is None or vote.primary is None)
+                         and ov is None)
+            if not named:
+                continue
+            t = base_place(c)
+            if t is None:
+                c_desire[c] = Desire(place=None, hold=None)
+            elif self._model.is_lib_object(c):
+                c_desire[c] = Desire(place=t, hold=None)
+            else:
+                c_desire[c] = Desire(place=t, hold=HOLD_PROGRAM)
+
+        # The moving .c set (single LIB_OBJS objects that are placed and
+        # not already at their target): the sources a header can ride.
+        moving_c = {c for c, d in c_desire.items()
+                    if d.place is not None and d.hold is None
+                    and not os.path.dirname(c) == d.place}
+        cands = {stem(c) + ".h" for c in moving_c
+                 if exists(stem(c) + ".h")}
+        for h in scope:
+            if h.endswith(".h") and base_place(h) is not None \
+                    and not exists(stem(h) + ".c"):
+                cands.add(h)          # a flagged header-only lib
+        internal = self._model.internal_headers(cands, moving_c)
+
+        out = dict(c_desire)
+        for h in scope:
+            if not h.endswith(".h"):
+                continue
+            c = stem(h) + ".c"
+            if exists(c):
+                # A same-stem header rides its source's Desire. When the
+                # source is absent or placed nowhere the header is
+                # unmanaged; a public header (not internal) is held at
+                # the source's target.
+                src = c_desire.get(c)
+                if src is None or src.place is None:
+                    continue          # source unmanaged -> header absent
+                if h in internal:
+                    out[h] = Desire(place=src.place, hold=src.hold)
+                else:
+                    out[h] = Desire(place=src.place, hold=HOLD_PUBLIC)
+            else:
+                # A header-only lib (no same-stem .c). An internal one
+                # (all includers co-move) rides into its target and
+                # moves; a public one stays at root and, as before, is
+                # counted nowhere in status, so it is placed nowhere.
+                t = base_place(h)
+                if t is None:
+                    continue
+                if h in internal:
+                    out[h] = Desire(place=t, hold=None)
+                else:
+                    out[h] = Desire(place=None, hold=None)
+        return out
+
+    def declared(self, scope):
+        """{FileId: DirId} of each file's OWN declared placement: the
+        target its label or override resolves to. This is what git
+        records as organize.subsystem and check-attr reads back, so the
+        attributes command emits exactly these, independent of the role,
+        pin, and pairing that desires() folds in. A file with no label or
+        override, or one whose value resolves to no target, is absent."""
         votes = self._label(scope)
         over = self._overrides(scope)
         out = {}
         for f in scope:
-            vote = votes.get(f)
-            ov = over.get(f)
+            vote, ov = votes.get(f), over.get(f)
             if (vote is None or vote.primary is None) and ov is None:
                 continue
-            p = self._place(f, vote, ov)
-            out[f] = Desire(place=p.target, hold=None)
+            target = self._place(f, vote, ov).target
+            if target is not None:
+                out[f] = target
         return out
 
     def load(self, mapref):
@@ -265,18 +465,18 @@ class GitInterpreter:
         return target
 
 
-INCLUDE = re.compile(
-    r'^[ \t]*#[ \t]*include[ \t]+"([^"]+)"', re.M)
-
-
 class GitTransformer:
     """The git and C and Make and meson cascade. Owns root scope, the
-    relocatability verdict, the include rewrite, the build-list edits,
-    the validator, and rollback."""
+    include rewrite, the build-list edits, the validator, and rollback.
 
-    def __init__(self):
-        self._lib = None       # Counter of LIB_OBJS += <stem>.o lines
-        self._make = None      # cached Makefile text
+    The role, pin, and pairing decisions now live in GitInterpreter,
+    expressed through Desire(place, hold). The core passes plan() only
+    the files it should move (place set, hold None), so this transformer
+    is mechanical: it renames the files it is given and edits the build
+    lists, with no relocatability veto and no header pairing of its own."""
+
+    def __init__(self, model=None):
+        self._model = model or GitCModel()
 
     # scope and readiness
 
@@ -306,31 +506,13 @@ class GitTransformer:
     def recover_hint(self):
         return "recover the pre-apply tree with: git reset --hard"
 
-    # relocatability
+    # build-rule reparenting
 
     def _makefile(self):
-        if self._make is None:
-            self._make = open(os.path.join(TOP, "Makefile"),
-                              encoding="utf-8").read()
-        return self._make
-
-    def _is_lib_object(self, c):
-        """Whether the Makefile builds c as exactly one libgit object,
-        that is one 'LIB_OBJS += <stem>.o' line."""
-        if self._lib is None:
-            self._lib = Counter(re.findall(
-                r'^[ \t]*LIB_OBJS \+= (\S+)\.o$',
-                self._makefile(), re.M))
-        return self._lib[stem(c)] == 1
+        return self._model._makefile()
 
     def _has_localized_core(self, c):
-        """Whether the Makefile lists the root source c in
-        LOCALIZED_C_CORE (feeds po/git-core.pot). Present for only some
-        sources, so absence is fine."""
-        pat = re.compile(
-            r'^[ \t]*LOCALIZED_C_CORE \+= '
-            + re.escape(os.path.basename(c)) + r'$', re.M)
-        return bool(pat.search(self._makefile()))
+        return self._model.has_localized_core(c)
 
     def _root_object_rule(self, text, name):
         """Whether the given Makefile text names the root object
@@ -347,59 +529,10 @@ class GitTransformer:
             + r'\.o(?![\w./-])[^:\n]*:', re.M)
         return bool(pat.search(text))
 
-    def _relocatable(self, c):
-        """(ok, reason). A source moves when it is a single libgit
-        object. A program (non-LIB_OBJS) cannot move because its
-        program name derives from the object path. A per-object build
-        rule does not block the move; apply rewrites the rule to the
-        new path. reason is the standalone skip phrase; _paired_reason
-        turns it into the paired-header phrase."""
-        if not self._is_lib_object(c):
-            return Verdict(
-                False, "built as a program, not a libgit object")
-        return Verdict(True, "")
-
-    @staticmethod
-    def _paired_reason(c, reason):
-        """Fit a standalone skip reason into the paired-header note so
-        it reads as a clause about the paired source."""
-        if reason.startswith("built as"):
-            return f"paired {c} is {reason}"
-        return f"paired {c} {reason}"
-
-    # the include resolver
-
-    def _binds_to_root(self, f, arg, h):
-        """Whether '#include \"arg\"' in file f binds to the repo root
-        header h. A quote include resolves against the includer's own
-        directory first, then the root via -I. A local shadow such as
-        reftable/tree.h does not count."""
-        if os.path.basename(arg) != h:
-            return False
-        local = os.path.normpath(
-            os.path.join(os.path.dirname(f), arg))
-        if exists(local):
-            return local == h
-        return os.path.normpath(arg) == h
+    # the include resolver (shared with the interpreter through the model)
 
     def _include_edits(self, h):
-        """[(file, arg)] for every tracked *.c/*.h include that binds
-        to the root header h. Covers bare 'h' and relative '../h', and
-        excludes a local shadow and the doc or patch fixtures. The
-        candidate grep pattern matches the INCLUDE regex, including the
-        spaced form '# include', so no binding is missed."""
-        cand = git("grep", "-lE",
-                   r'#[ \t]*include[ \t]+"([^"]*/)?'
-                   + re.escape(h) + '"',
-                   "--", "*.c", "*.h", allow=(0, 1)).split()
-        edits = []
-        for f in cand:
-            text = open(os.path.join(TOP, f),
-                        encoding="utf-8").read()
-            for m in INCLUDE.finditer(text):
-                if self._binds_to_root(f, m.group(1), h):
-                    edits.append((f, m.group(1)))
-        return edits
+        return self._model.include_edits(h)
 
     def _nonsource_refs(self, h):
         """Tracked '#include \"h\"' references in files that are not
@@ -413,74 +546,25 @@ class GitTransformer:
     # plan
 
     def plan(self, target, files):
-        """Build one area's Plan from the files the Policy placed here.
+        """Build one area's Plan by moving the files it is given.
 
-        The .c is the primary unit. Its same-stem .h moves only when it
-        is INTERNAL, that is every file that includes it co-moves; a
-        PUBLIC interface header stays at the repo root. This follows
-        git's own carve convention (odb/, refs/, builtin/), so the move
-        is a pure git mv with no include rewrites. A non-relocatable .c
-        is skipped; a flagged .h whose .c is present but not moving is
-        skipped with a reason."""
-        flagged = {f for f in files
-                   if not self.already_at(f, target)}
-        move_set, kept_public, skipped = set(), set(), []
-        moving_c = set()
-        for c in sorted(f for f in flagged if f.endswith(".c")):
-            v = self._relocatable(c)
-            if not v.ok:
-                skipped.append((c, v.reason))
-                continue
-            moving_c.add(c)
-        moving_stems = {stem(f) for f in moving_c}
-        # Candidate headers: a same-stem .h of a moving .c, or a flagged
-        # .h whose .c is absent (a header-only lib).
-        cands = {stem(c) + ".h" for c in moving_c if exists(stem(c) + ".h")}
-        for h in flagged:
-            if h.endswith(".h") and not exists(stem(h) + ".c"):
-                cands.add(h)
-        internal = self._internal_headers(cands, moving_c)
-        move_set |= moving_c | internal
-        # A same-stem header that is not internal is PUBLIC: it stays at
-        # root, tracked for a display note, and is not a skip.
-        for c in moving_c:
-            h = stem(c) + ".h"
-            if h in cands and h not in internal:
-                kept_public.add(h)
-        for h in flagged:
-            if not h.endswith(".h"):
-                continue
-            c = stem(h) + ".c"
-            if exists(c) and stem(h) not in moving_stems:
-                skipped.append((h, self._skip_note(c)))
+        The interpreter has already decided role, pin, and pairing and
+        expressed them as Desire(place, hold); the core passes here only
+        the files that should move (place == target, hold None). This
+        transformer is mechanical: it drops any file already in target
+        and renames the rest. Every moved header is internal, so the
+        carve is a pure git mv with no include rewrites, and there is no
+        requirement veto: plan.skipped is empty."""
+        move_set = {f for f in files if not self.already_at(f, target)}
         moves = tuple(sorted((f, f"{target}/{f}") for f in move_set))
         headers = sorted(f for f in move_set if f.endswith(".h"))
         steps = self._steps(target, moves)
-        notes = self._notes(target, moves, sorted(kept_public))
+        notes = self._notes(target, moves)
         return Plan(target=target, moves=moves,
-                    skipped=tuple(sorted(skipped)),
+                    skipped=(),
                     steps=steps, notes=notes,
-                    kept_public=tuple(sorted(kept_public)),
+                    kept_public=(),
                     paired_headers=len(headers))
-
-    def _internal_headers(self, cands, moving_c):
-        """The candidate headers all of whose includers co-move.
-
-        A candidate H is internal when every file that includes H (by
-        full path via _include_edits) is in the moving set: the moving
-        .c files plus any other internal header. A header may include a
-        header, so grow the internal set by fixpoint until it stops."""
-        includers = {h: {f for f, _ in self._include_edits(h)}
-                     for h in cands}
-        internal = set()
-        changed = True
-        while changed:
-            changed = False
-            for h in cands - internal:
-                if includers[h] <= (moving_c | internal):
-                    internal.add(h)
-                    changed = True
-        return internal
 
     def paired_internal_header(self, c):
         """The same-stem .h of source c, when it exists and is internal
@@ -490,15 +574,9 @@ class GitTransformer:
         h = stem(c) + ".h"
         if not exists(h):
             return None
-        if h in self._internal_headers({h}, {c}):
+        if h in self._model.internal_headers({h}, {c}):
             return h
         return None
-
-    def _skip_note(self, c):
-        v = self._relocatable(c)
-        if exists(c) and not v.ok:
-            return self._paired_reason(c, v.reason)
-        return f"paired {c} is unlabelled"
 
     def _steps(self, target, moves):
         """One move Step per file, its summary the printed line. The
@@ -514,7 +592,7 @@ class GitTransformer:
                 preview=None, payload=(src, dst)))
         return tuple(steps)
 
-    def _notes(self, target, moves, kept_public):
+    def _notes(self, target, moves):
         """The build-edit report lines the core prints verbatim after
         the moves. The carve is a pure rename: every moved header is
         internal, so same-dir resolution holds and no include is
@@ -523,10 +601,6 @@ class GitTransformer:
         n_c = len(moved_c)
         n_loc = sum(1 for c in moved_c if self._has_localized_core(c))
         lines = ["", "carve is a pure rename (0 include rewrites)"]
-        if kept_public:
-            lines.append(
-                f"kept public at root: {len(kept_public)} headers "
-                "(interface stays put)")
         lines += ["", "build edits:",
                   f"  Makefile:    {n_c} LIB_OBJS lines",
                   f"  meson.build: {n_c} source lines"]
@@ -783,7 +857,8 @@ class GitTransformer:
 
 
 def _make_git_c():
-    return (GitInterpreter(), GitTransformer())
+    model = GitCModel()          # one Makefile/include reader, shared
+    return (GitInterpreter(model), GitTransformer(model))
 
 
 organize_core.register("git-c", _make_git_c)
