@@ -349,11 +349,17 @@ class ConfigTransformer:
         basename, or the basename when the dir is ROOT) differs from its
         current path, emit a Rename: ok True when the relocate command
         clears the move, ok False with the command's reason when it
-        blocks it (a requirement conflict). Then compute the reference
-        PATCHES the ok renames entail: each referrer file whose text a
-        config pattern rewrites to name a moved file's new path, as a
-        Patch(ok=True) whose payload is the patched text future. A
-        referrer that is itself moving is patched at its new path."""
+        blocks it (a requirement conflict).
+
+        Then hold any otherwise-ok move that a referrer collides with by
+        basename without a clean local link (a mechanical conflict the
+        repointer cannot prove unrelated): re-emit it ok False naming the
+        referrer and the offending reference. Finally compute the
+        reference PATCHES the surviving ok renames entail: each referrer
+        file whose text a config pattern rewrites to name a moved file's
+        new path, as a Patch(ok=True) whose payload is the patched text
+        future. A referrer that is itself moving is patched at its new
+        path."""
         renames = []
         blocked = self._relocatability(self.scope())
         for f, t in sorted(targets.items()):
@@ -367,9 +373,22 @@ class ConfigTransformer:
                                        reason=reason))
             else:
                 renames.append(Rename(src=f, dst=dst, ok=True, reason=""))
-        ok_moves = [(r.src, r.dst) for r in renames if r.ok]
+        # A requirement conflict already blocked some moves; the rest are
+        # candidates for a mechanical conflict from a colliding reference.
+        candidates = [(r.src, r.dst) for r in renames if r.ok]
+        collisions = self._reference_collisions(candidates)
+        held = set()
+        final_renames = []
+        for r in renames:
+            if r.ok and r.src in collisions:
+                held.add(r.src)
+                final_renames.append(Rename(src=r.src, dst=r.dst, ok=False,
+                                            reason=collisions[r.src]))
+            else:
+                final_renames.append(r)
+        ok_moves = [(r.src, r.dst) for r in final_renames if r.ok]
         patches = self._reference_patches(ok_moves)
-        return Diff(renames=tuple(renames), patches=tuple(patches))
+        return Diff(renames=tuple(final_renames), patches=tuple(patches))
 
     def _reference_patches(self, moves):
         """A Patch per referrer file whose text the config patterns
@@ -377,8 +396,9 @@ class ConfigTransformer:
         as a future from the file's current text and the moves, before
         any write; a referrer that is itself moving is patched at its
         new path (the reference-relative link is computed from there).
-        Each is unambiguous (the reference matching kept as-is), so ok
-        is True; the payload is (read_path, new_text) for apply."""
+        Only a clean local link (no URL scheme, resolving to a moved
+        file's old path) is rewritten, so ok is True; the payload is
+        (read_path, new_text) for apply."""
         if not self._patterns or not moves:
             return ()
         # A moving referrer is read at its old path but written at its
@@ -392,13 +412,89 @@ class ConfigTransformer:
                 continue
             final = move_dst.get(f, f)
             text = open(fp, encoding="utf-8").read()
-            new_text, hits = self._repoint_text(final, text, moves)
+            # References resolve from where the file lives now (f); the
+            # rewritten link routes from where it will live (final).
+            new_text, hits = self._repoint_text(f, final, text, moves)
             if hits:
                 patches.append(Patch(
                     path=final, ok=True, reason="",
                     summary=f"{final}: {hits} reference line(s)",
                     payload=(f, new_text)))
         return patches
+
+    def _reference_collisions(self, moves):
+        """{move_src: reason} for each candidate move a referrer collides
+        with by basename but does not cleanly link to (a mechanical
+        conflict). A reference collides with a move M when its basename
+        equals M's old basename; it is clean for M only when it is a
+        local link that resolves to M's old path. A collision that is not
+        clean (a URL, or a local link that resolves elsewhere or nowhere)
+        cannot be proven unrelated, so the whole move is held. Returns the
+        first offending reference per move; a move absent from the result
+        stays ok."""
+        if not self._patterns or not moves:
+            return {}
+        old_base = {os.path.basename(src): src for src, _dst in moves}
+        held = {}
+        for f in sorted(self.scope()):
+            fp = os.path.join(self._root, f)
+            if not os.path.isfile(fp):
+                continue
+            text = open(fp, encoding="utf-8").read()
+            for captured in self._captured_references(text):
+                base = os.path.basename(captured)
+                src = old_base.get(base)
+                if src is None or src in held:
+                    continue
+                # A clean local link to this move's old path is fine; any
+                # other same-basename reference holds the move.
+                resolved = self._resolve_ref(f, captured)
+                if resolved == src:
+                    continue
+                held[src] = self._collision_reason(f, captured)
+        return held
+
+    def _collision_reason(self, referrer, captured):
+        """The held-move reason naming the referrer and the offending
+        reference, distinguishing a URL from a mismatched local link."""
+        if self._is_url(captured):
+            kind = "colliding with this file but not a local link"
+        else:
+            kind = "colliding with this file but resolving elsewhere"
+        return (f"a reference in {referrer} names {captured}, {kind}; "
+                "move by hand after resolving it")
+
+    def _captured_references(self, text):
+        """Every path a config pattern captures in one file's text, in
+        order, for the collision scan (both clean and colliding)."""
+        found = []
+        for template in self._patterns:
+            regex = self._pattern_regex(template)
+            if regex is None:
+                continue
+            for m in regex.finditer(text):
+                found.append(m.group("path"))
+        return found
+
+    @staticmethod
+    def _is_url(captured):
+        """True when a captured reference is a URL, not a local path: it
+        carries a scheme (http:, https:, mailto:) or is protocol-relative
+        (starts with //). Such a reference names no file in the tree."""
+        return (captured.startswith("//") or
+                re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", captured) is not None)
+
+    def _resolve_ref(self, referring_file, captured):
+        """The old tree-relative path a captured reference names, or None
+        when it names no local file. A URL, a protocol-relative link, or
+        a pure anchor (#...) resolves to None. A local link resolves
+        against the referring file's directory:
+        normpath(join(dirname(referring_file), captured))."""
+        if self._is_url(captured) or captured.startswith("#"):
+            return None
+        ref_dir = os.path.dirname(referring_file)
+        joined = os.path.join(ref_dir, captured) if ref_dir else captured
+        return os.path.normpath(joined)
 
     # apply
 
@@ -447,11 +543,6 @@ class ConfigTransformer:
         lines.append("review the tree; the moves are on disk.")
         return ApplyResult(True, lines)
 
-    def _reference_spellings(self, path):
-        """The strings a reference might use to name path: its full
-        tree-relative path and its basename."""
-        return {path, os.path.basename(path)}
-
     def _pattern_regex(self, template):
         """Compile a reference template into a regex with a named 'path'
         group, escaping the literal text and turning the placeholders
@@ -476,26 +567,33 @@ class ConfigTransformer:
             return None
         return re.compile("".join(out))
 
-    def _repoint_text(self, referring_file, text, moves):
-        """Rewrite, in one file's text, every reference whose captured
-        path names a moved file. The replacement path is a route from the
-        referring file's directory to the moved file's new location, so a
-        relative link stays relative. Returns (new_text, hit_count)."""
-        move_by_old = {}
-        for src, dst in moves:
-            for spelling in self._reference_spellings(src):
-                move_by_old[spelling] = (src, dst)
+    def _repoint_text(self, read_from, write_to, text, moves):
+        """Rewrite, in one file's text, every clean local link whose
+        route changes. A reference is clean when it resolves (from
+        read_from, where the file lives now) to a tree path; a URL or an
+        anchor is left untouched. Its target's new path is the move
+        destination when the target moves, else its old path (an unmoved
+        target keeps its place). The replacement routes from write_to
+        (where this file will live) to that new path, so a link stays
+        relative and follows both endpoints. A link whose route is
+        unchanged (neither endpoint moved relative to the other) is left
+        byte-identical. Returns (new_text, hit_count)."""
+        move_by_old = {src: dst for src, dst in moves}
         hits = [0]
-        ref_dir = os.path.dirname(referring_file)
+        out_dir = os.path.dirname(write_to)
 
         def repoint_one(regex):
             def sub(m):
                 captured = m.group("path")
-                key = self._match_moved(captured, move_by_old)
-                if key is None:
-                    return m.group(0)
-                src, dst = move_by_old[key]
-                new_rel = os.path.relpath(dst, ref_dir) if ref_dir else dst
+                resolved = self._resolve_ref(read_from, captured)
+                if resolved is None:
+                    return m.group(0)     # a URL or an anchor
+                # The target's path after apply: its destination when it
+                # moves, else where it already sits (which is resolved).
+                dst = move_by_old.get(resolved, resolved)
+                new_rel = os.path.relpath(dst, out_dir) if out_dir else dst
+                if new_rel == captured:
+                    return m.group(0)     # route unchanged; leave as-is
                 hits[0] += 1
                 return m.group(0).replace(captured, new_rel)
             return sub
@@ -507,19 +605,6 @@ class ConfigTransformer:
                 continue
             new_text = regex.sub(repoint_one(regex), new_text)
         return new_text, hits[0]
-
-    def _match_moved(self, captured, move_by_old):
-        """The move key a captured reference names, resolving a relative
-        or bare path against the moved files. None when it names none."""
-        if captured in move_by_old:
-            return captured
-        base = os.path.basename(captured)
-        if base in move_by_old:
-            return base
-        norm = os.path.normpath(captured)
-        if norm in move_by_old:
-            return norm
-        return None
 
     def validate(self):
         """Run the validate command in the tree; exit 0 means the
