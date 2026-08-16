@@ -169,9 +169,11 @@ class GitInterpreter:
         return lines
 
     def resolution(self, f, place):
-        """Adapter prose for a resolution worklist entry. A stub for now;
-        the core does not wire it in slice 2."""
-        return []
+        """The .gitattributes line that records f's placement. git
+        declares a placement by setting organize.subsystem on the path,
+        so the attributes command emits these and check-attr reads them
+        back. The core prints the lines verbatim and names no attribute."""
+        return [f"/{f}  organize.subsystem={place}"]
 
     # the label, override, and place internals
 

@@ -455,7 +455,28 @@ Usage:
                                   converge every unconflicted subsystem
                                   in one pure-rename-and-validator-gated
                                   pass; hold conflict sources at root
+  organize attributes [--map FILE]
+                                  print the declared placement as one
+                                  attribute line per placed file, the set
+                                  git check-attr reads to reproduce the
+                                  layout
 """
+
+
+def cmd_attributes(interp, transformer, mapref):
+    """Print the declared placement as attribute lines, one per placed
+    file, sorted. The interpreter owns the attribute name and returns the
+    line through resolution; the core prints it verbatim and names none.
+    The output is what git check-attr reads back to reproduce the carve,
+    so a maintainer can record the layout with it."""
+    interp.load(mapref)
+    desired = _desires(interp, transformer)
+    for f in sorted(desired):
+        place = desired[f].place
+        if place is None:
+            continue
+        for line in interp.resolution(f, place):
+            print(line)
 
 
 def main(default_triple, default_mapref):
@@ -490,6 +511,8 @@ def main(default_triple, default_mapref):
             cmd_apply_auto(interp, transformer, mapref, commit)
         else:
             cmd_apply(interp, transformer, mapref, area, commit)
+    elif cmd == "attributes":
+        cmd_attributes(interp, transformer, mapref)
     elif cmd == "check":
         sys.exit("organize check is now organize status --exit-code")
     elif cmd == "agree":

@@ -153,6 +153,11 @@ class CohesionInterpreter:
     def target_of(self, label):
         return label                 # the cluster name is the directory
 
+    def resolution(self, f, place):
+        """Clusters are discovered, not declared, so there is no
+        attribute to record; the attributes command emits nothing."""
+        return []
+
     def ordered_targets(self):
         """Cluster names for stable output, sorted by name for a
         deterministic order. Derived from the cached cluster list, so it
