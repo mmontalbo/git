@@ -442,6 +442,7 @@ libgit_sources = [
   'oidmap.c',
   'oidset.c',
   'oidtree.c',
+  'organize.c',
   'pack-bitmap-write.c',
   'pack-bitmap.c',
   'pack-check.c',
