@@ -1,16 +1,22 @@
 """organize core: records, seams, orchestration, registry.
 
-Enforce a declared layout through two seams: an Interpreter states each
-file's Desire (a target dir or none), a Transformer owns membership and
-the move cascade. This module orchestrates records and formats output.
+Enforce a declared layout through two seams cast as a git tree diff. An
+Interpreter names each file's TARGET directory (where the rules say the
+blob should live); a Transformer diffs the current tree against that
+target tree. The diff is a set of RENAMES (a blob moves to a new path,
+content identical, R100) plus PATCHES (a referrer blob whose content
+changes only to repoint at moved blobs, same path). A diff entry that
+cannot be applied cleanly is a CONFLICT. This module orchestrates the
+records and formats output.
 
 Contract of this module (the purity invariant):
 - It runs no subprocess and imports no build or version-control tool.
 - It names no build system, language, or attribute file. Every such
   string lives in an adapter.
-- FileId and DirId are opaque handles. This module never takes a
-  destination, a parent directory, or an existence check off one. Any
-  such question routes through the Transformer.
+- FileId and DirId are opaque handles. This module never interprets
+  their text, joins a path, or takes a parent directory off one. The
+  Transformer computes target paths; the core reads a Rename's src and
+  dst. Any path or existence question routes through the Transformer.
 """
 import sys
 from dataclasses import dataclass, field
@@ -20,6 +26,12 @@ from typing import NewType, Optional, Protocol
 FileId = NewType("FileId", str)
 DirId = NewType("DirId", str)
 Label = str
+
+# The repository root as a target directory. A file whose target dir is
+# ROOT stays at the top (a public interface header kept at root); its
+# target path equals its basename. The core passes this handle through
+# to the Transformer, which owns the path arithmetic.
+ROOT = DirId("")
 
 
 @dataclass(frozen=True)
@@ -43,19 +55,44 @@ class Placement:
     logic. target None means no opinion, so the file stays in place.
     reason is UX prose naming which input won (override, label, name).
     Not part of the Interpreter contract; the adapter maps it to a
-    Desire."""
+    target directory."""
     target: Optional[DirId]
     label: Optional[Label]
     reason: str
 
 
 @dataclass(frozen=True)
-class Desire:
-    """What a file wants, per the interpreter. place is the target dir
-    or None (unmanaged). hold, when set, is a project reason the file
-    must stay despite place; None means free to move."""
-    place: Optional[DirId]
-    hold: Optional[str]
+class Rename:
+    """A blob moves to a new path, content identical (R100). ok is
+    False when the transformer cannot perform the move (a conflict);
+    reason says why."""
+    src: FileId
+    dst: FileId
+    ok: bool
+    reason: str
+
+
+@dataclass(frozen=True)
+class Patch:
+    """A referrer blob whose content changes only to repoint at moved
+    blobs (same path, new content) -- a patched-blob future computed
+    before it is written. ok is False when the pointer update cannot
+    be computed unambiguously (a conflict); reason says why. summary
+    is a short human line; payload is opaque, the transformer's apply
+    consumes it."""
+    path: FileId
+    ok: bool
+    reason: str
+    summary: str
+    payload: object
+
+
+@dataclass(frozen=True)
+class Diff:
+    """The tree diff from current to target: renames plus the pointer
+    patches they entail."""
+    renames: tuple      # of Rename
+    patches: tuple      # of Patch
 
 
 @dataclass(frozen=True)
@@ -79,22 +116,6 @@ class Step:
     payload: object
 
 
-@dataclass(frozen=True)
-class Plan:
-    """One area's carve. moves are (src, dst) handle pairs. skipped are
-    (file, reason). steps are the opaque cascade. notes are display
-    lines the core prints verbatim (counts, stale references).
-    paired_headers is how many moves are headers riding with their
-    source; the adapter counts it so the core does no path math."""
-    target: DirId
-    moves: tuple
-    skipped: tuple
-    steps: tuple
-    notes: tuple = ()
-    kept_public: tuple = ()
-    paired_headers: int = 0
-
-
 @dataclass
 class ApplyResult:
     """The outcome of an apply: ok plus lines the core prints."""
@@ -103,11 +124,16 @@ class ApplyResult:
 
 
 class Interpreter(Protocol):
-    def desires(self, scope):
-        """scope: set[FileId] -> dict[FileId, Desire]. A file with no
-        opinion (no label and no override) is absent. A file the
-        interpreter names but places nowhere is present with
-        Desire(place=None)."""
+    def targets(self, scope):
+        """scope: set[FileId] -> dict[FileId, DirId]. The target
+        directory for each file the rules address. A file no rule
+        addresses is ABSENT (untracked). A file that should stay at the
+        root (a public interface header) maps to ROOT. Placement
+        (subsystem from label or override) and role (public header ->
+        ROOT, internal header -> its source's dir) and pairing live
+        here. A program pin does NOT live here: a program gets its
+        subsystem dir like any file; the transformer's diff() decides it
+        cannot move."""
 
     def load(self, mapref):
         """Load the area map named by mapref, an adapter string."""
@@ -122,6 +148,7 @@ class Interpreter(Protocol):
         """The map's targets in declared order, for stable output."""
 
     # optional: override_notices(scope) -> list[str] (hasattr-gated).
+    # optional: declared(scope) -> {FileId: DirId} (hasattr-gated).
     # optional: resolution(f, place) -> list[str] (adapter prose).
 
 
@@ -142,23 +169,25 @@ class Transformer(Protocol):
         The adapter owns which files are sources; the core names no
         language."""
 
-    def paired_internal_header(self, f):
-        """The same-stem header that would co-move with source f, or
-        None when there is none or it is a public header kept at root.
-        The core prints this handle; the adapter owns the path check."""
-
     def preflight(self):
         """Blocking reasons (list[str]); empty means clear to apply."""
 
-    def plan(self, target, files):
-        """(DirId, set[FileId]) -> Plan. files are the scope handles
-        the Policy placed into target. Folds pairing, relocatability,
-        and the include and build edits into one Plan. Drops files
-        already in target."""
+    def diff(self, targets):
+        """{FileId: DirId} -> Diff. Compute the tree diff from the
+        current tree to the target tree. For each file whose target PATH
+        (target_dir joined with basename, or basename when the dir is
+        ROOT) differs from its current path, emit a Rename(src, dst, ok,
+        reason): ok False when the move cannot be performed. Then compute
+        the PATCHES the ok renames entail: each referrer blob that names
+        a moved file, as a Patch with ok True when the pointer update is
+        unambiguous. The core does no path arithmetic; it reads the
+        Rename src and dst."""
 
-    def apply(self, plan, commit):
-        """Run the cascade, gate on the build, roll back on failure.
-        Returns ApplyResult. Commits only when commit is true."""
+    def apply(self, diff, commit):
+        """Perform the ok renames and ok patches, run validate, roll
+        back on failure. Ignore the not-ok entries (they are held
+        conflicts). Returns ApplyResult. Commits only when commit is
+        true."""
 
     def recover_hint(self):
         """The one string that restores the pre-apply tree."""
@@ -185,23 +214,16 @@ def registered(name):
     return name in _PAIRS
 
 
-def _desires(interp, transformer):
-    """The interpreter's Desire per scope file: {FileId: Desire}.
-
-    Files the interpreter has no opinion on are absent; a file it names
-    but places nowhere is present with Desire(place=None), so the
-    unmanaged count stays stable."""
-    return interp.desires(transformer.scope())
+def _targets(interp, transformer):
+    """The interpreter's target directory per addressed scope file:
+    {FileId: DirId}. A file no rule addresses is absent (untracked)."""
+    return interp.targets(transformer.scope())
 
 
-def _files_for(interp, transformer, target):
-    """The set of scope files that will move into target: the interpreter
-    desires them there and holds none of them. A held file (a pinned
-    program, a public header kept at root) stays put, so the Transformer
-    never sees it. The Transformer only drops files already in target."""
-    placed = _desires(interp, transformer)
-    return {f for f, d in placed.items()
-            if d.place == target and d.hold is None}
+def _diff(interp, transformer):
+    """The tree diff from the current tree to the interpreter's target
+    tree: a Diff of renames plus the pointer patches they entail."""
+    return transformer.diff(_targets(interp, transformer))
 
 
 def _resolve_target(interp, area):
@@ -226,6 +248,18 @@ def _override_notices(interp, transformer):
     return ["", "override lint:"] + notices
 
 
+def _area_diff(interp, transformer, target):
+    """The tree diff scoped to one target directory: the renames whose
+    destination lands in target, plus the patches those renames entail.
+
+    The interpreter names the whole tree's targets; restricting to the
+    files whose target is this area yields that area's slice of the
+    diff, so a per-area apply moves only that subsystem."""
+    all_targets = _targets(interp, transformer)
+    scoped = {f: t for f, t in all_targets.items() if t == target}
+    return transformer.diff(scoped)
+
+
 def cmd_apply(interp, transformer, mapref, area, commit):
     if area is None:
         sys.exit("organize apply: --area X is required")
@@ -239,153 +273,179 @@ def cmd_apply(interp, transformer, mapref, area, commit):
         sys.exit("organize apply: " + "; ".join(blockers))
     if not transformer.target_ready(target):
         sys.exit(f"organize apply: target dir {target}/ is absent")
-    plan = transformer.plan(target, _files_for(interp, transformer,
-                                               target))
-    if not plan.moves:
+    diff = _area_diff(interp, transformer, target)
+    ok_renames = [r for r in diff.renames if r.ok]
+    if not ok_renames:
         print("organize apply: nothing to do")
         return
-    result = transformer.apply(plan, commit)
+    result = transformer.apply(diff, commit)
     for line in result.lines:
         print(line)
     if not result.ok:
         sys.exit(1)
 
 
-def cmd_status(interp, transformer, mapref, area=None,
-               by_area=False, conflicts=False, exit_code=False):
-    """Scope the organize against the declared layout.
+def _area_of(interp, transformer, targets, rename):
+    """The target directory a Rename lands in: the target the
+    interpreter named for the moved file. The core does no path
+    arithmetic, so it reads the interpreter's target map by src."""
+    return targets.get(rename.src)
 
-    The default groups the drift by state, the way git status groups by
-    change type. Every count derives from the interpreter's Desires:
-    renamed is a placed file the interpreter holds free that is not yet
-    in its target (what apply moves); organized is a placed file the
-    interpreter either holds at root (a pinned program, a public header)
-    or that already sits in its target; untracked is a source the
-    interpreter places nowhere. conflict is 0: the mechanical-conflict
-    notion is not implemented yet. With --by-area, print the same counts
-    per subsystem; with --conflicts, print the (now empty) conflict
-    worklist; with --exit-code, exit 0 when nothing renames and 1
-    otherwise, for CI. With an area, show that subsystem's exact move
-    set."""
+
+def cmd_status(interp, transformer, mapref, area=None,
+               by_area=False, conflicts=False, exit_code=False,
+               plan=False):
+    """Scope the organize as a git tree diff against the target layout.
+
+    The default groups the diff by state, the way git status groups by
+    change type. Every count derives from the Diff and the interpreter's
+    targets:
+    - organized: files the interpreter addresses whose target path
+      equals the current path (not in the renames) -- the public
+      headers the rules keep at root.
+    - renamed: the ok renames (what apply moves).
+    - conflict: the not-ok renames plus not-ok patches (the entries the
+      transformer cannot apply cleanly, e.g. a program built from a
+      path-derived name).
+    - untracked: sources the interpreter does NOT address.
+    With --by-area, print the same counts per subsystem; with
+    --conflicts, list each not-ok entry with its reason; with --plan,
+    the incremental refactoring view; with --exit-code, exit 0 when
+    nothing renames and no conflict and 1 otherwise, for CI. With an
+    area, show that subsystem's renames."""
     if conflicts:
         _status_conflicts(interp, transformer, mapref)
         return
     interp.load(mapref)
+    if plan:
+        _status_plan(interp, transformer)
+        return
     if area is not None:
         _status_area(interp, transformer, area)
         return
-    desired = _desires(interp, transformer)
-    rows = []
-    tot = {"renamed": 0, "conflict": 0, "organized": 0}
-    for t in interp.ordered_targets():
-        placed = {f: d for f, d in desired.items() if d.place == t}
-        if not placed:
-            continue
-        renamed = sum(1 for f, d in placed.items()
-                      if d.hold is None
-                      and not transformer.already_at(f, t))
-        organized = sum(1 for f, d in placed.items()
-                        if d.hold is not None
-                        or transformer.already_at(f, t))
-        conflict = 0
-        if not (renamed or conflict or organized):
-            continue
-        state = "exists" if transformer.target_ready(t) else "new"
-        rows.append((t, state, renamed, conflict, organized))
-        tot["renamed"] += renamed
-        tot["conflict"] += conflict
-        tot["organized"] += organized
+    targets = _targets(interp, transformer)
+    diff = transformer.diff(targets)
+    ok_renames = [r for r in diff.renames if r.ok]
+    conflict_entries = ([r for r in diff.renames if not r.ok]
+                        + [p for p in diff.patches if not p.ok])
+    ok_patches = [p for p in diff.patches if p.ok]
+
     if by_area:
-        _status_by_area(interp, rows)
+        _status_by_area(interp, transformer, targets, diff)
         for line in _override_notices(interp, transformer):
             print(line)                # first notice prints its header
         return
+
+    renamed_srcs = {r.src for r in diff.renames}
+    organized = sum(1 for f in targets if f not in renamed_srcs)
+    renamed = len(ok_renames)
+    conflict = len(conflict_entries)
     scope_src = {f for f in transformer.scope() if transformer.is_source(f)}
-    placed_src = {f for f in desired
-                  if transformer.is_source(f)
-                  and desired[f].place is not None}
-    untracked = len(scope_src - placed_src)
-    renamed = tot["renamed"]
-    conflict = tot["conflict"]
-    is_organized = renamed == 0
-    banner = "(organized)" if is_organized else "(not organized)"
+    untracked = len(scope_src - set(targets))
+
+    clean = renamed == 0 and conflict == 0
+    banner = "(organized)" if clean else "(not organized)"
     print(f"organize status against {interp.name()}   {banner}\n")
     print(f"renamed    {renamed:<5} will move on apply")
     print(f"conflict   {conflict:<5} cannot auto-apply, needs a "
           "decision")
     print(f"untracked  {untracked:<5} no rule places these")
-    print(f"organized  {tot['organized']:<5} already in place")
-    print(f"\napply moves the {renamed}."
-          "\norganize status --by-area splits per subsystem; "
+    print(f"organized  {organized:<5} already in place")
+    print(f"\napply moves the {renamed} and patches {len(ok_patches)} "
+          f"referrer files; {conflict} renames are held (programs).")
+    print("organize status --by-area splits per subsystem; "
           "status <area> shows one.")
     for line in _override_notices(interp, transformer):
         # first notice line prints its own header
         print(line)
     if exit_code:
-        sys.exit(0 if is_organized else 1)
+        sys.exit(0 if clean else 1)
 
 
-def _status_by_area(interp, rows):
+def _area_rows(interp, transformer, targets, diff):
+    """Per-subsystem (target, state, renamed, conflict, organized) rows
+    from the diff, one per target the interpreter declares that has any
+    addressed file. Every count derives from the Diff and the targets,
+    the same quantities the default groups by state."""
+    renamed_srcs = {r.src for r in diff.renames}
+    ok_by_area, conflict_by_area, organized_by_area = {}, {}, {}
+    for r in diff.renames:
+        area = _area_of(interp, transformer, targets, r)
+        bucket = ok_by_area if r.ok else conflict_by_area
+        bucket[area] = bucket.get(area, 0) + 1
+    for f, t in targets.items():
+        if f not in renamed_srcs:
+            organized_by_area[t] = organized_by_area.get(t, 0) + 1
+    rows = []
+    for t in interp.ordered_targets():
+        renamed = ok_by_area.get(t, 0)
+        conflict = conflict_by_area.get(t, 0)
+        organized = organized_by_area.get(t, 0)
+        if not (renamed or conflict or organized):
+            continue
+        state = "exists" if transformer.target_ready(t) else "new"
+        rows.append((t, state, renamed, conflict, organized))
+    return rows
+
+
+def _status_by_area(interp, transformer, targets, diff):
     """Print the per-subsystem drift table: the same quantities the
     default groups by state, laid out by area."""
     print(f"organize status against {interp.name()}\n")
     print(f"  {'subsystem':<11}{'dir':<7}{'renamed':>8}"
           f"{'conflict':>9}{'organized':>10}")
-    for t, state, renamed, conflict, organized in rows:
+    for t, state, renamed, conflict, organized in _area_rows(
+            interp, transformer, targets, diff):
         print(f"  {t + '/':<11}{state:<7}{renamed:>8}{conflict:>9}"
               f"{organized:>10}")
 
 
 def _status_area(interp, transformer, area):
-    """Show one subsystem's exact move set, the dry run plan used to
-    print."""
+    """Show one subsystem's renames, the dry run diff used to print."""
     target = _resolve_target(interp, area)
     if not target:
         sys.exit(f"organize status: unknown area '{area}'\n"
                  "known areas: " + ", ".join(interp.ordered_targets()))
-    plan = transformer.plan(target, _files_for(interp, transformer,
-                                               target))
-    print(f"organize status for {target}/  ({len(plan.moves)} will "
+    diff = _area_diff(interp, transformer, target)
+    ok_renames = [r for r in diff.renames if r.ok]
+    print(f"organize status for {target}/  ({len(ok_renames)} will "
           f"move)\n")
-    print(f"moves: {len(plan.moves)} files")
-    for src, dst in plan.moves:
-        print(f"  {src:<22}  ->  {dst}")
-    for line in plan.notes:
-        print(line)
+    print(f"moves: {len(ok_renames)} files")
+    for r in ok_renames:
+        print(f"  {r.src:<22}  ->  {r.dst}")
+    held = [r for r in diff.renames if not r.ok]
+    if held:
+        print(f"\nheld ({len(held)}):")
+        for r in held:
+            print(f"  {r.src:<22}  {r.reason}")
 
 
 def cmd_apply_auto(interp, transformer, mapref, commit):
     """Converge every subsystem in one gated pass.
 
-    The organize's terraform-apply. Each area's plan already withholds
-    the files the Transformer cannot move (plan.skipped, the requirement
-    blocks); the rest run as one operation, then the Transformer gates
-    them: the pure-rename check (a git primitive, domain-agnostic) and
-    the validator (a domain plugin, the build for a C tree). The batch is
-    staged, or committed with --commit."""
+    The organize's terraform-apply. The Diff carries every ok rename and
+    the pointer patches they entail plus the not-ok entries the
+    transformer cannot apply (the held conflicts); apply performs only
+    the ok entries as one operation, then gates on the validator (a
+    domain plugin, the build for a C tree). The batch is staged, or
+    committed with --commit."""
     interp.load(mapref)
     blockers = transformer.preflight()
     if blockers:
         sys.exit("organize apply --unconflicted: " + "; ".join(blockers))
-    plans = []
-    held = 0
-    for t in interp.ordered_targets():
-        files = _files_for(interp, transformer, t)
-        if not files:
-            continue
-        plan = transformer.plan(t, files)
-        held += len(plan.skipped)
-        if plan.moves:
-            plans.append(plan)
-    if not plans:
+    diff = _diff(interp, transformer)
+    ok_renames = [r for r in diff.renames if r.ok]
+    held = ([r for r in diff.renames if not r.ok]
+            + [p for p in diff.patches if not p.ok])
+    if not ok_renames:
         print("organize apply --unconflicted: nothing unconflicted "
               "to carve")
         return
-    n = sum(len(p.moves) for p in plans)
-    print(f"converging {len(plans)} subsystems, {n} unconflicted "
-          f"files; holding {held} conflict sources at "
-          f"root\n")
-    result = transformer.apply_auto(plans, commit)
+    ok_patches = [p for p in diff.patches if p.ok]
+    print(f"converging {len(ok_renames)} unconflicted files, "
+          f"patching {len(ok_patches)} referrer files; holding "
+          f"{len(held)} conflict entries at root\n")
+    result = transformer.apply(diff, commit)
     for line in result.lines:
         print(line)
     if not result.ok:
@@ -395,13 +455,78 @@ def cmd_apply_auto(interp, transformer, mapref, commit):
 def _status_conflicts(interp, transformer, mapref):
     """Emit the worklist of conflicts that need a human or an LM.
 
-    A conflict was a placed source the tool could not move mechanically.
-    That notion no longer exists: the interpreter folds a program pin and
-    a public header into a hold, so a held file is organized, not
-    conflicted. The mechanical-conflict notion is not implemented yet, so
-    there are no conflicts to list."""
+    A conflict is a diff entry the transformer cannot apply cleanly: a
+    not-ok Rename (a program built from a path-derived name, so the move
+    would break the build) or a not-ok Patch (a pointer update it cannot
+    compute unambiguously). Each prints with its reason."""
     interp.load(mapref)
-    print("organize status --conflicts: 0 conflicts")
+    diff = _diff(interp, transformer)
+    held_renames = [r for r in diff.renames if not r.ok]
+    held_patches = [p for p in diff.patches if not p.ok]
+    n = len(held_renames) + len(held_patches)
+    if n == 0:
+        print("organize status --conflicts: 0 conflicts")
+        return
+    print(f"organize status --conflicts: {n} conflicts\n")
+    for r in held_renames:
+        print(f"  {r.src:<22}  {r.reason}")
+    for p in held_patches:
+        print(f"  {p.path:<22}  {p.reason}")
+
+
+def _status_plan(interp, transformer):
+    """The incremental refactoring view: the diff sorted into four bands.
+
+    cleaned up      the files already at their target path (organized)
+    auto-cleanable  the ok renames, grouped by target subsystem
+    partial         the not-ok renames and patches, grouped, with reason
+    needs rules     the sources no rule addresses (untracked)"""
+    targets = _targets(interp, transformer)
+    diff = transformer.diff(targets)
+    renamed_srcs = {r.src for r in diff.renames}
+    cleaned = sum(1 for f in targets if f not in renamed_srcs)
+
+    auto = {}
+    for r in diff.renames:
+        if r.ok:
+            area = _area_of(interp, transformer, targets, r)
+            auto.setdefault(area, []).append(r)
+
+    partial = {}
+    for r in diff.renames:
+        if not r.ok:
+            area = _area_of(interp, transformer, targets, r)
+            partial.setdefault(area, []).append((r.src, r.reason))
+    for p in diff.patches:
+        if not p.ok:
+            partial.setdefault(None, []).append((p.path, p.reason))
+
+    scope_src = {f for f in transformer.scope() if transformer.is_source(f)}
+    needs = sorted(scope_src - set(targets))
+
+    n_auto = sum(len(v) for v in auto.values())
+    n_partial = sum(len(v) for v in partial.values())
+    print(f"organize plan against {interp.name()}\n")
+    print(f"cleaned up      {cleaned:<5} already at their target path")
+    print(f"auto-cleanable  {n_auto:<5} move on apply --unconflicted")
+    print(f"partial         {n_partial:<5} held, need a decision")
+    print(f"needs rules     {len(needs):<5} no rule places these\n")
+    if auto:
+        print("auto-cleanable by subsystem:")
+        for t in interp.ordered_targets():
+            if auto.get(t):
+                print(f"  {t + '/':<12} {len(auto[t])}")
+    if partial:
+        print("\npartial:")
+        for t in interp.ordered_targets():
+            for f, reason in partial.get(t, []):
+                print(f"  {(t + '/'):<12} {f:<22} {reason}")
+        for f, reason in partial.get(None, []):
+            print(f"  {'(referrer)':<12} {f:<22} {reason}")
+    if needs:
+        print("\nneeds rules:")
+        for f in needs:
+            print(f"  {f}")
 
 
 def take_opt(args, name):
@@ -415,27 +540,31 @@ def take_opt(args, name):
 DOC = """organize: enforce a declared source layout.
 
 Usage:
-  organize status [AREA] [--by-area] [--conflicts] [--exit-code]
-                  [--map FILE]
+  organize status [AREA] [--by-area] [--conflicts] [--plan]
+                  [--exit-code] [--map FILE]
                                   the orientation view, and the default
-                                  with no command. With no area, group
-                                  the drift by state: renamed, conflict,
-                                  untracked, and clean; --by-area lays the
-                                  same numbers out per subsystem;
-                                  --conflicts lists each conflict with the
-                                  rule edit to record a decision;
-                                  --exit-code exits 0 on a clean layout
-                                  and 1 otherwise, for CI; with an area (a
-                                  directory name or an area token), that
-                                  subsystem's exact move set (the dry run
-                                  plan used to give)
+                                  with no command. status is the tree
+                                  diff from the current tree to the
+                                  target tree. With no area, group the
+                                  diff by state: renamed, conflict,
+                                  untracked, and organized; --by-area
+                                  lays the same numbers out per
+                                  subsystem; --conflicts lists each
+                                  not-ok diff entry with its reason;
+                                  --plan shows the incremental
+                                  refactoring bands (cleaned up,
+                                  auto-cleanable, partial, needs rules);
+                                  --exit-code exits 0 on an organized
+                                  tree and 1 otherwise, for CI; with an
+                                  area (a directory name or an area
+                                  token), that subsystem's renames
   organize apply --area X [--commit]
-                                  perform one area's carve, stop before
-                                  commit unless --commit is given
+                                  perform one area's renames and patches,
+                                  stop before commit unless --commit
   organize apply --unconflicted [--commit]
-                                  converge every unconflicted subsystem
-                                  in one pure-rename-and-validator-gated
-                                  pass; hold conflict sources at root
+                                  perform every ok rename and the patches
+                                  they entail in one validator-gated
+                                  pass; hold conflict entries at root
   organize attributes [--map FILE]
                                   print the declared placement as one
                                   attribute line per placed file, the set
@@ -451,16 +580,18 @@ def cmd_attributes(interp, transformer, mapref):
     The output is what git check-attr reads back to reproduce the carve,
     so a maintainer can record the layout with it.
 
-    The lines record each file's OWN declared placement, not the role,
-    pin, and pairing that desires() folds in for status; an interpreter
-    exposes that set through declared(), falling back to desires()."""
+    The lines record each file's OWN declared placement, not the role
+    and pairing that targets() folds in for status; an interpreter
+    exposes that set through declared(), falling back to targets() with
+    the files kept at ROOT dropped (a root file has no subsystem to
+    record)."""
     interp.load(mapref)
     if hasattr(interp, "declared"):
         placed = interp.declared(transformer.scope())
     else:
-        placed = {f: d.place for f, d in
-                  _desires(interp, transformer).items()
-                  if d.place is not None}
+        placed = {f: t for f, t in
+                  _targets(interp, transformer).items()
+                  if t != ROOT}
     for f in sorted(placed):
         for line in interp.resolution(f, placed[f]):
             print(line)
@@ -478,10 +609,11 @@ def main(default_pair, default_mapref):
     auto = "--unconflicted" in args
     by_area = "--by-area" in args
     conflicts = "--conflicts" in args
+    plan = "--plan" in args
     exit_code = "--exit-code" in args
     args = [a for a in args
             if a not in ("--commit", "--unconflicted", "--by-area",
-                         "--conflicts", "--exit-code")]
+                         "--conflicts", "--plan", "--exit-code")]
     if args and args[0] in ("--help", "-h", "help"):
         print(DOC)                     # explicit help exits 0
         return
@@ -491,7 +623,7 @@ def main(default_pair, default_mapref):
         area = args[1]                 # organize status <area>
     if cmd == "status":
         cmd_status(interp, transformer, mapref, area, by_area,
-                   conflicts, exit_code)
+                   conflicts, exit_code, plan)
     elif cmd == "apply":
         if auto:
             cmd_apply_auto(interp, transformer, mapref, commit)
@@ -507,6 +639,6 @@ def main(default_pair, default_mapref):
     elif cmd == "todo":
         sys.exit("organize todo is now organize status --conflicts")
     elif cmd == "plan":
-        sys.exit("organize plan is now organize status <area>")
+        sys.exit("organize plan is now organize status --plan")
     else:
         sys.exit(DOC)                  # unknown command: nonzero + DOC

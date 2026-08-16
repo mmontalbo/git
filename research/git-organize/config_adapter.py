@@ -42,8 +42,8 @@ import sys
 from pathlib import Path
 
 import organize_core
-from organize_core import (Vote, Placement, Verdict, Step, Plan,
-                          ApplyResult, Desire)
+from organize_core import (Vote, Placement, Verdict, Rename, Patch, Diff,
+                          ApplyResult, ROOT)
 
 
 def _load_config(path):
@@ -105,9 +105,9 @@ def _run_batch(argv, paths, root):
 
 
 class ConfigInterpreter:
-    """State each file's Desire from the tag command (or a map-token
-    fallback) plus the declared layout map and command-supplied
-    overrides, folded into one placement.
+    """Name each file's target directory from the tag command (or a
+    map-token fallback) plus the declared layout map and
+    command-supplied overrides, folded into one placement.
 
     The tag command speaks the tag protocol: for each file it emits zero
     or more "path<TAB>key=value" lines with keys area, role, kind. The
@@ -129,12 +129,13 @@ class ConfigInterpreter:
 
     # the Interpreter contract
 
-    def desires(self, scope):
-        """{FileId: Desire} for the files the label or an override names.
+    def targets(self, scope):
+        """{FileId: DirId} for the files the label or an override names.
 
-        A file with a label or a declared override is present; one with
-        neither is absent. A named file whose label resolves to no target
-        is present with Desire(place=None). hold stays None."""
+        A file with a label or a declared override that resolves to a
+        target is present; one with neither, or one whose value resolves
+        to no target, is absent. There is no role or pin: every member
+        is a source, so a target is a plain subsystem directory."""
         votes = self._label(scope)
         over = self._overrides(scope)
         out = {}
@@ -143,8 +144,9 @@ class ConfigInterpreter:
             ov = over.get(f)
             if (vote is None or vote.primary is None) and ov is None:
                 continue
-            p = self._place(f, vote, ov)
-            out[f] = Desire(place=p.target, hold=None)
+            target = self._place(f, vote, ov).target
+            if target is not None:
+                out[f] = target
         return out
 
     def load(self, mapref):
@@ -266,13 +268,17 @@ class ConfigInterpreter:
 
 
 class ConfigTransformer:
-    """The generic move cascade: scope from member globs, relocatability
-    from a command, and plan/apply built from the primitives.
+    """The generic tree diff: scope from member globs, relocatability
+    from a command, and diff/apply built from the primitives.
 
     The primitives are mkdir the target, mv the file, repoint each
     reference the config's patterns match, run the validate command, and
-    report. Only the reference repoint reads a domain specific, and that
-    specific is a pattern string in the config, not a literal here."""
+    report. diff() emits a Rename per movable file (ok from the relocate
+    command) and a Patch per referrer file the moves repoint, computed
+    as a future before the writes; apply() performs the ok renames then
+    writes the ok patches. Only the reference repoint reads a domain
+    specific, and that specific is a pattern string in the config, not a
+    literal here."""
 
     def __init__(self, cfg):
         self._cfg = cfg
@@ -309,11 +315,6 @@ class ConfigTransformer:
         A domain that pairs files supplies a plugin."""
         return True
 
-    def paired_internal_header(self, f):
-        """No paired-file convention in the generic adapter; a domain
-        that pairs files (a source and its header) supplies a plugin."""
-        return None
-
     def preflight(self):
         return []
 
@@ -339,122 +340,112 @@ class ConfigTransformer:
                     if r.strip() and r.strip() != "ok"}
         return self._reloc
 
-    # plan
+    # diff
 
-    def plan(self, target, files):
-        """One target's Plan: the movable files become moves, the blocked
-        files become skipped requirement conflicts. Drops files already
-        in target. No pairing and no build-list edit; the reference
-        repoint runs in apply from the config patterns."""
-        flagged = {f for f in files if not self.already_at(f, target)}
+    def diff(self, targets):
+        """The tree diff from the current tree to the target tree.
+
+        For each file whose target path (target dir joined with its
+        basename, or the basename when the dir is ROOT) differs from its
+        current path, emit a Rename: ok True when the relocate command
+        clears the move, ok False with the command's reason when it
+        blocks it (a requirement conflict). Then compute the reference
+        PATCHES the ok renames entail: each referrer file whose text a
+        config pattern rewrites to name a moved file's new path, as a
+        Patch(ok=True) whose payload is the patched text future. A
+        referrer that is itself moving is patched at its new path."""
+        renames = []
         blocked = self._relocatability(self.scope())
-        move_set, skipped = set(), []
-        for f in sorted(flagged):
+        for f, t in sorted(targets.items()):
+            dst = os.path.basename(f) if t == ROOT \
+                else f"{t}/{os.path.basename(f)}"
+            if dst == f:
+                continue               # already at its target path
             reason = blocked.get(f)
             if reason:
-                skipped.append((f, reason))
+                renames.append(Rename(src=f, dst=dst, ok=False,
+                                       reason=reason))
             else:
-                move_set.add(f)
-        moves = tuple(sorted((f, f"{target}/{os.path.basename(f)}")
-                             for f in move_set))
-        steps = tuple(
-            Step(kind="move", summary=f"  {src}  ->  {dst}",
-                 reads=(src,), writes=(dst,), preview=None,
-                 payload=(src, dst))
-            for src, dst in moves)
-        notes = self._notes(moves)
-        return Plan(target=target, moves=moves,
-                    skipped=tuple(sorted(skipped)), steps=steps,
-                    notes=notes, kept_public=(), paired_headers=0)
+                renames.append(Rename(src=f, dst=dst, ok=True, reason=""))
+        ok_moves = [(r.src, r.dst) for r in renames if r.ok]
+        patches = self._reference_patches(ok_moves)
+        return Diff(renames=tuple(renames), patches=tuple(patches))
 
-    def _notes(self, moves):
-        if not moves:
+    def _reference_patches(self, moves):
+        """A Patch per referrer file whose text the config patterns
+        rewrite to name a moved file's new path. Each patch is computed
+        as a future from the file's current text and the moves, before
+        any write; a referrer that is itself moving is patched at its
+        new path (the reference-relative link is computed from there).
+        Each is unambiguous (the reference matching kept as-is), so ok
+        is True; the payload is (read_path, new_text) for apply."""
+        if not self._patterns or not moves:
             return ()
-        lines = ["", f"{len(moves)} files move by rename"]
-        if self._patterns:
-            lines.append(f"references repointed by "
-                         f"{len(self._patterns)} pattern(s)")
-        if self._validate_cmd:
-            lines.append("validated after staging")
-        return tuple(lines)
+        # A moving referrer is read at its old path but written at its
+        # new path, so links from it route from the new location.
+        move_dst = {src: dst for src, dst in moves}
+        files = self.scope() | {src for src, _dst in moves}
+        patches = []
+        for f in sorted(files):
+            fp = os.path.join(self._root, f)
+            if not os.path.isfile(fp):
+                continue
+            final = move_dst.get(f, f)
+            text = open(fp, encoding="utf-8").read()
+            new_text, hits = self._repoint_text(final, text, moves)
+            if hits:
+                patches.append(Patch(
+                    path=final, ok=True, reason="",
+                    summary=f"{final}: {hits} reference line(s)",
+                    payload=(f, new_text)))
+        return patches
 
     # apply
 
-    def apply(self, plan, commit):
-        """Perform one target's cascade: mkdir the target, mv each file,
-        repoint the references the config patterns match, run validate,
-        and report. commit is accepted for the protocol; this adapter
-        leaves the tree in place for review rather than committing."""
-        return self._run([plan])
-
-    def apply_auto(self, plans, commit):
-        """Perform several targets as one operation, the same cascade."""
-        return self._run(plans)
-
-    def _run(self, plans):
+    def apply(self, diff, commit):
+        """Perform the ok renames then write the ok patches, validate,
+        and report. Create each target dir, os.rename each ok rename,
+        then write each ok patch's precomputed text at its path (which
+        now exists after the renames). Ignore the not-ok renames (the
+        requirement conflicts). commit is accepted for the protocol;
+        this adapter leaves the tree in place for review."""
+        ok_renames = [r for r in diff.renames if r.ok]
+        ok_patches = [p for p in diff.patches if p.ok]
         lines = []
-        all_moves = [m for p in plans for m in p.moves]
-        if not all_moves:
+        if not ok_renames:
             return ApplyResult(True, ["organize apply: nothing to do"])
         # Create every target first, so a mv never races an absent dir.
-        for p in plans:
-            Path(self._root, p.target).mkdir(parents=True, exist_ok=True)
+        for r in ok_renames:
+            d = os.path.dirname(r.dst)
+            if d:
+                Path(self._root, d).mkdir(parents=True, exist_ok=True)
         # mv each file.
-        for src, dst in all_moves:
-            src_abs = os.path.join(self._root, src)
-            dst_abs = os.path.join(self._root, dst)
+        for r in ok_renames:
+            src_abs = os.path.join(self._root, r.src)
+            dst_abs = os.path.join(self._root, r.dst)
             if os.path.exists(dst_abs):
-                lines.append(f"organize apply: {dst} already exists; "
+                lines.append(f"organize apply: {r.dst} already exists; "
                              "refusing to overwrite")
                 lines.append(self.recover_hint())
                 return ApplyResult(False, lines)
             os.rename(src_abs, dst_abs)
-        # repoint every reference that names a moved file.
-        n_ref = self._repoint(all_moves)
+        # Write each precomputed patch at its (now existing) path.
+        for p in ok_patches:
+            _read, new_text = p.payload
+            open(os.path.join(self._root, p.path), "w",
+                 encoding="utf-8").write(new_text)
         # validate the staged tree.
         v = self.validate()
         if not v.ok:
             lines.append(f"organize apply: {v.reason}; nothing committed.")
             lines.append(self.recover_hint())
             return ApplyResult(False, lines)
-        lines.append(f"organize apply: moved {len(all_moves)} files, "
-                     f"repointed {n_ref} reference line(s).")
+        lines.append(f"organize apply: moved {len(ok_renames)} files, "
+                     f"repointed {len(ok_patches)} reference file(s).")
         if v.reason:
             lines.append(v.reason)
         lines.append("review the tree; the moves are on disk.")
         return ApplyResult(True, lines)
-
-    def _repoint(self, moves):
-        """Repoint every reference line that a config pattern matches and
-        that names a moved file, to the moved file's new path.
-
-        A pattern is a template with a {path}, {stem}, or {title}
-        placeholder; the config supplies the exact literal syntax. For
-        each moved file this builds the pattern's matcher, scans every
-        scope file plus the moved files, and, on a line that names the
-        old path (or its basename), rewrites the path to a route from the
-        referring file to the new location. Returns the count of
-        rewritten lines."""
-        if not self._patterns:
-            return 0
-        # Map each moved file's possible reference spellings to its new
-        # path, so a link by basename or by relative path both repoint.
-        old_to_new = {}
-        for src, dst in moves:
-            for spelling in self._reference_spellings(src):
-                old_to_new[spelling] = dst
-        files = self.scope() | {dst for _s, dst in moves}
-        rewritten = 0
-        for f in sorted(files):
-            fp = os.path.join(self._root, f)
-            if not os.path.isfile(fp):
-                continue
-            text = open(fp, encoding="utf-8").read()
-            new_text, hits = self._repoint_text(f, text, moves)
-            if hits:
-                open(fp, "w", encoding="utf-8").write(new_text)
-                rewritten += hits
-        return rewritten
 
     def _reference_spellings(self, path):
         """The strings a reference might use to name path: its full
@@ -563,30 +554,32 @@ def register_config(path):
 # The generic dispatch. The config adapter keeps its own status summary
 # and all-areas apply so the "config layout clean" phrasing and the
 # already/untracked counts stay stable; status <area> and apply --area X
-# read from the plan, so they defer to the core unchanged.
+# read from the diff, so they defer to the core unchanged.
 
 
 def _config_status(interp, transformer, mapref):
-    """The state summary for a config pair, built from the generic
-    seams: renamed is the files a plan would move, conflict is the
-    requirement conflicts the relocate command flags, clean is the
-    files already in place."""
+    """The state summary for a config pair, built from the tree diff:
+    renamed is the ok renames, conflict is the requirement conflicts the
+    relocate command flags (the not-ok renames), clean is the addressed
+    files already in place, untracked is the sources no rule addresses."""
     interp.load(mapref)
-    renamed, conflict, rows = 0, 0, []
     scope = transformer.scope()
-    placed = organize_core._desires(interp, transformer)
-    placed_files = set(placed)
-    for t in interp.ordered_targets():
-        files = organize_core._files_for(interp, transformer, t)
-        if not files:
-            continue
-        plan = transformer.plan(t, files)
-        state = "exists" if transformer.target_ready(t) else "new"
-        rows.append((t, state, len(plan.moves), len(plan.skipped)))
-        renamed += len(plan.moves)
-        conflict += len(plan.skipped)
-    already = len(placed_files) - renamed - conflict
-    untracked = len(scope - placed_files)
+    targets = interp.targets(scope)
+    diff = transformer.diff(targets)
+    renamed_srcs = {r.src for r in diff.renames}
+    ok = [r for r in diff.renames if r.ok]
+    conflict_renames = [r for r in diff.renames if not r.ok]
+    renamed = len(ok)
+    conflict = len(conflict_renames)
+    already = sum(1 for f in targets if f not in renamed_srcs)
+    untracked = len(scope - set(targets))
+
+    ok_by_area, conflict_by_area = {}, {}
+    for r in diff.renames:
+        area = targets.get(r.src)
+        bucket = ok_by_area if r.ok else conflict_by_area
+        bucket[area] = bucket.get(area, 0) + 1
+
     clean_layout = renamed == 0 and conflict == 0
     banner = "(layout clean)" if clean_layout else "(layout not clean)"
     print(f"organize status against {interp.name()}   {banner}\n")
@@ -595,7 +588,12 @@ def _config_status(interp, transformer, mapref):
           "(requirement: a check blocks the move)")
     print(f"clean      {already:<5} already in their area")
     print(f"untracked  {untracked:<5} no rule places these\n")
-    for t, state, n_move, n_skip in rows:
+    for t in interp.ordered_targets():
+        n_move = ok_by_area.get(t, 0)
+        n_skip = conflict_by_area.get(t, 0)
+        if not (n_move or n_skip):
+            continue
+        state = "exists" if transformer.target_ready(t) else "new"
         print(f"  {t + '/':<14}{state:<7}{n_move:>3} move"
               f"{'':>4}{n_skip:>3} conflict")
     print("\napply --unconflicted moves every unconflicted file in one\n"
@@ -603,30 +601,25 @@ def _config_status(interp, transformer, mapref):
 
 
 def _config_apply_auto(interp, transformer, mapref):
-    """All-areas apply for a config pair. Collect every area's plan,
-    then run them as one operation through the generic apply_auto, so a
+    """All-areas apply for a config pair. Compute the whole tree's diff,
+    then run it as one operation through the generic apply, so a
     cross-area reference repoints against the whole batch and validate
     sees the fully moved tree. Routes through the transformer directly."""
     interp.load(mapref)
     blockers = transformer.preflight()
     if blockers:
         sys.exit("organize apply --unconflicted: " + "; ".join(blockers))
-    plans = []
-    for t in interp.ordered_targets():
-        files = organize_core._files_for(interp, transformer, t)
-        if not files:
-            continue
-        plan = transformer.plan(t, files)
-        if plan.moves:
-            plans.append(plan)
-    if not plans:
+    diff = organize_core._diff(interp, transformer)
+    ok = [r for r in diff.renames if r.ok]
+    held = [r for r in diff.renames if not r.ok]
+    if not ok:
         print("organize apply --unconflicted: nothing to carve")
         return
-    n = sum(len(p.moves) for p in plans)
-    held = sum(len(p.skipped) for p in plans)
-    print(f"converging {len(plans)} areas, {n} files; holding {held} "
-          f"conflict sources at root\n")
-    result = transformer.apply_auto(plans, False)
+    ok_patches = [p for p in diff.patches if p.ok]
+    print(f"converging {len(ok)} files, patching {len(ok_patches)} "
+          f"referrer files; holding {len(held)} conflict sources at "
+          f"root\n")
+    result = transformer.apply(diff, False)
     for line in result.lines:
         print(line)
     if not result.ok:
@@ -650,7 +643,7 @@ def dispatch(name, mapref, argv):
     words = [a for a in probe if not a.startswith("-")]
     cmd = words[0] if words else "status"
     interp, transformer = organize_core.get_pair(name)
-    flags = ("--by-area", "--conflicts", "--exit-code")
+    flags = ("--by-area", "--conflicts", "--plan", "--exit-code")
     named_area = area or (words[1] if cmd == "status" and len(words) > 1
                           else None)
     if cmd == "status" and named_area is None \
@@ -661,7 +654,7 @@ def dispatch(name, mapref, argv):
         _config_apply_auto(interp, transformer, mapref)
         return
     # Every other command (status <area>, apply --area X, status
-    # --by-area) reads from the plan, so the core handles it with no
-    # second signal. The core re-reads sys.argv, so leave it untouched
-    # and pass the defaults.
+    # --by-area, status --plan) reads from the diff, so the core handles
+    # it with no second signal. The core re-reads sys.argv, so leave it
+    # untouched and pass the defaults.
     organize_core.main(default_pair=name, default_mapref=mapref)

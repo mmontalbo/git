@@ -1,8 +1,8 @@
 """organize git adapter: the git and C and Make and meson pair.
 
 Provides GitInterpreter (label from commit subject prefixes plus the
-area map with declared overrides, folded into one Desire per file) and
-GitTransformer (root scope, the move cascade, the validator).
+area map with declared overrides, folded into one target dir per file)
+and GitTransformer (root scope, the tree diff, the validator).
 Importing this module registers the "git-c" pair. Every git, C,
 Makefile, meson, include, nix, and .gitattributes string lives here.
 """
@@ -13,8 +13,8 @@ import subprocess
 from collections import Counter, defaultdict
 
 import organize_core
-from organize_core import (Vote, Placement, Verdict, Step, Plan,
-                        ApplyResult, Desire)
+from organize_core import (Vote, Placement, Verdict, Rename, Patch, Diff,
+                        ApplyResult, ROOT)
 
 TOP = subprocess.check_output(
     ["git", "rev-parse", "--show-toplevel"], text=True).strip()
@@ -78,21 +78,22 @@ def norm(p):
 INCLUDE = re.compile(
     r'^[ \t]*#[ \t]*include[ \t]+"([^"]+)"', re.M)
 
-# The two project reasons a placed file holds at root instead of moving.
+# The reason the transformer holds a program rename: git builds the
+# program from a path-derived name, so moving the source breaks the
+# build. The interpreter still gives a program its subsystem dir; the
+# transformer's diff() marks the rename not-ok with this reason.
 HOLD_PROGRAM = "built as a program, not a libgit object"
-HOLD_PUBLIC = "public interface header, kept at root"
 
 
 class GitCModel:
     """The git/C/Make analysis both seams share: the Makefile
     membership check and the include-graph reader.
 
-    The Interpreter reads this to fold role (public/internal), pin
-    (program), and pairing (header rides its source) into each file's
-    Desire; the Transformer reads the same helpers so a plan and a
-    marker agree. The Makefile text and its LIB_OBJS index are cached on
-    first use. No behavior differs from the prior per-Transformer copy;
-    this only lifts it to a single owner."""
+    The Interpreter reads this to fold role (public/internal) and
+    pairing (header rides its source) into each file's target dir; the
+    Transformer reads the same helpers (is_lib_object gates a rename)
+    so the diff and the interpreter agree. The Makefile text and its
+    LIB_OBJS index are cached on first use."""
 
     def __init__(self):
         self._lib = None       # Counter of LIB_OBJS += <stem>.o lines
@@ -175,9 +176,9 @@ class GitCModel:
 
 
 class GitInterpreter:
-    """State each root .c/.h file's Desire by folding the commit-subject
-    label, the declared area map, and the git/C role, pin, and pairing
-    into one placement.
+    """Name each root .c/.h file's TARGET directory by folding the
+    commit-subject label, the declared area map, and the git/C role and
+    pairing into one placement.
 
     The label comes from the modal commit-subject prefix over a file's
     history, weighted by full commit breadth so a large sweep counts
@@ -188,10 +189,12 @@ class GitInterpreter:
     target through its map token.
 
     On top of the placement this interpreter reads the Makefile and the
-    include graph (through GitCModel) to set the Desire.hold that marks a
-    file as staying at root: a program .c is pinned; a same-stem .h is
-    either internal (it rides its source's Desire) or public (held); a
-    header whose source .c is unmanaged is itself unmanaged."""
+    include graph (through GitCModel) to set each file's role: a .c with
+    a resolvable subsystem targets that dir, program or not (the
+    transformer decides a program cannot move); a same-stem .h is either
+    internal (it rides its source into that dir) or public (it targets
+    ROOT, kept at the top); a header whose source .c is unmanaged is
+    itself unmanaged (absent)."""
 
     def __init__(self, model=None):
         self._owner = {}
@@ -200,61 +203,53 @@ class GitInterpreter:
 
     # the Interpreter contract
 
-    def desires(self, scope):
-        """{FileId: Desire} for the files the label or an override names.
+    def targets(self, scope):
+        """{FileId: DirId} for the files the label or an override names.
 
         A source .c with a confident label or a declared override is
-        present; one with neither is absent, so the unmanaged count stays
+        present; one with neither is absent, so the untracked count stays
         stable. A named source whose label resolves to no target is
-        present with Desire(place=None).
+        absent (named, but placed nowhere).
 
-        The Desire.hold folds in role, pin, and pairing:
-        - A single-LIB_OBJS .c: Desire(place=T, hold=None).
-        - A program .c (not a single LIB_OBJS object):
-          Desire(place=<derived T or None>, hold=HOLD_PROGRAM); pinned.
-        - A same-stem .h whose source .c is placed: internal (every
-          includer co-moves) -> it rides the source's Desire; public ->
-          Desire(place=<source's place>, hold=HOLD_PUBLIC).
-        - A same-stem .h whose source .c is unmanaged: unmanaged.
+        Role and pairing fold in:
+        - A .c with a resolvable subsystem targets that dir, program or
+          not; the transformer holds a program's rename.
+        - A same-stem .h whose source .c targets a dir: internal (every
+          includer co-moves) -> it targets the same dir; public ->
+          ROOT (kept at the top).
+        - A same-stem .h whose source .c is absent: absent.
         - A flagged header-only .h (no .c): internal (all includers
-          co-move) rides into T with hold=None, else it is public."""
+          co-move) targets its dir; public (not internal) is absent, so
+          no rule places it and it is counted nowhere."""
         votes = self._label(scope)
         over = self._overrides(scope)
 
         def base_place(f):
             """The label-or-override target for f, or None. Ignores role;
-            the hold logic below adds it."""
+            the role logic below adds it."""
             vote, ov = votes.get(f), over.get(f)
             if (vote is None or vote.primary is None) and ov is None:
                 return None
             return self._place(f, vote, ov).target
 
-        # The .c placements, with the program pin folded in. A source
-        # with a label or override but no resolving target is present
-        # with place None (named, but placed nowhere), so the unmanaged
-        # count stays stable; a source with neither is absent.
-        c_desire = {}
+        # The .c placements. A source with a label or override that
+        # resolves to a target targets that dir, program or not. A
+        # source with neither, or one whose value resolves to no target,
+        # is absent, so the untracked count stays stable.
+        c_target = {}
         for c in scope:
             if not c.endswith(".c"):
                 continue
-            vote, ov = votes.get(c), over.get(c)
-            named = not ((vote is None or vote.primary is None)
-                         and ov is None)
-            if not named:
-                continue
             t = base_place(c)
-            if t is None:
-                c_desire[c] = Desire(place=None, hold=None)
-            elif self._model.is_lib_object(c):
-                c_desire[c] = Desire(place=t, hold=None)
-            else:
-                c_desire[c] = Desire(place=t, hold=HOLD_PROGRAM)
+            if t is not None:
+                c_target[c] = t
 
-        # The moving .c set (single LIB_OBJS objects that are placed and
-        # not already at their target): the sources a header can ride.
-        moving_c = {c for c, d in c_desire.items()
-                    if d.place is not None and d.hold is None
-                    and not os.path.dirname(c) == d.place}
+        # The moving .c set (library objects that will actually move):
+        # the sources a header can ride. A program's .c is excluded, so
+        # its same-stem header stays public and targets ROOT.
+        moving_c = {c for c, t in c_target.items()
+                    if self._model.is_lib_object(c)
+                    and not os.path.dirname(c) == t}
         cands = {stem(c) + ".h" for c in moving_c
                  if exists(stem(c) + ".h")}
         for h in scope:
@@ -263,43 +258,37 @@ class GitInterpreter:
                 cands.add(h)          # a flagged header-only lib
         internal = self._model.internal_headers(cands, moving_c)
 
-        out = dict(c_desire)
+        out = dict(c_target)
         for h in scope:
             if not h.endswith(".h"):
                 continue
             c = stem(h) + ".c"
             if exists(c):
-                # A same-stem header rides its source's Desire. When the
-                # source is absent or placed nowhere the header is
-                # unmanaged; a public header (not internal) is held at
-                # the source's target.
-                src = c_desire.get(c)
-                if src is None or src.place is None:
+                # A same-stem header rides its source. When the source
+                # is absent the header is absent; an internal header
+                # targets the source's dir; a public header targets ROOT.
+                t = c_target.get(c)
+                if t is None:
                     continue          # source unmanaged -> header absent
-                if h in internal:
-                    out[h] = Desire(place=src.place, hold=src.hold)
-                else:
-                    out[h] = Desire(place=src.place, hold=HOLD_PUBLIC)
+                out[h] = t if h in internal else ROOT
             else:
                 # A header-only lib (no same-stem .c). An internal one
-                # (all includers co-move) rides into its target and
-                # moves; a public one stays at root and, as before, is
-                # counted nowhere in status, so it is placed nowhere.
+                # (all includers co-move) targets its dir. A public one
+                # (flagged for a subsystem but not internal) is absent:
+                # no rule places it, so it is neither renamed nor
+                # organized, as before.
                 t = base_place(h)
-                if t is None:
+                if t is None or h not in internal:
                     continue
-                if h in internal:
-                    out[h] = Desire(place=t, hold=None)
-                else:
-                    out[h] = Desire(place=None, hold=None)
+                out[h] = t
         return out
 
     def declared(self, scope):
         """{FileId: DirId} of each file's OWN declared placement: the
         target its label or override resolves to. This is what git
         records as organize.subsystem and check-attr reads back, so the
-        attributes command emits exactly these, independent of the role,
-        pin, and pairing that desires() folds in. A file with no label or
+        attributes command emits exactly these, independent of the role
+        and pairing that targets() folds in. A file with no label or
         override, or one whose value resolves to no target, is absent."""
         votes = self._label(scope)
         over = self._overrides(scope)
@@ -466,14 +455,17 @@ class GitInterpreter:
 
 
 class GitTransformer:
-    """The git and C and Make and meson cascade. Owns root scope, the
-    include rewrite, the build-list edits, the validator, and rollback.
+    """The git and C and Make and meson tree diff. Owns root scope, the
+    build-list patches, the validator, and rollback.
 
-    The role, pin, and pairing decisions now live in GitInterpreter,
-    expressed through Desire(place, hold). The core passes plan() only
-    the files it should move (place set, hold None), so this transformer
-    is mechanical: it renames the files it is given and edits the build
-    lists, with no relocatability veto and no header pairing of its own."""
+    The role and pairing decisions live in GitInterpreter, which hands
+    diff() a target dir per file. This transformer computes the tree
+    diff: a Rename per file whose target path differs from its current
+    path (ok False for a program, which git builds from a path-derived
+    name), plus a Patch per build-list file the ok renames reparent
+    (Makefile LIB_OBJS and per-object rules, meson sources). Every moved
+    header is internal, so the moves are pure git mv with no include
+    rewrite."""
 
     def __init__(self, model=None):
         self._model = model or GitCModel()
@@ -543,113 +535,135 @@ class GitTransformer:
                       "--", "*.c", "*.h", allow=(0, 1)).split())
         return len(allf - src)
 
-    # plan
+    # diff
 
-    def plan(self, target, files):
-        """Build one area's Plan by moving the files it is given.
+    def diff(self, targets):
+        """The tree diff from the current tree to the target tree.
 
-        The interpreter has already decided role, pin, and pairing and
-        expressed them as Desire(place, hold); the core passes here only
-        the files that should move (place == target, hold None). This
-        transformer is mechanical: it drops any file already in target
-        and renames the rest. Every moved header is internal, so the
-        carve is a pure git mv with no include rewrites, and there is no
-        requirement veto: plan.skipped is empty."""
-        move_set = {f for f in files if not self.already_at(f, target)}
-        moves = tuple(sorted((f, f"{target}/{f}") for f in move_set))
-        headers = sorted(f for f in move_set if f.endswith(".h"))
-        steps = self._steps(target, moves)
-        notes = self._notes(target, moves)
-        return Plan(target=target, moves=moves,
-                    skipped=(),
-                    steps=steps, notes=notes,
-                    kept_public=(),
-                    paired_headers=len(headers))
+        For each file whose target path differs from its current path,
+        emit a Rename. A .c is ok when the Makefile builds it as one
+        LIB_OBJS object; a program .c (not a single LIB_OBJS object) is
+        not ok, with the HOLD_PROGRAM reason, so it stays at root. A
+        header rides its source and is always ok (every moved header is
+        internal, so it is a pure git mv). The ok renames entail the
+        build-list PATCHES: one Patch per referrer file (Makefile,
+        meson.build) that reparents the moved objects. Each build patch
+        is unambiguous, so ok is True; the payload carries the moved
+        basenames grouped by target for apply to consume."""
+        renames = []
+        for f, t in targets.items():
+            dst = os.path.basename(f) if t == ROOT else f"{t}/{f}"
+            if dst == f:
+                continue               # already at its target path
+            if f.endswith(".c") and not self._model.is_lib_object(f):
+                renames.append(Rename(src=f, dst=dst, ok=False,
+                                       reason=HOLD_PROGRAM))
+            else:
+                renames.append(Rename(src=f, dst=dst, ok=True, reason=""))
+        renames.sort(key=lambda r: r.src)
 
-    def paired_internal_header(self, c):
-        """The same-stem .h of source c, when it exists and is internal
-        (every file that includes it co-moves with c), else None. A
-        public interface header the policy keeps at root returns None,
-        so a marker never suggests moving one."""
-        h = stem(c) + ".h"
-        if not exists(h):
-            return None
-        if h in self._model.internal_headers({h}, {c}):
-            return h
-        return None
+        # The build-list patches the ok .c renames entail. Group the
+        # moved .c basenames by target so a patch reparents each object
+        # to its new directory.
+        moved = defaultdict(list)      # target -> [basename, ...]
+        for r in renames:
+            if r.ok and r.src.endswith(".c"):
+                moved[os.path.dirname(r.dst)].append(os.path.basename(r.src))
+        patches = self._build_patches(dict(moved)) if moved else ()
+        return Diff(renames=tuple(renames), patches=tuple(patches))
 
-    def _steps(self, target, moves):
-        """One move Step per file, its summary the printed line. The
-        carve is a pure rename, so there are no include-rewrite edit
-        Steps; the build detail rides in notes."""
-        steps = []
-        for src, dst in moves:
-            mark = "   (internal header)" if src.endswith(".h") else ""
-            steps.append(Step(
-                kind="move",
-                summary=f"  {src:<10}  ->  {dst}{mark}",
-                reads=(src,), writes=(dst,),
-                preview=None, payload=(src, dst)))
-        return tuple(steps)
+    def _build_patches(self, moved_by_target):
+        """One Patch per build-list referrer the moved objects reparent.
 
-    def _notes(self, target, moves):
-        """The build-edit report lines the core prints verbatim after
-        the moves. The carve is a pure rename: every moved header is
-        internal, so same-dir resolution holds and no include is
-        rewritten."""
-        moved_c = [s for s, _ in moves if s.endswith(".c")]
-        n_c = len(moved_c)
-        n_loc = sum(1 for c in moved_c if self._has_localized_core(c))
-        lines = ["", "carve is a pure rename (0 include rewrites)"]
-        lines += ["", "build edits:",
-                  f"  Makefile:    {n_c} LIB_OBJS lines",
-                  f"  meson.build: {n_c} source lines"]
+        moved_by_target is {target_dir: [<name>.c, ...]}. The Makefile
+        patch reparents LIB_OBJS, LOCALIZED_C_CORE, and the per-object
+        triplet rules; the meson.build patch reparents the source
+        lines. Each is unambiguous (a full-line edit matched once per
+        name), so ok is True; the payload is the grouping the apply
+        edit consumes."""
+        n_c = sum(len(v) for v in moved_by_target.values())
+        n_loc = sum(1 for v in moved_by_target.values()
+                    for base in v if self._has_localized_core(base))
+        make_lines = [f"{n_c} LIB_OBJS lines"]
         if n_loc:
-            lines.append(
-                f"  Makefile:    {n_loc} LOCALIZED_C_CORE lines")
-        return tuple(lines)
+            make_lines.append(f"{n_loc} LOCALIZED_C_CORE lines")
+        return (
+            Patch(path="Makefile", ok=True, reason="",
+                  summary=f"Makefile: {', '.join(make_lines)}",
+                  payload=("Makefile", moved_by_target)),
+            Patch(path="meson.build", ok=True, reason="",
+                  summary=f"meson.build: {n_c} source lines",
+                  payload=("meson.build", moved_by_target)),
+        )
 
     # apply
 
-    def apply(self, plan, commit):
-        """Patch build lists, then git mv the files, stage, and gate on
-        the build. The carve is a pure rename: every moved header is
-        internal, so no include is rewritten and moved files stay
-        byte-identical. Edit before moving so a failure before any git
-        mv leaves a recoverable tree."""
-        moved_c = [os.path.basename(s) for s, _ in plan.moves
-                   if s.endswith(".c")]
+    def apply(self, diff, commit):
+        """Perform the ok renames and the build patches, stage, and gate
+        on the build. Every moved header is internal, so no include is
+        rewritten and moved files stay byte-identical. Create each
+        target dir and patch the build lists before any git mv, so a
+        failure before a mv leaves a recoverable tree. Ignore the not-ok
+        renames (the held programs)."""
+        ok_renames = [r for r in diff.renames if r.ok]
+        ok_patches = [p for p in diff.patches if p.ok]
         lines = []
-        self._patch_build(moved_c, plan.target)
-        self._patch_object_rules(moved_c, plan.target)
-        for src, dst in plan.moves:
-            r = subprocess.run(["git", "-C", TOP, "mv", src, dst],
-                               capture_output=True, text=True)
-            if r.returncode:
-                lines.append(f"organize apply: git mv {src} failed: "
-                             f"{r.stderr.strip()}")
+        if not ok_renames:
+            return ApplyResult(True, ["organize apply: nothing to do"])
+        # Create each target directory the renames land in.
+        for r in ok_renames:
+            d = os.path.dirname(r.dst)
+            if d and not os.path.isdir(os.path.join(TOP, d)):
+                os.makedirs(os.path.join(TOP, d))
+        # Patch the build lists, then git mv the files.
+        for p in ok_patches:
+            self._apply_patch(p)
+        for r in ok_renames:
+            res = subprocess.run(["git", "-C", TOP, "mv", r.src, r.dst],
+                                 capture_output=True, text=True)
+            if res.returncode:
+                lines.append(f"organize apply: git mv {r.src} failed: "
+                             f"{res.stderr.strip()}")
                 lines.append(self.recover_hint())
                 return ApplyResult(False, lines)
         git("add", "-u")
+        v = self._verify_pure_renames(ok_renames)
+        if not v.ok:
+            lines.append(f"organize apply: {v.reason}")
+            lines.append(self.recover_hint())
+            return ApplyResult(False, lines)
         v = self.validate()
         if not v.ok:
             lines.append(f"organize apply: {v.reason}; nothing "
                          "committed.")
             lines.append(self.recover_hint())
             return ApplyResult(False, lines)
+        n = len(ok_renames)
+        held = sum(1 for r in diff.renames if not r.ok)
+        lines.append(f"organize apply: pure renames + validator passed "
+                     f"({n} files, {len(ok_patches)} build patches, "
+                     f"{held} held).")
         if commit:
             subprocess.run(
                 ["git", "-C", TOP, "commit", "-m",
-                 f"{plan.target}: carve out {plan.target}/"],
-                check=True)
-            lines.append(f"organize apply: committed the "
-                         f"{plan.target} carve.")
+                 f"organize: apply {n} renames"], check=True)
+            lines.append("organize apply: committed.")
         else:
-            lines.append("organize apply: build passed; carve is "
-                         "staged.")
             lines.append("review, then commit, or "
                          + self.recover_hint())
         return ApplyResult(True, lines)
+
+    def _apply_patch(self, patch):
+        """Perform one build-list Patch: dispatch by its referrer path
+        to the full-line edit for that file. The payload is (path,
+        {target: [<name>.c, ...]}), the grouping diff() computed."""
+        path, moved_by_target = patch.payload
+        for target, names in moved_by_target.items():
+            if path == "Makefile":
+                self._patch_makefile(names, target)
+                self._patch_object_rules(names, target)
+            elif path == "meson.build":
+                self._patch_meson(names, target)
 
     def validate(self):
         """The validator provider: confirm the organize preserved the
@@ -662,7 +676,7 @@ class GitTransformer:
             return Verdict(False, "validator (build) failed")
         return Verdict(True, "")
 
-    def _verify_pure_renames(self, plans):
+    def _verify_pure_renames(self, ok_renames):
         """Core gate, git primitive: every moved file is a content-
         preserving rename that git's rename detection scores R100.
         Domain-agnostic; needs no build. Returns a Verdict."""
@@ -674,61 +688,12 @@ class GitTransformer:
                 status[p[2]] = p[0]
             elif len(p) == 2:
                 status[p[1]] = p[0]
-        bad = [dst for pl in plans for _, dst in pl.moves
-               if status.get(dst) != "R100"]
+        bad = [r.dst for r in ok_renames
+               if status.get(r.dst) != "R100"]
         if bad:
             return Verdict(False, "not pure renames (R100): "
                            + ", ".join(sorted(bad)[:5]))
         return Verdict(True, "")
-
-    def apply_auto(self, plans, commit):
-        """Converge several subsystems as one gated operation. Create
-        each target dir, apply every build-list edit and git mv, then
-        gate: first the pure-rename check (a git primitive), then the
-        validator (a domain plugin). Leave the batch staged, or commit
-        it. On any failure the tree is recoverable with reset."""
-        lines = []
-        for plan in plans:
-            d = os.path.join(TOP, plan.target)
-            if not os.path.isdir(d):
-                os.makedirs(d)
-            moved_c = [os.path.basename(s) for s, _ in plan.moves
-                       if s.endswith(".c")]
-            self._patch_build(moved_c, plan.target)
-            self._patch_object_rules(moved_c, plan.target)
-            for src, dst in plan.moves:
-                r = subprocess.run(["git", "-C", TOP, "mv", src, dst],
-                                   capture_output=True, text=True)
-                if r.returncode:
-                    lines.append(f"organize apply --auto: git mv {src} "
-                                 f"failed: {r.stderr.strip()}")
-                    lines.append(self.recover_hint())
-                    return ApplyResult(False, lines)
-        git("add", "-u")
-        v = self._verify_pure_renames(plans)
-        if not v.ok:
-            lines.append(f"organize apply --auto: {v.reason}")
-            lines.append(self.recover_hint())
-            return ApplyResult(False, lines)
-        v = self.validate()
-        if not v.ok:
-            lines.append(f"organize apply --auto: {v.reason}; nothing "
-                         "committed.")
-            lines.append(self.recover_hint())
-            return ApplyResult(False, lines)
-        n = sum(len(p.moves) for p in plans)
-        lines.append(f"organize apply --auto: pure renames + validator "
-                     f"passed ({n} files, {len(plans)} subsystems).")
-        if commit:
-            subprocess.run(
-                ["git", "-C", TOP, "commit", "-m",
-                 f"organize: converge {len(plans)} subsystems "
-                 f"({n} files)"], check=True)
-            lines.append("organize apply --auto: committed.")
-        else:
-            lines.append("review, then commit, or "
-                         + self.recover_hint())
-        return ApplyResult(True, lines)
 
     def _rewrite_includes(self, headers, target):
         """Rewrite each include that binds to a moved root header to
@@ -761,32 +726,25 @@ class GitTransformer:
                 text = pat.sub(r'\1"' + target + '/' + h + '"', text)
             open(p, "w", encoding="utf-8").write(text)
 
-    def _patch_build(self, moved_c, target):
-        """Full-line edit Makefile and meson.build for each moved .c.
-        The LIB_OBJS and meson source edits preserve leading whitespace
-        and must match exactly once per name per file, else it is a loud
-        error. The optional LOCALIZED_C_CORE edit re-paths po/git-core
-        sources; it exists for only some sources, so 0 or 1 match is
-        fine."""
-        for path, pat_t, rep_t in [
-            ("Makefile", r'^([ \t]*)LIB_OBJS \+= {n}\.o$',
-             r'\1LIB_OBJS += ' + target + r'/{n}.o'),
-            ("meson.build", r"^([ \t]*)'{n}\.c',$",
-             r"\1'" + target + r"/{n}.c',"),
-        ]:
-            p = os.path.join(TOP, path)
-            text = open(p, encoding="utf-8").read()
-            for c in moved_c:
-                n = c[:-2]
-                pat = re.compile(pat_t.format(n=re.escape(n)), re.M)
-                new, k = pat.subn(rep_t.format(n=n), text)
-                if k != 1:
-                    sys.exit(f"organize apply: {path}: expected 1 line "
-                             f"for {n}, found {k}")
-                text = new
-            open(p, "w", encoding="utf-8").write(text)
+    def _patch_makefile(self, moved_c, target):
+        """Full-line edit Makefile for each moved .c: reparent the
+        LIB_OBJS line and, when present, the LOCALIZED_C_CORE line. The
+        LIB_OBJS edit preserves leading whitespace and must match
+        exactly once per name, else it is a loud error. The
+        LOCALIZED_C_CORE edit re-paths po/git-core sources; it exists
+        for only some sources, so 0 or 1 match is fine."""
         p = os.path.join(TOP, "Makefile")
         text = open(p, encoding="utf-8").read()
+        for c in moved_c:
+            n = c[:-2]
+            pat = re.compile(
+                r'^([ \t]*)LIB_OBJS \+= ' + re.escape(n) + r'\.o$', re.M)
+            new, k = pat.subn(
+                r'\1LIB_OBJS += ' + target + '/' + n + '.o', text)
+            if k != 1:
+                sys.exit(f"organize apply: Makefile: expected 1 line "
+                         f"for {n}, found {k}")
+            text = new
         for c in moved_c:
             n = c[:-2]
             pat = re.compile(
@@ -798,6 +756,23 @@ class GitTransformer:
             if k > 1:
                 sys.exit(f"organize apply: Makefile: expected 0 or 1 "
                          f"LOCALIZED_C_CORE line for {n}, found {k}")
+        open(p, "w", encoding="utf-8").write(text)
+
+    def _patch_meson(self, moved_c, target):
+        """Full-line edit meson.build for each moved .c: reparent its
+        source line. The edit preserves leading whitespace and must
+        match exactly once per name, else it is a loud error."""
+        p = os.path.join(TOP, "meson.build")
+        text = open(p, encoding="utf-8").read()
+        for c in moved_c:
+            n = c[:-2]
+            pat = re.compile(r"^([ \t]*)'" + re.escape(n) + r"\.c',$",
+                             re.M)
+            new, k = pat.subn(r"\1'" + target + "/" + n + ".c',", text)
+            if k != 1:
+                sys.exit(f"organize apply: meson.build: expected 1 line "
+                         f"for {n}, found {k}")
+            text = new
         open(p, "w", encoding="utf-8").write(text)
 
     def _patch_object_rules(self, moved_c, target):
