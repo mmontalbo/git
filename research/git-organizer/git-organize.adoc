@@ -1,0 +1,142 @@
+git-organize(1)
+===============
+
+NAME
+----
+git-organize - Reconcile a source tree against a declared layout
+
+
+SYNOPSIS
+--------
+[verse]
+'git organize status' [--by-label <key>=<value>...]
+'git organize apply' [--by-label <key>=<value>...]
+
+
+DESCRIPTION
+-----------
+Bring a source tree into a layout the project declares, mechanically,
+the way a formatter brings a file into a declared style.
+
+git organize orchestrates two project tools and owns the declaration. A
+LABELER (the `organize.labeler` command) reports the subsystem each file
+belongs to. git organize writes those labels into `.gitattributes` as
+`organize.subsystem` (a public interface header as `organize.role`), so
+the intended layout is a tracked, reviewable declaration. An ORGANIZER
+(the `organize.organizer` command) reads the labels and returns the
+operations that make the tree match them. A 'rename' moves a file to its
+subsystem directory, content byte-for-byte identical, an R100 rename. A
+'patch' repoints a referrer at a moved file, such as a build-list entry.
+git organize performs them.
+
+git organize itself names no subsystem, role, or file type. The labeler
+owns the inference; the organizer owns the mechanics; git organize owns
+`.gitattributes` and performs the ops behind the R100 check.
+
+`git organize apply` renames with `git mv`, confirms git scores each move
+R100, and writes the reference patches and the updated `.gitattributes`.
+It holds the conflicts and leaves the result staged for a plain `git
+commit`. Because every move is an R100 rename, the outcome reads as an
+ordinary rename patch that `git log --follow` and `git blame` still
+track. Review it with `git diff --cached` and undo it with `git reset
+--hard`.
+
+Nothing is created, deleted, or changed in meaning. The whole vocabulary
+is rename, repoint-a-reference, and declare-a-label. The excluded
+operations (add new content, delete, change what a file means) are what
+keep an apply safe.
+
+
+LABELS
+------
+The labeler assigns each file a `key=value` label. Git's labeler labels a
+source `subsystem=<dir>` and a public interface header `role=public`. git
+organize writes these as `organize.*` attributes and reads them back, so a
+declared file reconciles against its declaration. The labeler fills only
+the files that carry no declaration yet. A declared file stays put unless
+it drifts from where it is declared to live. `--by-label
+<key>=<value>` limits an operation to the named labels, so a project
+organizes one labeled concept at a time.
+
+
+COMMANDS
+--------
+
+status::
+	Report the labels with a count each, the conflicts with the reason
+	each is held, the reference patch count, and whether the
+	`.gitattributes` declaration is up to date. With `--by-label`, report
+	only the named labels.
+
+apply::
+	Perform the reconcile: rename each ok move with `git mv`, confirm git
+	scores it R100, write the reference patches and the updated
+	`.gitattributes`, and leave the result staged. Hold each conflict in
+	place and print its reason. With `--by-label`, perform only the named
+	labels.
++
+apply requires a clean worktree, so `git reset --hard` restores the
+pre-apply tree. A failed step stops apply and leaves the partial changes
+on disk for inspection. apply runs no build; build the staged result to
+check it before you commit.
+
+
+OPTIONS
+-------
+
+--by-label <key>=<value>::
+	Limit status or apply to the files carrying this label. Repeatable;
+	the selectors union.
+
+
+CONFIGURATION
+-------------
+organize.labeler::
+	The command that reports labels. It writes one `path \0 key \0 value`
+	record per governed file on stdout, and writes nothing else.
+
+organize.organizer::
+	The command that returns operations. It reads the labeled things on
+	stdin (the same `path \0 key \0 value` records) and writes the op
+	stream on stdout, one rename or reference patch per record.
+
+Git's labeler and organizer are the `labeler` and `organizer` binaries in
+`research/git-organizer`. The labeler mines each file's subsystem from the
+modal prefix of its commit subjects, routed through a map of area tokens
+to directories (`git-layout.map`). A per-path `organize.subsystem`
+attribute overrides the derivation. The organizer renames with `git mv`
+and reparents the Makefile and meson build lists. A public interface
+header is kept at the root. A program, whose name derives from its object
+path, is labeled but held as a conflict. A different project points
+`organize.labeler` and `organize.organizer` at its own commands.
+
+
+EXAMPLES
+--------
+
+List the labels organizing git's root sources would carry:
++
+------------
+$ git organize status
+------------
+
+Carve one subsystem, review it as a rename patch, then keep it:
++
+------------
+$ git organize apply --by-label subsystem=odb
+$ git diff --cached -M
+$ git commit
+------------
+
+
+NOTES
+-----
+This is a prototype. `git organize` is the builtin (`builtin/organize.c`
+plus the `organize.c` engine). Git's labeler and organizer are the Rust
+binaries in `research/git-organizer`, named through `organize.labeler` and
+`organize.organizer`.
+
+
+GIT
+---
+Part of the linkgit:git[1] suite

@@ -1,0 +1,22 @@
+[package]
+name = "git-organizer"
+version = "0.1.0"
+edition = "2021"
+description = "git's labeler and organizer for the git organize builtin"
+
+[lib]
+name = "organize"
+path = "src/lib.rs"
+
+[[bin]]
+name = "labeler"
+path = "src/bin/labeler.rs"
+
+[[bin]]
+name = "organizer"
+path = "src/bin/organizer.rs"
+
+[dependencies]
+anyhow = "1"
+lexopt = "0.3"
+regex = "1"
