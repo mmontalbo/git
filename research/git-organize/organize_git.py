@@ -1,9 +1,9 @@
-"""organize git adapter: the git and C and Make and meson triple.
+"""organize git adapter: the git and C and Make and meson pair.
 
-Provides CommitPrefixSignal (label from commit subject prefixes),
-MapPolicy (the area map with declared overrides), and
+Provides GitInterpreter (label from commit subject prefixes plus the
+area map with declared overrides, folded into one Desire per file) and
 GitTransformer (root scope, the move cascade, the validator).
-Importing this module registers the "git-c" triple. Every git, C,
+Importing this module registers the "git-c" pair. Every git, C,
 Makefile, meson, include, nix, and .gitattributes string lives here.
 """
 import os
@@ -14,7 +14,7 @@ from collections import Counter, defaultdict
 
 import organize_core
 from organize_core import (Vote, Placement, Verdict, Step, Plan,
-                        ApplyResult)
+                        ApplyResult, Desire)
 
 TOP = subprocess.check_output(
     ["git", "rev-parse", "--show-toplevel"], text=True).strip()
@@ -74,15 +74,108 @@ def norm(p):
     return p[:-2] if p.endswith((".c", ".h")) else p
 
 
-class CommitPrefixSignal:
-    """Label each file by the modal commit-subject prefix over its
+class GitInterpreter:
+    """State each root .c/.h file's Desire by folding the commit-subject
+    label and the declared area map into one placement.
+
+    The label comes from the modal commit-subject prefix over a file's
     history, weighted by full commit breadth so a large sweep counts
-    little per file. Returns one Vote per confidently labelled file.
+    little per file; evidence-quality thresholds (at least 2.0 support,
+    a 0.34 modal share) live in _label. The map is 'directory: area
+    area ...' per line, plus per-path 'area=' overrides; a declared
+    override beats the inferred label, and a label resolves to a target
+    through its map token."""
 
-    Evidence-quality thresholds live here: at least 2.0 support and a
-    0.34 modal share. A file below either is absent from the result."""
+    def __init__(self):
+        self._owner = {}
+        self._name = ""
 
-    def label(self, scope):
+    # the Interpreter contract
+
+    def desires(self, scope):
+        """{FileId: Desire} for the files the label or an override names.
+
+        A file with a confident label or a declared override is present;
+        one with neither is absent, so the unmanaged count stays stable.
+        A named file whose label resolves to no target is present with
+        Desire(place=None). hold stays None; a requirement block is the
+        Transformer's plan.skipped, not a hold here."""
+        votes = self._label(scope)
+        over = self._overrides(scope)
+        out = {}
+        for f in scope:
+            vote = votes.get(f)
+            ov = over.get(f)
+            if (vote is None or vote.primary is None) and ov is None:
+                continue
+            p = self._place(f, vote, ov)
+            out[f] = Desire(place=p.target, hold=None)
+        return out
+
+    def load(self, mapref):
+        self._name = os.path.basename(mapref)
+        owner = {}
+        try:
+            fh = open(mapref, encoding="utf-8")
+        except FileNotFoundError:
+            sys.exit(f"organize: no such map file: {mapref}")
+        for line in fh:
+            line = line.split("#", 1)[0].strip()
+            if not line or ":" not in line:
+                continue
+            d, areas = line.split(":", 1)
+            for a in areas.split():
+                owner[a] = d.strip()
+        self._owner = owner
+
+    def name(self):
+        return self._name
+
+    def target_of(self, label):
+        """A label to its target dir. Accepts a map token (read), a
+        multi-segment label (read/cache), or the destination directory
+        name itself (index), so an override may name the directory. A
+        value that resolves to nothing returns None (the caller drops
+        or reports it)."""
+        if label in self._owner.values():
+            return label
+        return self._owner.get(self._token_of(label))
+
+    def ordered_targets(self):
+        return list(dict.fromkeys(self._owner.values()))
+
+    def override_notices(self, scope):
+        """Display lines for override lint, for the core to print
+        verbatim. Two kinds: an override whose value resolves to no
+        target (a typo such as area=packs), naming the file, the value,
+        and the valid area names; and a path carrying more than one
+        area= line in the root .gitattributes (a duplicate the resolver
+        should collapse). Empty when every override is clean."""
+        lines = []
+        valid = ", ".join(self.ordered_targets())
+        for f, value in sorted(self._overrides(scope).items()):
+            if self.target_of(value) is None:
+                lines.append(
+                    f"  {f}: area={value} resolves to no area; the "
+                    f"file stays at root.\n    valid areas: {valid}")
+        for f, n in sorted(_duplicate_area_paths().items()):
+            if n > 1:
+                lines.append(
+                    f"  {f}: {n} area= lines in .gitattributes; keep "
+                    "one.")
+        return lines
+
+    def resolution(self, f, place):
+        """Adapter prose for a resolution worklist entry. A stub for now;
+        the core does not wire it in slice 2."""
+        return []
+
+    # the label, override, and place internals
+
+    def _label(self, scope):
+        """Label each file by the modal commit-subject prefix over its
+        history. Returns one Vote per confidently labelled file; a file
+        below either threshold is absent."""
         wt = defaultdict(lambda: defaultdict(float))
         lab, touched, total = None, [], 0
         log = git("log", "--no-merges", "--name-only",
@@ -113,41 +206,12 @@ class CommitPrefixSignal:
                                 confidence=w / tot, status="labelled")
         return votes
 
-
-class MapPolicy:
-    """The declared area map: 'directory: area area ...' per line, plus
-    per-path 'area=' overrides. A declared override beats the inferred
-    label. A label resolves to a target through its map token."""
-
-    def __init__(self):
-        self._owner = {}
-        self._name = ""
-
-    def load(self, mapref):
-        self._name = os.path.basename(mapref)
-        owner = {}
-        try:
-            fh = open(mapref, encoding="utf-8")
-        except FileNotFoundError:
-            sys.exit(f"organize: no such map file: {mapref}")
-        for line in fh:
-            line = line.split("#", 1)[0].strip()
-            if not line or ":" not in line:
-                continue
-            d, areas = line.split(":", 1)
-            for a in areas.split():
-                owner[a] = d.strip()
-        self._owner = owner
-
-    def name(self):
-        return self._name
-
-    def token_of(self, label):
+    def _token_of(self, label):
         """The map token for a label: the first hyphen-free segment of
         the first path component."""
         return label.split("/")[0].split("-")[0]
 
-    def overrides(self, scope):
+    def _overrides(self, scope):
         """path -> declared 'area=' value for scope paths that set it.
 
         Batches one 'git check-attr area --stdin -z'. The NUL stream is
@@ -171,7 +235,7 @@ class MapPolicy:
                 over[path] = value
         return over
 
-    def place(self, f, vote, override):
+    def _place(self, f, vote, override):
         if override is not None:
             label, reason = override, "override"
         elif vote is not None and vote.primary is not None:
@@ -180,40 +244,6 @@ class MapPolicy:
             return Placement(target=None, label=None, reason="none")
         return Placement(target=self.target_of(label),
                          label=label, reason=reason)
-
-    def target_of(self, label):
-        """A label to its target dir. Accepts a map token (read), a
-        multi-segment label (read/cache), or the destination directory
-        name itself (index), so an override may name the directory. A
-        value that resolves to nothing returns None (the caller drops
-        or reports it)."""
-        if label in self._owner.values():
-            return label
-        return self._owner.get(self.token_of(label))
-
-    def ordered_targets(self):
-        return list(dict.fromkeys(self._owner.values()))
-
-    def override_notices(self, scope):
-        """Display lines for override lint, for the core to print
-        verbatim. Two kinds: an override whose value resolves to no
-        target (a typo such as area=packs), naming the file, the value,
-        and the valid area names; and a path carrying more than one
-        area= line in the root .gitattributes (a duplicate the resolver
-        should collapse). Empty when every override is clean."""
-        lines = []
-        valid = ", ".join(self.ordered_targets())
-        for f, value in sorted(self.overrides(scope).items()):
-            if self.target_of(value) is None:
-                lines.append(
-                    f"  {f}: area={value} resolves to no area; the "
-                    f"file stays at root.\n    valid areas: {valid}")
-        for f, n in sorted(_duplicate_area_paths().items()):
-            if n > 1:
-                lines.append(
-                    f"  {f}: {n} area= lines in .gitattributes; keep "
-                    "one.")
-        return lines
 
     def token_for(self, target):
         """A label the map routes to target, for suggesting an override
@@ -746,7 +776,7 @@ class GitTransformer:
 
 
 def _make_git_c():
-    return (CommitPrefixSignal(), MapPolicy(), GitTransformer())
+    return (GitInterpreter(), GitTransformer())
 
 
 organize_core.register("git-c", _make_git_c)

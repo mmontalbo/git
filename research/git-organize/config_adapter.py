@@ -1,6 +1,6 @@
-"""organize config adapter: a domain-neutral Signal, Policy, Transformer.
+"""organize config adapter: a domain-neutral Interpreter and Transformer.
 
-One adapter that fills the three seams from a JSON config plus command
+One adapter that fills the two seams from a JSON config plus command
 call-outs, so a project reorganizes with no Python. It holds no domain
 literal: no build command, no language suffix, no attribute file name,
 no reference syntax. Every such specific comes from the config file,
@@ -42,7 +42,8 @@ import sys
 from pathlib import Path
 
 import organize_core
-from organize_core import Vote, Placement, Verdict, Step, Plan, ApplyResult
+from organize_core import (Vote, Placement, Verdict, Step, Plan,
+                          ApplyResult, Desire)
 
 
 def _load_config(path):
@@ -103,73 +104,48 @@ def _run_batch(argv, paths, root):
     return out
 
 
-class ConfigSignal:
-    """Label each file through the tag command, or, absent one, by the
-    map token that appears in its path.
+class ConfigInterpreter:
+    """State each file's Desire from the tag command (or a map-token
+    fallback) plus the declared layout map and command-supplied
+    overrides, folded into one placement.
 
     The tag command speaks the tag protocol: for each file it emits zero
-    or more "path<TAB>key=value" lines with keys area, role, kind. This
-    signal reads the area key as the placement label; role and kind ride
-    in the vote's distribution for a later cross-check. With no tag
-    command, a file's area is the first map token whose name appears as a
-    path component, so a plain map is enough for a flat tree."""
-
-    def __init__(self, cfg, policy):
-        self._cfg = cfg
-        self._policy = policy      # for the map-token fallback
-        self._tag_cmd = _resolve(cfg, cfg.get("tagCmd"))
-        self._root = cfg["root"]
-
-    def _tag_lines(self, scope):
-        """{path: {key: value}} from the tag command, keys area/role/kind."""
-        raw = _run_batch(self._tag_cmd, scope, self._root)
-        tags = {}
-        for path, kv in raw.items():
-            if "=" in kv:
-                key, value = kv.split("=", 1)
-                tags.setdefault(path, {})[key.strip()] = value.strip()
-        return tags
-
-    def label(self, scope):
-        votes = {}
-        if self._tag_cmd:
-            for f, kv in self._tag_lines(scope).items():
-                if f not in scope:
-                    continue
-                area = kv.get("area")
-                if not area:
-                    continue
-                dist = {area: 1.0}
-                for k in ("role", "kind"):
-                    if kv.get(k):
-                        dist[f"{k}:{kv[k]}"] = 1.0
-                votes[f] = Vote(dist=dist, primary=area,
-                                confidence=1.0, status="labelled")
-            return votes
-        # Fallback: the map token that appears in the file's path.
-        for f in scope:
-            token = self._policy.token_in_path(f)
-            if token:
-                votes[f] = Vote(dist={token: 1.0}, primary=token,
-                                confidence=1.0, status="labelled")
-        return votes
-
-
-class ConfigPolicy:
-    """The declared layout map plus command-supplied overrides.
-
-    The map is "directory: token token" per line, the same format the
-    git adapter's layout map uses; a token routes to its directory. An
-    override, from the overrides command, is a declared area at highest
-    precedence. token_of reduces a multi-part label to its map token so
-    a label like guide/api still routes."""
+    or more "path<TAB>key=value" lines with keys area, role, kind. The
+    area key is the placement label; role and kind ride in the vote's
+    distribution. With no tag command, a file's area is the first map
+    token whose name appears as a path component, so a plain map is
+    enough for a flat tree. The map is "directory: token token" per
+    line, the same format the git adapter's layout map uses; a token
+    routes to its directory. An override, from the overrides command, is
+    a declared area at highest precedence."""
 
     def __init__(self, cfg):
         self._cfg = cfg
         self._owner = {}
         self._name = cfg.get("name", "config layout")
+        self._tag_cmd = _resolve(cfg, cfg.get("tagCmd"))
         self._over_cmd = _resolve(cfg, cfg.get("overridesCmd"))
         self._root = cfg["root"]
+
+    # the Interpreter contract
+
+    def desires(self, scope):
+        """{FileId: Desire} for the files the label or an override names.
+
+        A file with a label or a declared override is present; one with
+        neither is absent. A named file whose label resolves to no target
+        is present with Desire(place=None). hold stays None."""
+        votes = self._label(scope)
+        over = self._overrides(scope)
+        out = {}
+        for f in scope:
+            vote = votes.get(f)
+            ov = over.get(f)
+            if (vote is None or vote.primary is None) and ov is None:
+                continue
+            p = self._place(f, vote, ov)
+            out[f] = Desire(place=p.target, hold=None)
+        return out
 
     def load(self, mapref):
         self._name = os.path.basename(mapref)
@@ -190,53 +166,13 @@ class ConfigPolicy:
     def name(self):
         return self._name
 
-    def token_of(self, label):
-        """The map token for a label: the first hyphen-free segment of
-        the first path component, so guide/api and guide-v2 both reduce
-        to guide."""
-        return label.split("/")[0].split("-")[0]
-
-    def token_in_path(self, path):
-        """The first map token that appears as a component of path, for
-        the no-tag-command fallback. None when no token matches."""
-        parts = re.split(r"[\\/._-]", path.lower())
-        for tok in self._owner:
-            if tok.lower() in parts:
-                return tok
-        return None
-
-    def overrides(self, scope):
-        """{path: area} declared by the overrides command, for scope
-        paths that set an area= value. Absent command: no overrides."""
-        if not self._over_cmd:
-            return {}
-        over = {}
-        for path, result in _run_batch(self._over_cmd, scope,
-                                        self._root).items():
-            if path not in scope or "=" not in result:
-                continue
-            key, value = result.split("=", 1)
-            if key.strip() == "area" and value.strip():
-                over[path] = value.strip()
-        return over
-
-    def place(self, f, vote, override):
-        if override is not None:
-            label, reason = override, "override"
-        elif vote is not None and vote.primary is not None:
-            label, reason = vote.primary, "label"
-        else:
-            return Placement(target=None, label=None, reason="none")
-        return Placement(target=self.target_of(label),
-                         label=label, reason=reason)
-
     def target_of(self, label):
         """A label to its target directory. Accepts a map token, a
         multi-part label, or the destination directory name itself, so
         an override may name the directory. Unresolved returns None."""
         if label in self._owner.values():
             return label
-        return self._owner.get(self.token_of(label))
+        return self._owner.get(self._token_of(label))
 
     def ordered_targets(self):
         return list(dict.fromkeys(self._owner.values()))
@@ -252,6 +188,82 @@ class ConfigPolicy:
                 return tok
         return target
 
+    # the label, override, and place internals
+
+    def _tag_lines(self, scope):
+        """{path: {key: value}} from the tag command, keys area/role/kind."""
+        raw = _run_batch(self._tag_cmd, scope, self._root)
+        tags = {}
+        for path, kv in raw.items():
+            if "=" in kv:
+                key, value = kv.split("=", 1)
+                tags.setdefault(path, {})[key.strip()] = value.strip()
+        return tags
+
+    def _label(self, scope):
+        votes = {}
+        if self._tag_cmd:
+            for f, kv in self._tag_lines(scope).items():
+                if f not in scope:
+                    continue
+                area = kv.get("area")
+                if not area:
+                    continue
+                dist = {area: 1.0}
+                for k in ("role", "kind"):
+                    if kv.get(k):
+                        dist[f"{k}:{kv[k]}"] = 1.0
+                votes[f] = Vote(dist=dist, primary=area,
+                                confidence=1.0, status="labelled")
+            return votes
+        # Fallback: the map token that appears in the file's path.
+        for f in scope:
+            token = self._token_in_path(f)
+            if token:
+                votes[f] = Vote(dist={token: 1.0}, primary=token,
+                                confidence=1.0, status="labelled")
+        return votes
+
+    def _token_of(self, label):
+        """The map token for a label: the first hyphen-free segment of
+        the first path component, so guide/api and guide-v2 both reduce
+        to guide."""
+        return label.split("/")[0].split("-")[0]
+
+    def _token_in_path(self, path):
+        """The first map token that appears as a component of path, for
+        the no-tag-command fallback. None when no token matches."""
+        parts = re.split(r"[\\/._-]", path.lower())
+        for tok in self._owner:
+            if tok.lower() in parts:
+                return tok
+        return None
+
+    def _overrides(self, scope):
+        """{path: area} declared by the overrides command, for scope
+        paths that set an area= value. Absent command: no overrides."""
+        if not self._over_cmd:
+            return {}
+        over = {}
+        for path, result in _run_batch(self._over_cmd, scope,
+                                        self._root).items():
+            if path not in scope or "=" not in result:
+                continue
+            key, value = result.split("=", 1)
+            if key.strip() == "area" and value.strip():
+                over[path] = value.strip()
+        return over
+
+    def _place(self, f, vote, override):
+        if override is not None:
+            label, reason = override, "override"
+        elif vote is not None and vote.primary is not None:
+            label, reason = vote.primary, "label"
+        else:
+            return Placement(target=None, label=None, reason="none")
+        return Placement(target=self.target_of(label),
+                         label=label, reason=reason)
+
 
 class ConfigTransformer:
     """The generic move cascade: scope from member globs, relocatability
@@ -262,9 +274,8 @@ class ConfigTransformer:
     report. Only the reference repoint reads a domain specific, and that
     specific is a pattern string in the config, not a literal here."""
 
-    def __init__(self, cfg, policy):
+    def __init__(self, cfg):
         self._cfg = cfg
-        self._policy = policy
         self._root = cfg["root"]
         self._members = cfg.get("members", [])
         self._reloc_cmd = _resolve(cfg, cfg.get("relocateCmd"))
@@ -541,36 +552,32 @@ def register_config(path):
     name = cfg.get("name", "config")
 
     def build():
-        policy = ConfigPolicy(cfg)
-        signal = ConfigSignal(cfg, policy)
-        transformer = ConfigTransformer(cfg, policy)
-        return (signal, policy, transformer)
+        interp = ConfigInterpreter(cfg)
+        transformer = ConfigTransformer(cfg)
+        return (interp, transformer)
 
     organize_core.register(name, build)
     return name, cfg
 
 
-# The generic dispatch. The core's default status summary derives its
-# renamed count from the agreed + declared-only counters, which the
-# second-signal cross-check (_agreement) fills; a config domain supplies
-# no second signal, so those counters stay empty and the summary would
-# read 0 renamed. The config adapter instead derives renamed from the
-# plans directly. status <area> and apply --area X read from the plan, so
-# they defer to the core unchanged.
+# The generic dispatch. The config adapter keeps its own status summary
+# and all-areas apply so the "config layout clean" phrasing and the
+# already/untracked counts stay stable; status <area> and apply --area X
+# read from the plan, so they defer to the core unchanged.
 
 
-def _config_status(signal, policy, transformer, mapref):
-    """The state summary for a config triple, built from the generic
+def _config_status(interp, transformer, mapref):
+    """The state summary for a config pair, built from the generic
     seams: renamed is the files a plan would move, conflict is the
     requirement conflicts the relocate command flags, clean is the
-    files already in place. No second-signal cross-check."""
-    policy.load(mapref)
+    files already in place."""
+    interp.load(mapref)
     renamed, conflict, rows = 0, 0, []
     scope = transformer.scope()
-    placed = organize_core._place_all(signal, policy, transformer)
+    placed = organize_core._desires(interp, transformer)
     placed_files = set(placed)
-    for t in policy.ordered_targets():
-        files = organize_core._files_for(signal, policy, transformer, t)
+    for t in interp.ordered_targets():
+        files = organize_core._files_for(interp, transformer, t)
         if not files:
             continue
         plan = transformer.plan(t, files)
@@ -582,7 +589,7 @@ def _config_status(signal, policy, transformer, mapref):
     untracked = len(scope - placed_files)
     clean_layout = renamed == 0 and conflict == 0
     banner = "(layout clean)" if clean_layout else "(layout not clean)"
-    print(f"organize status against {policy.name()}   {banner}\n")
+    print(f"organize status against {interp.name()}   {banner}\n")
     print(f"renamed    {renamed:<5} will move on apply")
     print(f"conflict   {conflict:<5} cannot auto-apply "
           "(requirement: a check blocks the move)")
@@ -595,20 +602,18 @@ def _config_status(signal, policy, transformer, mapref):
           "validated pass; status <area> shows one area's move set.")
 
 
-def _config_apply_auto(signal, policy, transformer, mapref):
-    """All-areas apply for a config triple. Collect every area's plan,
+def _config_apply_auto(interp, transformer, mapref):
+    """All-areas apply for a config pair. Collect every area's plan,
     then run them as one operation through the generic apply_auto, so a
     cross-area reference repoints against the whole batch and validate
-    sees the fully moved tree. Routes through the transformer directly,
-    holding no conflict set because a config domain has no second
-    signal."""
-    policy.load(mapref)
+    sees the fully moved tree. Routes through the transformer directly."""
+    interp.load(mapref)
     blockers = transformer.preflight()
     if blockers:
         sys.exit("organize apply --unconflicted: " + "; ".join(blockers))
     plans = []
-    for t in policy.ordered_targets():
-        files = organize_core._files_for(signal, policy, transformer, t)
+    for t in interp.ordered_targets():
+        files = organize_core._files_for(interp, transformer, t)
         if not files:
             continue
         plan = transformer.plan(t, files)
@@ -629,10 +634,10 @@ def _config_apply_auto(signal, policy, transformer, mapref):
 
 
 def dispatch(name, mapref, argv):
-    """The launcher entry point for a config triple. Route the two
+    """The launcher entry point for a config pair. Route the two
     git-coupled commands (the default status summary and
     apply --unconflicted) through the generic seams; defer every other
-    command to the core, which handles a config triple unchanged.
+    command to the core, which handles a config pair unchanged.
 
     argv is the argument list with --config already removed. A --map
     override, if present, replaces the config's map."""
@@ -644,16 +649,16 @@ def dispatch(name, mapref, argv):
     auto = "--unconflicted" in probe
     words = [a for a in probe if not a.startswith("-")]
     cmd = words[0] if words else "status"
-    signal, policy, transformer = organize_core.get_triple(name)
+    interp, transformer = organize_core.get_triple(name)
     flags = ("--by-area", "--conflicts", "--exit-code")
     named_area = area or (words[1] if cmd == "status" and len(words) > 1
                           else None)
     if cmd == "status" and named_area is None \
             and not any(f in probe for f in flags):
-        _config_status(signal, policy, transformer, mapref)
+        _config_status(interp, transformer, mapref)
         return
     if cmd == "apply" and auto:
-        _config_apply_auto(signal, policy, transformer, mapref)
+        _config_apply_auto(interp, transformer, mapref)
         return
     # Every other command (status <area>, apply --area X, status
     # --by-area) reads from the plan, so the core handles it with no

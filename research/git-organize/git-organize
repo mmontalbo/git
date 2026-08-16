@@ -43,22 +43,16 @@ def main():
     mapref = os.path.join(_HERE, "git-layout.map")
     cfg_path, sys.argv[1:] = _take_config(sys.argv[1:])
     if cfg_path is not None:
-        # Load the config triple and dispatch it through the config
+        # Load the config pair and dispatch it through the config
         # adapter, which routes the git-coupled commands (the default
-        # status summary and apply --unconflicted) around the git-c-wired
-        # cross-check and defers the rest to the core. The config supplies
+        # status summary and apply --unconflicted) through the generic
+        # seams and defers the rest to the core. The config supplies
         # every domain string; the launcher stays domain-neutral.
         name, cfg = config_adapter.register_config(cfg_path)
         config_adapter.dispatch(name, cfg["map"], sys.argv[1:])
         return
     _load_git()
-    # The cohesion triple, when present, is git-c's second signal for the
-    # placement cross-check; the launcher names it, the core does not. The
-    # label is the word the status summary uses for that signal.
-    group = (organize_core.get_triple("cohesion")[0]
-             if organize_core.registered("cohesion") else None)
-    organize_core.main(default_triple="git-c", default_mapref=mapref,
-                       group_signal=group, group_label="the includes")
+    organize_core.main(default_triple="git-c", default_mapref=mapref)
 
 
 if __name__ == "__main__":

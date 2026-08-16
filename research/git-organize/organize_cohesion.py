@@ -1,10 +1,12 @@
-"""organize cohesion adapter: a Signal and Policy from include cohesion.
+"""organize cohesion adapter: an Interpreter from include cohesion.
 
-A second component that reuses the git Transformer unchanged. The Signal
-labels each root .c file by the include-cohesion cluster it lands in;
-the Policy treats a cluster name as its own target directory. This
-proves the Signal and Policy seams accept a different label vocabulary
+A second component that reuses the git Transformer unchanged. The
+interpreter labels each root .c file by the include-cohesion cluster it
+lands in and treats a cluster name as its own target directory. This
+proves the Interpreter seam accepts a different label vocabulary
 (cluster names, not git area tokens) over the same transformer cascade.
+It runs as a primary interpreter under --triple cohesion; it is no
+longer a cross-check.
 
 The cohesion measure is reused from research/lib-reorg/cohlib.py by
 import. The agglomerative clustering is ported here as a compact
@@ -18,7 +20,7 @@ from collections import defaultdict
 from itertools import combinations
 
 import organize_core
-from organize_core import Vote, Placement
+from organize_core import Desire
 from organize_git import GitTransformer
 
 _LIBREORG = os.path.join(
@@ -111,32 +113,36 @@ def _cluster(inc):
     return [(name(mem[g]), mem[g], cohv.get(g, 0.0)) for g in groups]
 
 
-class CohesionSignal:
-    """Label each root .c file by the include-cohesion cluster it lands
-    in. Headers get no vote; the transformer pairs a header when its
-    source moves, exactly as with the git signal. The label vocabulary
-    is cluster names, a file stem, not the git area tokens."""
+class CohesionInterpreter:
+    """State each root .c file's Desire from the include-cohesion cluster
+    it lands in; the discovered cluster name is the proposed directory,
+    so the placement is close to identity.
 
-    def label(self, scope):
-        inc = cohlib.distinctive(cohlib.read_includes())
-        votes = {}
-        for name, members, coh in _cluster(inc):
-            conf = min(1.0, coh / BAND)
-            for f in members:
-                if f in scope:
-                    votes[f] = Vote(dist={name: 1.0}, primary=name,
-                                    confidence=conf,
-                                    status="labelled")
-        return votes
-
-
-class ClusterPolicy:
-    """The discovered cluster name is the proposed directory, so this
-    policy is close to identity. It declares no map and no overrides;
-    the clusters are the targets."""
+    Headers get no vote; the transformer pairs a header when its source
+    moves, exactly as with the git interpreter. The label vocabulary is
+    cluster names (a file stem), not the git area tokens. It declares no
+    map and no overrides; the clusters are the targets."""
 
     def __init__(self):
-        self._targets = []           # cluster names seen in place()
+        self._clusters = None        # cached [(name, members, coh)]
+
+    def _cluster_list(self):
+        """The cohesion clusters, computed once and cached. Independent
+        of scope, so ordered_targets is stable before desires runs."""
+        if self._clusters is None:
+            inc = cohlib.distinctive(cohlib.read_includes())
+            self._clusters = _cluster(inc)
+        return self._clusters
+
+    def desires(self, scope):
+        """{FileId: Desire} for each root .c file the cohesion cluster
+        labels; place is the cluster name, hold stays None."""
+        out = {}
+        for name, members, coh in self._cluster_list():
+            for f in members:
+                if f in scope:
+                    out[f] = Desire(place=name, hold=None)
+        return out
 
     def load(self, mapref):
         return None                  # the clusters are the map
@@ -144,28 +150,18 @@ class ClusterPolicy:
     def name(self):
         return "cohesion clusters"
 
-    def overrides(self, scope):
-        return {}
-
-    def place(self, f, vote, override):
-        if vote is None or vote.primary is None:
-            return Placement(target=None, label=None, reason="none")
-        if vote.primary not in self._targets:
-            self._targets.append(vote.primary)
-        return Placement(target=vote.primary, label=vote.primary,
-                         reason="cohesion")
-
     def target_of(self, label):
         return label                 # the cluster name is the directory
 
     def ordered_targets(self):
-        """Cluster names for stable output. place() sees files in an
-        unordered scope, so sort by name for a deterministic order."""
-        return sorted(set(self._targets))
+        """Cluster names for stable output, sorted by name for a
+        deterministic order. Derived from the cached cluster list, so it
+        is populated before desires runs."""
+        return sorted({name for name, _m, _c in self._cluster_list()})
 
 
 def _make_cohesion():
-    return (CohesionSignal(), ClusterPolicy(), GitTransformer())
+    return (CohesionInterpreter(), GitTransformer())
 
 
 organize_core.register("cohesion", _make_cohesion)

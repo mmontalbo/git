@@ -48,18 +48,21 @@ link to a moved file is stale), sometimes both. The core counts
 organized vs unorganized vs untracked and never names the transformation
 kind; the project surfaces it (a rename, a patch) and any reasoning. A
 conflict is an unorganized file the tool cannot auto-apply, carrying the
-project's reason: a hold attribute, the transformer's block, or a second
-interpreter's place differing (X vs Y). apply performs the unorganized
-plan and holds the conflicts. The plan is the source of truth for what
-is unorganized, so one interpreter suffices to be correct.
+project's reason: a hold attribute or the transformer's block. apply
+performs the unorganized plan and holds the conflicts. The plan is the
+source of truth for what is unorganized. One interpreter suffices: the
+reconciler reads a single desired placement per file and converges the
+tree to it, so the core carries no cross-check between signals.
 
 ## Interpreter interface
 
     desires(scope) -> {file: Desire}
         Read the effective attributes for each file and return its
-        Desire. The primary interpreter drives placement; an optional
-        second interpreter is the cross-check whose disagreement is a
-        conflict.
+        Desire. One interpreter drives placement. A project that wants
+        extra organizing heuristics expresses them as its own organize.*
+        attributes that this interpreter reads into the Desire (a hold,
+        or a different place). The core never grows a second seam for
+        them.
 
     resolution(f, place) -> [str]
         The human instruction that records "f belongs in place": for
@@ -118,6 +121,33 @@ arithmetic, no language. Commands stay status (the plan and the drift)
 and apply (converge), with --by-area, --conflicts, --exit-code as views
 of the same counts.
 
+## Apply: safe operations first
+
+apply emits a sequence of git operations and runs only the provably safe
+subset, holding the rest. The safe subset is the git verbs that always
+apply and preserve content: an R100 rename to a free target (a clean
+tracked file, a destination that does not exist, the blob unchanged
+because a moved file is never edited), and a reference edit only when it
+is unambiguous (a build-list line with one match). git rm and any
+content-creating add stay out, so the output tree keeps the input's blob
+OIDs, only at new paths, except the reference files patched in place. The
+result is an ordinary staged commit, reviewed with git diff and reverted
+with git reset; the renames are R100, so history follows.
+
+The unit of safety is a file's whole transformation, the rename plus
+every reference edit it entails, not the rename alone. A file whose
+entailed edit is not provably safe is held whole, so apply never leaves a
+half-moved, unbuildable tree. conflict therefore starts as "not provably
+in the safe subset"; the finer split (a git-mechanical reject a human
+resolves, versus a policy that forbids the move) is a later refinement.
+
+A requirement block is such a policy: a program cannot relocate because
+its name derives from its path. Once that block is a policy attribute (a
+program desires place = root), its command sequence is empty and it reads
+clean, not conflict, so the separate requirement-conflict category
+collapses into the policy. The generic core keeps only the mechanical
+notion of a conflict; the domain expresses its constraints as attributes.
+
 ## git's instance
 
 Attributes (namespaced; git attribute names allow [-A-Za-z0-9_.], so a
@@ -129,8 +159,9 @@ config-style namespace is legal, attr.c:199):
 
 Interpreter: the git plugin. subsystem from the modal commit-subject
 prefix or a declared organize.subsystem; role from the include graph;
-pin from Makefile membership; internal headers ride their source. A
-second interpreter (include cohesion) supplies the cross-check.
+pin from Makefile membership; internal headers ride their source.
+Include cohesion is an advisory lens a maintainer runs as a separate
+view while authoring the attributes, not a core cross-check.
 
 Transformer: git mv, repoint the Makefile and meson build lists, run
 make as the validator, reset on failure.
