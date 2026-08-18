@@ -1,0 +1,41 @@
+# Git component layout for the reference labeler, in two sections.
+#
+# [tokens] lists, per component directory, the commit-subject prefix tokens
+# that belong to it. A file is placed by the "area:" prefix its own commits
+# carry most often, mined with git log --follow. The area its authors name need
+# not be its filename (ws.c files under whitespace, diffcore-pickaxe.c under
+# pickaxe). The fine tokens consolidate into a component; that consolidation is
+# the project knowledge a mechanical pass cannot supply.
+#
+# [names] lists the filename token, the name before the first hyphen. A file
+# whose dominant prefix is a broad area name that also swept its neighbors
+# (commit, config, refs, ...), or whose commits name no area, is placed by
+# its filename instead. Program sources stay at the root.
+[tokens]
+odb: blob commit-slab fsck hash loose match-trees object object-file object-file-convert object-name odb oidmap oidset oidtree replace-object replace_object sha1-array sha1-lookup sha1_name tag tmp-objdir tree tree-walk
+refs: ls-refs pack-refs ref-filter reflog reflog-walk refspec worktree
+pack: bloom chunk-format commit-graph delta-islands diff-delta midx pack-bitmap pack-bitmap-write pack-check pack-mtimes pack-objects pack-revindex pack-write packfile patch-delta prune prune-packed pseudo-merge reachable repack repack-promisor server-info
+diff: combine-diff diff diff-merges diffcore-break diffcore-delta diffcore-order diffcore-rename patch-ids pickaxe range-diff tree-diff userdiff xdiff-interface
+merge: fmt-merge-msg ll-merge merge merge-blobs merge-ort rerere
+revision: bisect blame commit-reach decorate format-patch graph line-log line-range list list-objects list-objects-filter list-objects-filter-options pretty revision shallow
+index: cache-tree checkout dir dir-iterator entry fsmonitor fsmonitor--daemon fsmonitor-ll fsmonitor-settings name-hash parallel-checkout pathspec preload-index read-cache resolve-undo sparse-index split-index statinfo symlinks unpack-trees wt-status
+setup: alias hook ident repository setup version
+convert: attr convert whitespace
+transport: bundle bundle-uri cat-file connect connected fetch-negotiator fetch-pack http pkt-line promisor-remote protocol protocol-caps remote remote-curl send-pack serve sideband transport transport-helper upload-pack walker
+notes: notes notes-cache notes-merge
+submodule: submodule submodule-config
+archive: archive archive-tar archive-zip
+[names]
+odb: object odb oid oidmap oidset oidtree loose blob tag commit tree replace match tmp fsck hash sha1dc streaming
+refs: refs refspec reflog ref ls worktree
+pack: pack packfile midx delta prune reachable server bloom chunk pseudo repack
+diff: diff diffcore combine range userdiff xdiff patch pickaxe
+merge: merge rerere fmt
+revision: revision log bisect shallow blame line graph decorate list pretty
+index: read cache split sparse unpack name preload resolve statinfo entry parallel dir pathspec checkout symlinks fsmonitor wt
+setup: config setup environment repository repo ident alias version hook
+convert: attr convert ws whitespace
+transport: transport remote connect connected send fetch upload walker http protocol serve pkt sideband bundle promisor
+notes: notes
+submodule: submodule
+archive: archive
