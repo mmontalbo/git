@@ -1,6 +1,9 @@
 #include "git-compat-util.h"
 #include "organize.h"
 #include "gitorganize-format.h"
+#include "labeler-protocol.h"
+#include "organizer-protocol.h"
+#include "config.h"
 #include "gettext.h"
 #include "pathspec.h"
 #include "quote.h"
@@ -12,6 +15,19 @@
 #include "strvec.h"
 #include "wrapper.h"
 #include "wt-status.h"
+
+/* The configured command organize.<key> (labeler or organizer), or NULL. */
+static const char *organize_command(struct repository *repo, const char *key)
+{
+	struct strbuf k = STRBUF_INIT;
+	const char *cmd;
+
+	strbuf_addf(&k, "organize.%s", key);
+	if (repo_config_get_string_tmp(repo, k.buf, &cmd))
+		cmd = NULL;
+	strbuf_release(&k);
+	return cmd;
+}
 
 /*
  * The [layout] rule whose directory equals `path`'s directory, or NULL when
@@ -114,6 +130,7 @@ static void add_move(struct organize_plan *plan, const char *src,
 	m->src = xstrdup(src);
 	m->dst = dst;
 	m->rule_value = xstrdup(value);
+	m->skip_reason = NULL;
 }
 
 void organize_plan_build(struct repository *repo, struct organize_plan *plan)
@@ -202,25 +219,66 @@ static int worktree_dirty(struct repository *repo)
 	return has_unstaged_changes(repo, 0) || has_uncommitted_changes(repo, 0);
 }
 
-/* Map each move's src to its dst, in `dst_of`. */
+/* Map each standing (non-rejected) move's src to its dst, in `dst_of`. */
 static void plan_dst_map(struct organize_plan *plan, struct string_list *dst_of)
 {
 	for (size_t i = 0; i < plan->moves_nr; i++)
-		string_list_insert(dst_of, plan->moves[i].src)->util =
-			plan->moves[i].dst;
+		if (!plan->moves[i].skip_reason)
+			string_list_insert(dst_of, plan->moves[i].src)->util =
+				plan->moves[i].dst;
 }
 
-/* A content-identical rename entry per move. */
-static void build_rename_patch(struct organize_plan *plan, struct strbuf *out)
+/*
+ * Emit `<prefix><name>` for a `diff --git` header the way git's diff does: when
+ * the prefixed path needs C-quoting, wrap the whole unit in one pair of double
+ * quotes ("a/<escaped>") rather than quoting the name alone. An ordinary path
+ * is emitted verbatim, so the header is byte-identical to git's diff.
+ */
+static void add_diff_git_path(struct strbuf *out, const char *prefix,
+			      const char *name)
+{
+	if (quote_c_style(prefix, NULL, NULL, CQUOTE_NODQ) ||
+	    quote_c_style(name, NULL, NULL, CQUOTE_NODQ)) {
+		strbuf_addch(out, '"');
+		quote_c_style(prefix, out, NULL, CQUOTE_NODQ);
+		quote_c_style(name, out, NULL, CQUOTE_NODQ);
+		strbuf_addch(out, '"');
+	} else {
+		strbuf_addstr(out, prefix);
+		strbuf_addstr(out, name);
+	}
+}
+
+/*
+ * A content-identical rename entry per standing move the organizer did not
+ * claim. A claimed move is one the organizer renames itself, with content
+ * changes, so git leaves that entry to the organizer's patch.
+ */
+static void build_rename_patch(struct organize_plan *plan,
+			       struct string_list *claimed, struct strbuf *out)
 {
 	for (size_t i = 0; i < plan->moves_nr; i++) {
 		struct organize_move *m = &plan->moves[i];
 
-		/* These are tracked_files source paths, which need no quoting. */
-		strbuf_addf(out, "diff --git a/%s b/%s\n", m->src, m->dst);
+		if (m->skip_reason || string_list_has_string(claimed, m->src))
+			continue;
+		/*
+		 * C-quote the paths the way git's diff does, so a byte special
+		 * to the patch format (newline, quote, ...) is escaped. An
+		 * ordinary path passes through unquoted, so this is byte-for-
+		 * byte git's rename header.
+		 */
+		strbuf_addstr(out, "diff --git ");
+		add_diff_git_path(out, "a/", m->src);
+		strbuf_addch(out, ' ');
+		add_diff_git_path(out, "b/", m->dst);
+		strbuf_addch(out, '\n');
 		strbuf_addstr(out, "similarity index 100%\n");
-		strbuf_addf(out, "rename from %s\n", m->src);
-		strbuf_addf(out, "rename to %s\n", m->dst);
+		strbuf_addstr(out, "rename from ");
+		quote_c_style(m->src, out, NULL, 0);
+		strbuf_addstr(out, "\nrename to ");
+		quote_c_style(m->dst, out, NULL, 0);
+		strbuf_addch(out, '\n');
 	}
 }
 
@@ -235,7 +293,8 @@ static int git_apply_index(const char *patch, size_t len)
 
 /*
  * Repoint each carved file's [labels] line to its new path, carrying its labels
- * unchanged: only its location changes. Returns nonzero when [labels] changed.
+ * unchanged: only its location changes. A rejected move stays put and keeps its
+ * line. Returns nonzero when [labels] changed.
  */
 static int repoint_moved_declarations(struct organize_plan *plan)
 {
@@ -278,19 +337,32 @@ static int repoint_moved_declarations(struct organize_plan *plan)
 void organize_plan_apply(struct repository *repo, struct organize_plan *plan)
 {
 	struct strbuf patch = STRBUF_INIT;
+	struct strbuf combined = STRBUF_INIT;
+	struct string_list claimed = STRING_LIST_INIT_DUP;
+	const char *organizer;
 
 	if (worktree_dirty(repo))
 		die(_("organize apply: the worktree has uncommitted changes; "
 		      "commit or stash first"));
 
+	organizer = organize_command(repo, "organizer");
+	if (organizer)
+		run_organizer(organizer, plan, &patch, &claimed);
+
 	/*
-	 * Content-identical renames for every move, applied as one
-	 * git apply --index transaction, so a failure leaves the tree untouched.
+	 * Content-identical renames for every unclaimed move, then the
+	 * organizer's edits (when any), apply as one git apply --index: git
+	 * checks the whole patch before it writes, so a patch that does not
+	 * apply changes nothing. The [labels] update in .gitorganize follows the
+	 * apply and is staged separately rather than as part of it.
 	 */
-	build_rename_patch(plan, &patch);
-	if (patch.len && git_apply_index(patch.buf, patch.len))
+	build_rename_patch(plan, &claimed, &combined);
+	if (patch.len)
+		strbuf_addbuf(&combined, &patch);
+	if (combined.len && git_apply_index(combined.buf, combined.len))
 		die(_("organize apply: the change does not apply cleanly; "
 		      "nothing was changed"));
+	strbuf_release(&combined);
 
 	if (repoint_moved_declarations(plan)) {
 		struct child_process add = CHILD_PROCESS_INIT;
@@ -302,7 +374,71 @@ void organize_plan_apply(struct repository *repo, struct organize_plan *plan)
 			      "restore with git reset --hard"));
 	}
 
+	string_list_clear(&claimed, 0);
 	strbuf_release(&patch);
+}
+
+void organize_run_labeler(struct repository *repo, int reseed)
+{
+	struct organize_ctx ctx = ORGANIZE_CTX_INIT;
+	struct string_list labeled = STRING_LIST_INIT_DUP;
+	struct string_list records = STRING_LIST_INIT_DUP;
+	struct child_process add = CHILD_PROCESS_INIT;
+	const char *cmd;
+
+	organize_ctx_load(repo, &ctx);
+	cmd = organize_command(repo, "labeler");
+	if (!cmd)
+		die(_("organize: organize.labeler is not set"));
+	run_labeler(cmd, &ctx.scoped_files, &labeled);
+
+	/*
+	 * A [labels] line for every scoped_files file. A file already recorded
+	 * keeps its line: the recorded placement is authoritative, so a decision
+	 * made by hand or in an earlier run survives, and the labeler only seeds a
+	 * file it has not yet placed. With reseed, take the labeler's fresh label
+	 * for every file instead, discarding the recorded placements. Walking the
+	 * scoped_files set keeps a new, unrecorded source visible either way. The
+	 * loop below then preserves every placed file already listed.
+	 */
+	for (size_t i = 0; i < ctx.scoped_files.nr; i++) {
+		const char *path = ctx.scoped_files.items[i].string;
+		struct string_list_item *rec =
+			string_list_lookup(&ctx.gitorg.records, path);
+		struct string_list_item *it;
+
+		if (rec && !reseed) {
+			string_list_insert(&records, path)->util =
+				xstrdup((const char *)rec->util);
+			continue;
+		}
+		if (layout_dir_rule(&ctx.gitorg, path))
+			continue;	/* placed by its directory; no line needed */
+		it = string_list_lookup(&labeled, path);
+		string_list_insert(&records, path)->util =
+			xstrdup(it ? (const char *)it->util : "");
+	}
+	for (size_t i = 0; i < ctx.gitorg.records.nr; i++) {
+		const char *path = ctx.gitorg.records.items[i].string;
+
+		if (strchr(path, '/') &&
+		    string_list_has_string(&ctx.tracked_files, path) &&
+		    !string_list_has_string(&records, path))
+			string_list_insert(&records, path)->util =
+				xstrdup(ctx.gitorg.records.items[i].util);
+	}
+
+	string_list_clear(&ctx.gitorg.records, 1);
+	ctx.gitorg.records = records;	/* ctx.gitorg owns the fresh [labels] */
+	gitorganize_write(&ctx.gitorg);
+
+	add.git_cmd = 1;
+	strvec_pushl(&add.args, "add", ".gitorganize", NULL);
+	if (run_command(&add))
+		die(_("organize apply --labels-only: staging .gitorganize failed"));
+
+	organize_ctx_release(&ctx);
+	string_list_clear(&labeled, 1);
 }
 
 void organize_plan_release(struct organize_plan *plan)
@@ -311,6 +447,7 @@ void organize_plan_release(struct organize_plan *plan)
 		free(plan->moves[i].src);
 		free(plan->moves[i].dst);
 		free(plan->moves[i].rule_value);
+		free(plan->moves[i].skip_reason);
 	}
 	FREE_AND_NULL(plan->moves);
 	plan->moves_nr = plan->moves_alloc = 0;
