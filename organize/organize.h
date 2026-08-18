@@ -24,21 +24,33 @@ struct repository;
  *   [labels]   the recorded labels, one line per source in scope, `<path> <key>=
  *     <value> ...`, with every label the project defines. Placed files are listed
  *     too, so a placed file's [labels] line records its labels, independently of
- *     the directory name.
+ *     the directory name. A label not named in any rule places no file; it is
+ *     recorded for a reader.
+ *
+ * The labeler and organizer commands live in config, organize.labeler and
+ * organize.organizer.
  *
  *   status  Read [labels] and report the files in scope whose matching rule
  *     names a directory they are not in yet (the moves), the backlog, and a
  *     recorded path that no longer exists.
  *
- *   apply   Perform the moves. A move is a content-identical rename, applied as
- *     one git apply --index transaction. A carved file's [labels] line is
- *     repointed to its new path, carrying its labels.
+ *   apply   Perform the moves. A move is a content-preserving rename. When an
+ *     organizer is configured, hand it the moves; it returns edits to referring
+ *     files as a patch and a reason for any move it declines. Moves and the
+ *     patch apply as one git apply. With no organizer, each move is a plain git
+ *     mv. A carved file's [labels] line is repointed to its new path, carrying
+ *     its labels.
+ *
+ *   apply --labels-only  Run the labeler and write a [labels] line for every
+ *     file in scope, preserving the lines of already placed files. Staged.
+ *     This is the only path that runs a labeler.
  */
 
 struct organize_move {
 	char *src;	/* current path */
 	char *dst;	/* declared path */
-	char *rule_value;	/* the matched rule's value */
+	char *rule_value;	/* the matched rule's value, sent to the organizer */
+	char *skip_reason;	/* why the organizer declined it; NULL when it stands */
 };
 
 struct organize_plan {
@@ -67,10 +79,20 @@ struct organize_plan {
 void organize_plan_build(struct repository *repo, struct organize_plan *plan);
 
 /*
- * Perform the plan: apply the moves as one content-identical-rename
- * transaction; the result is staged. Requires a clean worktree.
+ * Perform the plan: consult the organizer when one is configured, then apply
+ * the standing moves and the organizer's patch; the result is staged.
+ * Requires a clean worktree. Records each declined move's reason in the plan.
  */
 void organize_plan_apply(struct repository *repo, struct organize_plan *plan);
+
+/*
+ * Fill the [labels] record for every file in scope, staged. A file already
+ * recorded keeps its line (the recorded placement is authoritative); an
+ * unrecorded file is seeded from the labeler (its labels, or empty when the
+ * labeler leaves it unplaced). With reseed, re-derive every line from the
+ * labeler, discarding the recorded placements.
+ */
+void organize_run_labeler(struct repository *repo, int reseed);
 
 void organize_plan_release(struct organize_plan *plan);
 
