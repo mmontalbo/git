@@ -11,6 +11,7 @@ SYNOPSIS
 [verse]
 'git organize status'
 'git organize apply'
+'git organize apply' --labels-only
 
 
 DESCRIPTION
@@ -31,18 +32,36 @@ rule it satisfies places it; a file matching no rule is the backlog.
 source in scope, `<path> <key>=<value> ...`, with every label the project
 defines. A placed file is listed too, so its `[labels]` line records its
 labels, independently of the directory name. Only a label named in a rule
-places a file.
+places a file; a label named in no rule places nothing and is recorded for a
+reader.
+
+The labeler and organizer live in config: `organize.labeler` and
+`organize.organizer`. A label is a key and value the labeler attaches to a
+file. `git organize apply --labels-only` runs the labeler and records the
+labels. A file is out of place when its matching rule names a directory it
+is not in yet.
 
 `git organize status` reads `[labels]` and reports the out-of-place files,
 the backlog, a file in scope that `[labels]` does not record, and a
-recorded path that no longer exists. It runs nothing and
-changes nothing.
+recorded path that no longer exists. status runs no
+configured command and changes nothing.
 
 `git organize apply` reconciles the tree. It moves each out-of-place file
-into its directory. A move is a content-identical rename, so `git log
---follow` and `git blame` track the file exactly. apply stages the result
-and repoints each carved file's `[labels]` line to its new path, carrying
-its labels. It commits nothing. apply requires a clean worktree.
+into its directory. A move that git organize makes on its own is a
+content-identical rename, so `git log --follow` and `git blame` track the
+file exactly. apply stages the result and repoints each carved file's
+`[labels]` line to its new path, carrying its labels. It commits nothing.
+
+A move can require an edit elsewhere, such as repointing a reference in
+another file, or an edit to the moved file itself, such as repointing its
+own references. A project supplies those edits with an organizer, its
+`organize.organizer` command. apply hands the organizer its
+moves. The organizer returns a patch of the edits and, for any move it
+cannot complete, a reason to skip it. When the organizer edits a file as it
+moves, git's rename detection matches it while its similarity stays above
+the rename threshold. apply applies the moves and the patch as one
+transaction. With no organizer configured, apply moves the files and makes
+no other edit.
 
 
 COMMANDS
@@ -52,13 +71,49 @@ status::
 	Report the files whose placement value names a directory they are not
 	in (the moves), the backlog (recorded files with no matching
 	rule), a file in scope that `[labels]` does not record, and a recorded
-	path that no longer exists. Changes nothing.
+	path that no longer exists. Runs no configured
+	command and changes nothing.
 
 apply::
 	Move each out-of-place file into its directory as a content-identical
-	rename, repoint each carved file's `[labels]` line to its new path, and
-	stage the result. apply requires a clean worktree, so the change can be
-	discarded as a whole.
+	rename, apply the organizer's edits, repoint each carved file's
+	`[labels]` line to its new path, and stage the result. apply requires a
+	clean worktree, so the change can be discarded as a whole.
++
+With `--labels-only`, apply instead runs the labeler and writes a `[labels]`
+line for every root file in scope, preserving the lines of already placed
+files, and stages the file. This is the only path that runs a labeler; `git
+organize apply` without `--labels-only` and `git organize status` never do.
+
+
+OPTIONS
+-------
+
+--labels-only::
+	With apply, run the labeler and record the labels; move no file.
+
+
+CONFIGURATION
+-------------
+organize.labeler::
+	The command that records the labels. `git organize apply
+	--labels-only` runs it over the root files in scope. It writes one
+	record per file on its standard output: the path, a NUL, its
+	space-separated `key=value` labels, a NUL. A file in scope with no
+	record is unrecorded, reported apart from the backlog. Use user or
+	system config for this setting; do
+	not take it from a repository file.
+
+organize.organizer::
+	The command that returns move edits. apply runs it over the moves. It
+	reads the pending moves on its standard input and returns a patch and
+	any skip reasons; see PROTOCOL. Optional. Without it, apply performs the
+	moves and makes no other edit. Use user or system config for this
+	setting; do not take it from a repository file.
+
+The labeler and organizer are trusted, the way a clean or smudge filter or a
+hook is trusted. Set them in user or system config, so a repository you clone
+cannot supply its own.
 
 
 FILES
@@ -71,10 +126,23 @@ FILES
 	file takes the directory of the first rule its labels satisfy, and a
 	file matching no rule is the backlog. `[labels]` holds the recorded
 	labels, one `<path> <key>=<value> ...` line per source in scope,
-	including placed files. The project writes `[scope]` and `[layout]`; the
-	move apply repoints a carved file's line. A `#` line is a comment; git
-	organize rewrites the file whole, keeping the hand-authored `[scope]`
-	and `[layout]` verbatim.
+	including placed files. The project writes `[scope]` and `[layout]`;
+	`git organize apply --labels-only` writes `[labels]`, and the move apply
+	repoints a carved file's line. A `#` line is a comment; git organize
+	rewrites the file whole, keeping the hand-authored `[scope]` and
+	`[layout]` verbatim.
+
+
+PROTOCOL
+--------
+apply speaks a line protocol with the organizer over a pipe. It writes the
+version line `git-organize 1 organize`, then a `move <src> <dst> <label>`
+line per pending move, with C-quoted paths. The organizer replies with the
+same version line. For each declined move, it writes `reject <src>
+<reason>`. It may then write `patch`, followed by a git patch that runs to
+the end of its output. The patch may edit referring files and may rename a
+moved file as it edits it, but it must not add, delete, or copy files, and
+any rename must match a planned move.
 
 
 GIT

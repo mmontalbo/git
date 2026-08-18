@@ -1,0 +1,19 @@
+# git's component layout for the reference labeler: "directory: tokens".
+# Each line names a component directory and the name tokens that belong to it.
+# A .c source's token is the part of its name before the first hyphen; the map
+# resolves that token to the directory. The project declares this map; the
+# labeler applies it.
+odb: object odb oid oidmap oidset oidtree loose blob tag commit tree replace match tmp fsck hash sha1dc streaming
+refs: refs refspec reflog ref ls worktree
+pack: pack packfile midx delta prune reachable server bloom chunk pseudo repack
+diff: diff diffcore combine range userdiff xdiff patch pickaxe
+merge: merge rerere fmt
+revision: revision log bisect shallow blame line graph decorate list pretty
+index: read cache split sparse unpack name preload resolve statinfo entry parallel dir pathspec checkout symlinks fsmonitor wt
+setup: config setup environment repository repo ident alias version hook
+convert: attr convert ws whitespace
+transport: transport remote connect connected send fetch upload walker http protocol serve pkt sideband bundle promisor
+notes: notes
+submodule: submodule
+archive: archive
+sequencer: sequencer rebase replay apply add reset branch mailinfo mailmap

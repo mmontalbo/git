@@ -1,0 +1,120 @@
+#!/usr/bin/perl
+# Reference organizer for git organize(1). This is a demonstration; a real
+# project supplies its own.
+#
+# When a .c source moves into a component directory, its build object moves
+# with it; when a .h header moves, every #include of it must be repointed to
+# the new path (git builds with -I. only, so an include names the full path).
+# The organizer reads the pending moves and returns a patch that repoints:
+#
+#   Makefile / meson.build   the moved object / source path
+#   #include "foo.h"         -> #include "dir/foo.h" in every includer
+#
+# An include may name the header bare or by a ../ path (from a subdirectory),
+# and may write "#include" or "# include"; the repoint names the full path,
+# which -I. resolves from any directory. An includer that itself moves is
+# renamed-with-modification (its rename plus the repoint); a stationary
+# includer is edited in place.
+
+use strict;
+use warnings;
+use File::Temp qw(tempdir);
+
+my $protocol = "git-organize 1 organize";
+chomp(my $top = `git rev-parse --show-toplevel`);
+chdir $top or die "organize organizer: cannot cd to $top: $!\n";
+
+sub unquote {
+	my ($s) = @_;
+	return $s unless $s =~ /\A"(.*)"\z/s;
+	my $body = $1;
+	my %esc = (a=>"\a",b=>"\b",t=>"\t",n=>"\n",v=>"\013",f=>"\f",r=>"\r",'"'=>'"','\\'=>'\\');
+	$body =~ s{\\([0-7]{1,3}|.)}{ exists $esc{$1} ? $esc{$1} : $1 =~ /\A[0-7]/ ? chr(oct $1) : $1 }ges;
+	return $body;
+}
+sub shift_token {
+	$_[0] =~ s/\A\s+//;
+	my $tok = $_[0] =~ s/\A("(?:\\.|[^"\\])*")// ? $1 : $_[0] =~ s/\A(\S+)// ? $1
+		: die "organize organizer: malformed move line\n";
+	return unquote($tok);
+}
+sub slurp { open my $fh,'<',$_[0] or die "cannot read $_[0]: $!\n"; local $/; <$fh> }
+
+my @moves;
+while (my $line = <STDIN>) {
+	next unless $line =~ s/\Amove //;
+	my $src = shift_token($line); my $dst = shift_token($line);
+	push @moves, [$src, $dst];
+}
+my %dst_of = map { $_->[0] => $_->[1] } @moves;
+
+# Repoint the two build files for each moved object (headers have none).
+my %build = ('Makefile' => slurp('Makefile'), 'meson.build' => slurp('meson.build'));
+for my $m (@moves) {
+	my ($src, $dst) = @$m;
+	next if $src =~ /\.h\z/;
+	(my $stem = $src) =~ s/\.c\z//;
+	(my $dir = $dst) =~ s{/[^/]*\z}{};
+	$build{'Makefile'} =~ s{(^|\s)\Q$stem\E\.(sp|s|o)(?![A-Za-z0-9])}{$1$dir/$stem.$2}mg;
+	$build{'meson.build'} =~ s{'\Q$src\E'}{'$dst'}g;
+}
+
+# Collect #include repoints: for each moved header, edit every includer.
+my %repoint;   # file -> list of [src, dst]
+for my $m (@moves) {
+	my ($src, $dst) = @$m;
+	next unless $src =~ /\.h\z/;
+	(my $re = $src) =~ s/\./\\./g;
+	my $pat = '#[[:blank:]]*include[[:blank:]]*"(\.\./)*' . $re . '"';
+	for my $inc (split /\n/, `git grep -lE '$pat' -- '*.c' '*.h'`) {
+		push @{$repoint{$inc}}, [$src, $dst];
+	}
+}
+
+my $tmp = tempdir(CLEANUP => 1);
+my $patch = '';
+# hunk body (from the first @@) of a diff between $orig and the edited $text
+sub hunk {
+	my ($orig, $text) = @_;
+	open my $o, '>', "$tmp/e" or die; print {$o} $text; close $o;
+	my $d = `git diff --no-index -- "$orig" "$tmp/e"`;
+	my $i = index($d, "\n\@\@");
+	return $i < 0 ? '' : substr($d, $i + 1);
+}
+# Makefile / meson: in-place edits.
+for my $f ('Makefile', 'meson.build') {
+	my $orig = slurp($f);
+	next if $build{$f} eq $orig;
+	my $h = hunk($f, $build{$f});
+	$patch .= "diff --git a/$f b/$f\n--- a/$f\n+++ b/$f\n$h" if $h;
+}
+# Includers: in-place, or rename-with-modification when the includer moves.
+# Repoint an include only when it names the moved root header: a bare name
+# resolves to the root header unless the includer's own directory shadows it
+# (reftable/tree.h shadows a root tree.h); a ../ path resolves to the root
+# only when its ../ count matches the includer's depth.
+for my $f (sort keys %repoint) {
+	my $text = slurp($f);
+	(my $fdir = $f) =~ s{/?[^/]*\z}{};
+	my $depth = $fdir eq '' ? 0 : 1 + ($fdir =~ tr{/}{});
+	for my $e (@{$repoint{$f}}) {
+		my ($src, $dst) = @$e;
+		$text =~ s{^(\h*#\h*include\h*")((?:\.\./)*)\Q$src\E(")}{
+			my ($pre, $dots, $post) = ($1, $2, $3);
+			my $k = $dots =~ tr{/}{};
+			my $shadow = $fdir ne '' && -e "$fdir/$src";
+			my $to_root = $k ? $k == $depth : $depth == 0 || !$shadow;
+			$to_root ? "$pre$dst$post" : "$pre$dots$src$post";
+		}egm;
+	}
+	my $h = hunk($f, $text);
+	next unless $h;
+	if (my $dst = $dst_of{$f}) {
+		$patch .= "diff --git a/$f b/$dst\nrename from $f\nrename to $dst\n--- a/$f\n+++ b/$dst\n$h";
+	} else {
+		$patch .= "diff --git a/$f b/$f\n--- a/$f\n+++ b/$f\n$h";
+	}
+}
+
+print "$protocol\n";
+if (length $patch) { print "patch\n"; print $patch; }

@@ -230,6 +230,8 @@ void write_gitorganize(struct gitorganize *g)
 	else
 		strbuf_addstr(&out, "[layout]\n");
 	strbuf_addstr(&out, "[labels]\n");
+	strbuf_addstr(&out,
+		      "# git organize apply --labels-only regenerates the lines below.\n");
 	for (size_t i = 0; i < g->records.nr; i++) {
 		const char *labels = g->records.items[i].util;
 

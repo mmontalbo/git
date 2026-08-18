@@ -1,0 +1,96 @@
+#!/usr/bin/perl
+# Reference labeler for git organize(1). This is a demonstration; a real
+# project supplies its own.
+#
+# git organize keeps the root *.c and *.h sources in scope. The labeler prints
+# one NUL-terminated label record per file,
+#
+#     <path> \0 component=<dir> role=<role> \0
+#
+# git-layout.map is the grouping the project declares: each component is a
+# directory, and each owns the name tokens that belong to it (odb owns object,
+# blob, tag, tree, and so on). A source is assigned the component that owns its
+# token, the token before the first hyphen of its name, with an override for
+# the few names that mislead. A header follows the same rule as a .c of the
+# same name. A file no component owns is component=? (backlog); programs
+# (Makefile PROGRAM_OBJS) stay at the root.
+#
+# Usage:
+#     labeler                the label records on stdout
+
+use strict;
+use warnings;
+
+my $top = `git rev-parse --show-toplevel`;
+chomp $top;
+chdir $top or die "organize labeler: cannot cd to $top: $!\n";
+(my $here = $0) =~ s{/[^/]*$}{};
+my $mapfile = "$here/git-layout.map";
+
+# The token -> directory map the project declares.
+my %dir_of;
+open my $map, '<', $mapfile or die "organize labeler: cannot read $mapfile: $!\n";
+while (<$map>) {
+	next if /^#/ or !/:/;
+	my ($dir, $tokens) = split /:/, $_, 2;
+	$dir_of{$_} = $dir for split ' ', $tokens;
+}
+close $map;
+
+# A few names whose leading token names the wrong directory (delta compression
+# is not diff; a commit graph is not an object; pack-refs is ref storage, not a
+# packfile). The project names them; a .c and its .h share the name.
+my %override = (
+	'pack-refs'    => 'refs',
+	'commit-graph' => 'pack',
+	'commit-reach' => 'revision',
+	'tree-diff'    => 'diff',
+	'diff-delta'   => 'pack',
+	'patch-delta'  => 'pack',
+);
+
+# The standalone programs, from the Makefile.
+my %is_program;
+open my $mk, '<', 'Makefile' or die "organize labeler: cannot read Makefile: $!\n";
+while (<$mk>) {
+	$is_program{"$1.c"} = 1 if /^\s*PROGRAM_OBJS\s*\+?=\s*(\S+)\.o/;
+}
+close $mk;
+
+# The token before the first hyphen (and any path) of the name, lowercased.
+sub name_token {
+	my ($s) = @_;
+	$s = lc $s;
+	$s =~ s{/.*}{};
+	$s =~ s/-.*//;
+	return $s;
+}
+
+# The override, else the directory that owns the file's name token. A .c and
+# its .h resolve the same way, from the name with its extension removed.
+sub place {
+	my ($f) = @_;
+	(my $stem = $f) =~ s/\.[ch]$//;
+	return $override{$stem} if exists $override{$stem};
+	my $d = $dir_of{ name_token($stem) };
+	return defined $d ? $d : '?';
+}
+
+sub emit {
+	my ($path, $component, $role) = @_;
+	print "$path\0component=$component role=$role\0";
+}
+
+for my $file (split /\n/, `git ls-files ':(glob)*.c'`) {
+	if ($is_program{$file}) {
+		emit($file, '?', 'program');   # a program: it stays at the root
+		next;
+	}
+	emit($file, place($file), 'lib');
+}
+# A header follows its name to the same component as a .c would; the component
+# carries it, or it stays at the root when no component owns the name.
+for my $header (split /\n/, `git ls-files ':(glob)*.h'`) {
+	my $c = place($header);
+	emit($header, $c, $c eq '?' ? 'public' : 'header');
+}
