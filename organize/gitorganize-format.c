@@ -243,6 +243,11 @@ void write_gitorganize(struct gitorganize *g)
 	else
 		strbuf_addstr(&out, "[layout]\n");
 	strbuf_addstr(&out, "[labels]\n");
+	strbuf_addstr(&out,
+		      "# The recorded placement of each source; edit a line to "
+		      "change it.\n"
+		      "# apply --labels-only fills in unrecorded sources; "
+		      "--reseed re-derives all.\n");
 	for (size_t i = 0; i < g->records.nr; i++) {
 		const char *labels = g->records.items[i].util;
 
