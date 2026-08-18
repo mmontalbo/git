@@ -1,0 +1,334 @@
+#!/usr/bin/perl
+# Reference organizer for git organize(1). This is a demonstration; a real
+# project supplies its own.
+#
+# When a .c source moves into a component directory, its build object moves
+# with it; when a .h header moves, every #include of it must be repointed to
+# the new path (the Git build uses -I. only, so an include names the full path).
+# The organizer reads the pending moves and returns a patch that repoints
+# every reference the reorganization leaves stale across Git's build systems:
+#
+#   Makefile                 the moved object list (stem.o/.s/.sp) and any
+#                            bare source name in a list (LOCALIZED_C_CORE)
+#   meson.build              the moved source path
+#   Documentation/Makefile   a moved header named by a ../<name>.h argument
+#   contrib/buildsystems/CMakeLists.txt
+#                            a moved .c named bare or by ${CMAKE_SOURCE_DIR}/
+#   #include "foo.h"         -> #include "dir/foo.h" in every C includer
+#   Documentation/**/*.adoc  a tutorial #include "foo.h" example line
+#
+# An include may name the header bare or by a ../ path (from a subdirectory),
+# and may write "#include" or "# include"; the repoint names the full path,
+# which -I. resolves from any directory. An includer that itself moves is
+# renamed-with-modification (its rename plus the repoint); a stationary
+# includer is edited in place. The .adoc tutorials always name the full new
+# path, so their #include example lines are repointed unconditionally, without
+# the shadow/depth resolution a real C include needs.
+#
+# The organizer declines any move whose references it cannot repoint. It
+# repoints every #include in the tracked C sources and tutorials, except that
+# frozen test data under t/tNNNN/ is deliberately left alone: those files are
+# fixtures (for example a mailinfo.c that git am replays byte for byte), so an
+# apparent #include in them is data, not a reference to follow. Outside those
+# fixtures, the only reference it can miss is one in a build file. After it
+# edits the build files above, it rejects a move whose old path a build file
+# still names (in a build file it does not edit, or in a form its edit missed).
+# That file stays at the root with its references intact, and apply moves the
+# rest.
+#
+# The code runs in four phases:
+#   Phase 1  read the "move <src> <dst>" lines from stdin.
+#   Phase 2  edit the build files as if every move happened, then reject a
+#            move a build file still names (build_edits, names_missing_path).
+#   Phase 3  build the new content of every file the accepted moves change
+#            (build_edits, include_edits, adoc_edits).
+#   Phase 4  emit one diff per changed file: a stationary file in place, an
+#            includer that itself moves as a rename-with-modification.
+# Name matching lives in the boundary regexes ($LB, $LB_ROOT, $RB) and in
+# include_names_root.
+
+use strict;
+use warnings;
+use File::Temp qw(tempdir);
+
+my $protocol = "git-organize 1 organize";
+chomp(my $top = `git rev-parse --show-toplevel`);
+chdir $top or die "organize organizer: cannot cd to $top: $!\n";
+
+sub unquote {
+	my ($s) = @_;
+	return $s unless $s =~ /\A"(.*)"\z/s;
+	my $body = $1;
+	my %esc = (a=>"\a", b=>"\b", t=>"\t", n=>"\n", v=>"\013",
+		f=>"\f", r=>"\r", '"'=>'"', '\\'=>'\\');
+	$body =~ s{\\([0-7]{1,3}|.)}
+		{ exists $esc{$1} ? $esc{$1} : $1 =~ /\A[0-7]/ ? chr(oct $1) : $1 }ges;
+	return $body;
+}
+sub shift_token {
+	$_[0] =~ s/\A\s+//;
+	my $tok = $_[0] =~ s/\A("(?:\\.|[^"\\])*")// ? $1 : $_[0] =~ s/\A(\S+)// ? $1
+		: die "organize organizer: malformed move line\n";
+	return unquote($tok);
+}
+sub slurp { open my $fh,'<',$_[0] or die "cannot read $_[0]: $!\n"; local $/; <$fh> }
+
+# Boundary vocabulary. A moved name matches only as a whole path component, so
+# remote.c never matches inside ls-remote.c and a subdirectory sibling
+# (builtin/remote.c) keeps its prefix and stays. Every name match below flanks
+# the name with these boundaries:
+#   $LB       left: not preceded by a name character
+#   $LB_ROOT  left, root only: also not preceded by a path separator
+#   $RB       right: the name token ends here
+#   $DIRS     an optional ../ and directory prefix before a name
+my $LB      = qr/(?<![A-Za-z0-9_.\-])/;
+my $LB_ROOT = qr/(?<![A-Za-z0-9_.\-\/])/;
+my $RB      = qr/(?![A-Za-z0-9])/;
+my $DIRS    = qr/(?:\.\.?\/)*(?:[A-Za-z0-9_.\-]+\/)*/;
+# bare_re: a bare root name, at a hard left boundary with no path separator, so
+# a subdir sibling (builtin/remote.c) keeps its prefix and stays.
+sub bare_re { my ($name) = @_; qr/$LB_ROOT\Q$name\E$RB/ }
+# cmake_re: a root .c named bare or as ${CMAKE_SOURCE_DIR}/<name> (captured in
+# $1). The name follows the CMAKE variable slash or a hard boundary, never a
+# real subdirectory component, so a nested source (compat/win32/headless.c)
+# stays.
+sub cmake_re {
+	my ($name) = @_;
+	qr/$LB(?:(\$\{CMAKE_SOURCE_DIR\}\/)|$LB_ROOT)\Q$name\E$RB/;
+}
+
+# === Phase 1: read the pending moves ===
+my @moves;
+while (my $line = <STDIN>) {
+	next unless $line =~ s/\Amove //;
+	my $src = shift_token($line); my $dst = shift_token($line);
+	push @moves, [$src, $dst];
+}
+
+# The build files the organizer edits. A moved .c is a build object (Makefile /
+# meson) and may also appear as a bare source name in a Makefile list and as a
+# path in the contrib CMake build. A moved .h is named by a ../ argument in
+# Documentation/Makefile. An absent build file is skipped.
+my @buildfiles = ('Makefile', 'meson.build',
+	'Documentation/Makefile', 'contrib/buildsystems/CMakeLists.txt');
+
+# Edit the build files for the given moves, returning path -> edited content
+# (undef for an absent file).
+sub build_edits {
+	my ($moves) = @_;
+	my %build = map { $_ => (-e $_ ? slurp($_) : undef) } @buildfiles;
+	for my $m (@$moves) {
+		my ($src, $dst) = @$m;
+		(my $stem = $src) =~ s/\.[ch]\z//;
+		(my $dir = $dst) =~ s{/[^/]*\z}{};
+		# A ../ argument in Documentation/Makefile names a moved header
+		# (../fsck.h feeds lint-fsck-msgids.perl). The ../ steps out of
+		# Documentation/ to the root, so ../<dst> names the new path.
+		if ($src !~ /\.c\z/) {
+			my $mk = 'Documentation/Makefile';
+			$build{$mk} =~ s{$LB\.\./\Q$src\E$RB}{../$dst}g
+				if defined $build{$mk};
+			next;
+		}
+		# A moved .c: Makefile object (stem.o/.s/.sp) and meson path.
+		$build{'Makefile'} =~ s{(^|\s)\Q$stem\E\.(sp|s|o)$RB}{$1$dir/$stem.$2}mg
+			if defined $build{'Makefile'};
+		$build{'meson.build'} =~ s{'\Q$src\E'}{'$dst'}g
+			if defined $build{'meson.build'};
+		# A bare source name in a Makefile list (LOCALIZED_C_CORE).
+		if (defined $build{'Makefile'}) {
+			my $re = bare_re($src);
+			$build{'Makefile'} =~ s{$re}{$dst}g;
+		}
+		# The contrib CMake names a .c bare or by ${CMAKE_SOURCE_DIR}/.
+		if (defined $build{'contrib/buildsystems/CMakeLists.txt'}) {
+			my $re = cmake_re($src);
+			$build{'contrib/buildsystems/CMakeLists.txt'} =~
+				s{$re}{($1 // '') . $dst}ge;
+		}
+	}
+	return \%build;
+}
+
+# The paths that exist once every move is made: the tracked files, less each
+# old path, plus each new path.
+my %exists = map { $_ => 1 } split /\n/, `git ls-files`;
+for my $m (@moves) { delete $exists{$m->[0]}; $exists{$m->[1]} = 1; }
+
+# A referenced path token, normalized to a repository-relative path.
+sub norm_ref {
+	my ($t) = @_;
+	while ($t =~ m{\A\.\.?/}) { $t =~ s{\A[^/]*/}{}; }
+	$t =~ s{\A/+}{};
+	return $t;
+}
+# Whether a build file's content still names $old at a path that will not exist
+# once the moves are made. A comment names a file rather than a rule, so it is
+# skipped.
+sub names_missing_path {
+	my ($content, $old) = @_;
+	(my $base = $old) =~ s{.*/}{};
+	for my $line (split /\n/, $content) {
+		next if $line =~ /\A\s*#/;
+		while ($line =~ /$LB($DIRS)\Q$base\E$RB/g) {
+			return 1 unless $exists{norm_ref($1 . $base)};
+		}
+	}
+	return 0;
+}
+
+# === Phase 2: decide the rejects (completeness contract) ===
+# Edit the build files as if every move happened, then a move whose old path a
+# build file still names is one the organizer cannot fully repoint. The search
+# covers the edited build files and every other build file in the tree.
+my $build_for_rejects = build_edits(\@moves);
+my @rejects;
+for my $m (@moves) {
+	my ($src) = @$m;
+	(my $base = $src) =~ s{.*/}{};
+	my $grep = "git grep -lF -e '$base' --"
+		. " '*Makefile' '*.mak' '*meson.build' '*CMakeLists.txt'"
+		. " 'config.mak*' 2>/dev/null";
+	my @files = grep { length } split /\n/, `$grep`;
+	for my $f (@files) {
+		my $edited = $build_for_rejects->{$f};
+		my $content = defined $edited ? $edited : slurp($f);
+		if (names_missing_path($content, $src)) {
+			push @rejects, [$src, "a build file names it and the "
+				. "organizer cannot repoint that reference"];
+			last;
+		}
+	}
+}
+
+my %rejected = map { $_->[0] => 1 } @rejects;
+my @accepted = grep { !$rejected{$_->[0]} } @moves;
+my %dst_of = map { $_->[0] => $_->[1] } @accepted;
+
+# Whether a #include names the moved ROOT header rather than a same-named header
+# in the includer's own directory. A ../ include names the root only when its
+# ../ count matches the includer's depth (one ../ from a depth-1 file reaches
+# the root). A bare include names the root unless a sibling header in the
+# includer's own directory shadows it (reftable/tree.h shadows a root tree.h).
+sub include_names_root {
+	my ($dots, $depth, $fdir, $src) = @_;
+	my $up = $dots =~ tr{/}{};
+	return $up == $depth if $up;
+	return $depth == 0 || !(-e "$fdir/$src");
+}
+
+# For each accepted header move, repoint #include "foo.h" (bare or ../ path) to
+# the full new path in every C includer, keeping an include that resolves to a
+# shadowing local header (per include_names_root) unchanged. Returns includer
+# path -> edited content.
+sub include_edits {
+	my ($moves) = @_;
+	my %repoint;   # includer -> list of [src, dst]
+	for my $m (@$moves) {
+		my ($src, $dst) = @$m;
+		next unless $src =~ /\.h\z/;
+		(my $re = $src) =~ s/\./\\./g;
+		my $pat = '#[[:blank:]]*include[[:blank:]]*"(\.\./)*' . $re . '"';
+		my $grep = "git grep -lE '$pat' --"
+			. " '*.c' '*.h' ':(exclude)t/t[0-9][0-9][0-9][0-9]/**'";
+		for my $inc (split /\n/, `$grep`) {
+			push @{$repoint{$inc}}, [$src, $dst];
+		}
+	}
+	my %edited;
+	for my $f (keys %repoint) {
+		my $text = slurp($f);
+		(my $fdir = $f) =~ s{/?[^/]*\z}{};
+		my $depth = $fdir eq '' ? 0 : 1 + ($fdir =~ tr{/}{});
+		for my $e (@{$repoint{$f}}) {
+			my ($src, $dst) = @$e;
+			$text =~ s{^(\h*#\h*include\h*")((?:\.\./)*)\Q$src\E(")}{
+				include_names_root($2, $depth, $fdir, $src)
+					? "$1$dst$3" : "$1$2$src$3"
+			}egm;
+		}
+		$edited{$f} = $text;
+	}
+	return \%edited;
+}
+
+# For each accepted header move, repoint the tutorial #include "foo.h" example
+# lines. A tutorial always names the full new path, so the repoint is
+# unconditional (no shadow/depth resolution) and matches the #include anywhere
+# in the line, at the start of a code block or in backticks mid-prose. Only the
+# quoted path changes; the #include spelling is left as written. Returns
+# tutorial path -> edited content.
+sub adoc_edits {
+	my ($moves) = @_;
+	my %repoint;   # tutorial -> list of [src, dst]
+	for my $m (@$moves) {
+		my ($src, $dst) = @$m;
+		next unless $src =~ /\.h\z/;
+		(my $re = $src) =~ s/\./\\./g;
+		my $apat = '#[[:blank:]]*include[[:blank:]]*"' . $re . '"';
+		my $grep = "git grep -lE '$apat' --"
+			. " 'Documentation/*.adoc' 'Documentation/**/*.adoc'"
+			. " ':(exclude)t/t[0-9][0-9][0-9][0-9]/**'";
+		for my $doc (split /\n/, `$grep`) {
+			push @{$repoint{$doc}}, [$src, $dst];
+		}
+	}
+	my %edited;
+	for my $f (keys %repoint) {
+		my $text = slurp($f);
+		for my $e (@{$repoint{$f}}) {
+			my ($src, $dst) = @$e;
+			$text =~ s{(#\h*include\h*")\Q$src\E(")}{$1$dst$2}g;
+		}
+		$edited{$f} = $text;
+	}
+	return \%edited;
+}
+
+# === Phase 3: collect the edits over the accepted moves ===
+# A rejected move stays at the root, so its build references, includers, and
+# tutorials keep naming it unchanged.
+my $build = build_edits(\@accepted);
+my $includers = include_edits(\@accepted);
+my $tutorials = adoc_edits(\@accepted);
+
+# === Phase 4: emit the patch ===
+my $tmp = tempdir(CLEANUP => 1);
+# hunk body (from the first @@) of a diff between $orig and the edited $text
+sub hunk {
+	my ($orig, $text) = @_;
+	open my $o, '>', "$tmp/e" or die; print {$o} $text; close $o;
+	my $d = `git diff --no-index -- "$orig" "$tmp/e"`;
+	my $i = index($d, "\n\@\@");
+	return $i < 0 ? '' : substr($d, $i + 1);
+}
+# A file's diff for the emitted patch: a plain hunk when $from and $to match, a
+# rename-with-modification when they differ. An empty $hunk yields no diff.
+sub diff_hunk {
+	my ($from, $to, $hunk) = @_;
+	return '' unless length $hunk;
+	my $out = "diff --git a/$from b/$to\n";
+	$out .= "rename from $from\nrename to $to\n" if $from ne $to;
+	return $out . "--- a/$from\n+++ b/$to\n$hunk";
+}
+
+# One diff per edited file, in a fixed order: build files, then includers, then
+# tutorials. A build file and a tutorial stay in place; an includer that itself
+# moves is a rename-with-modification (its new path is $dst_of{$f}).
+my $patch = '';
+for my $f (@buildfiles) {
+	next unless defined $build->{$f};
+	my $orig = slurp($f);
+	next if $build->{$f} eq $orig;
+	$patch .= diff_hunk($f, $f, hunk($f, $build->{$f}));
+}
+for my $f (sort keys %$includers) {
+	$patch .= diff_hunk($f, $dst_of{$f} // $f, hunk($f, $includers->{$f}));
+}
+for my $f (sort keys %$tutorials) {
+	$patch .= diff_hunk($f, $f, hunk($f, $tutorials->{$f}));
+}
+
+print "$protocol\n";
+print "reject $_->[0] $_->[1]\n" for @rejects;
+if (length $patch) { print "patch\n"; print $patch; }
