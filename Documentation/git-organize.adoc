@@ -1,0 +1,82 @@
+git-organize(1)
+===============
+
+NAME
+----
+git-organize - Reconcile a source tree against a declared layout
+
+
+SYNOPSIS
+--------
+[verse]
+'git organize status'
+'git organize apply'
+
+
+DESCRIPTION
+-----------
+A project declares where each of its files belongs, and git organize
+reports the files that sit elsewhere and, on request, moves them into
+place. As `.gitignore` declares what stays untracked and `.mailmap`
+declares canonical author names, `.gitorganize` declares the directory a
+file belongs in.
+
+`.gitorganize` at the repository root has three sections. `[scope]` names
+the files in scope, one pathspec per line; with no `[scope]` section
+nothing is in scope. `[layout]` is the project's placement map, authored by
+hand: ordered `<label>:<value> = <directory>` rules (`.` is the repository
+root). A file's labels are matched against the rules in order, and the first
+rule it satisfies places it; a file matching no rule is the backlog.
+`[labels]` holds the recorded labels, one line per
+source in scope, `<path> <key>=<value> ...`, with every label the project
+defines. A placed file is listed too, so its `[labels]` line records its
+labels, independently of the directory name. Only a label named in a rule
+places a file.
+
+`git organize status` reads `[labels]` and reports the out-of-place files,
+the backlog, a file in scope that `[labels]` does not record, and a
+recorded path that no longer exists. It runs nothing and
+changes nothing.
+
+`git organize apply` reconciles the tree. It moves each out-of-place file
+into its directory. A move is a content-identical rename, so `git log
+--follow` and `git blame` track the file exactly. apply stages the result
+and repoints each carved file's `[labels]` line to its new path, carrying
+its labels. It commits nothing. apply requires a clean worktree.
+
+
+COMMANDS
+--------
+
+status::
+	Report the files whose placement value names a directory they are not
+	in (the moves), the backlog (recorded files with no matching
+	rule), a file in scope that `[labels]` does not record, and a recorded
+	path that no longer exists. Changes nothing.
+
+apply::
+	Move each out-of-place file into its directory as a content-identical
+	rename, repoint each carved file's `[labels]` line to its new path, and
+	stage the result. apply requires a clean worktree, so the change can be
+	discarded as a whole.
+
+
+FILES
+-----
+`.gitorganize`::
+	The declaration, at the repository root, in three sections. `[scope]`
+	names the files in scope, one pathspec per line; with no `[scope]`
+	section nothing is in scope. `[layout]` is the project's placement map:
+	ordered `<label>:<value> = <directory>` rules (`.` is the root), where a
+	file takes the directory of the first rule its labels satisfy, and a
+	file matching no rule is the backlog. `[labels]` holds the recorded
+	labels, one `<path> <key>=<value> ...` line per source in scope,
+	including placed files. The project writes `[scope]` and `[layout]`; the
+	move apply repoints a carved file's line. A `#` line is a comment; git
+	organize rewrites the file whole, keeping the hand-authored `[scope]`
+	and `[layout]` verbatim.
+
+
+GIT
+---
+Part of the linkgit:git[1] suite
