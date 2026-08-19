@@ -160,6 +160,56 @@ test_expect_success 'status --exit-code fails when a file is out of place' '
 	test_expect_code 1 git organize status --exit-code
 '
 
+test_expect_success 'status --label filters by a recorded label' '
+	git organize status --label component=odb >actual &&
+	test_grep "blob.c  *-> odb/blob.c" actual &&
+	test_grep ! refs.c actual &&
+	# a non-placement label selects too (role, not just the placing component)
+	git organize status --label role=lib >bylib &&
+	test_grep "blob.c  *-> odb/blob.c" bylib &&
+	test_grep "refs.c  *-> refs/refs.c" bylib &&
+	# header.h (role=public, in place) is not over-included by the filter
+	test_grep ! "header.h" bylib &&
+	# a bare key matches any value of that label
+	git organize status --label component >bykey &&
+	test_grep "blob.c  *-> odb/blob.c" bykey &&
+	test_grep "refs.c  *-> refs/refs.c" bykey
+'
+
+test_expect_success 'apply --label moves only the selected files' '
+	git init bylabel &&
+	(
+		cd bylabel &&
+		echo blob >blob.c &&
+		echo refs >refs.c &&
+		echo header >header.h &&
+		git add . &&
+		git commit -m init &&
+		write_labeler &&
+		configure_organize ./labeler &&
+		git add .gitorganize &&
+		git commit -m declare &&
+		git organize apply --labels-only &&
+		git commit -m labels &&
+		# reconcile only the odb component; refs.c must stay put
+		git organize apply --label component=odb &&
+		git diff --cached -M --name-status >staged &&
+		test_grep "^R100.*blob.c.*odb/blob.c" staged &&
+		test_path_is_file odb/blob.c &&
+		test_path_is_missing blob.c &&
+		# refs.c is not selected: still at the root, absent from the staged set
+		test_path_is_file refs.c &&
+		test_path_is_missing refs/refs.c &&
+		test_grep ! "refs.c" staged &&
+		# [labels] repointed for odb only; the refs.c line is unchanged
+		test_grep "^odb/blob.c component=odb" .gitorganize &&
+		test_grep "^refs.c component=refs" .gitorganize &&
+		# refs.c is still reported as a pending move
+		git organize status >after &&
+		test_grep "refs.c  *-> refs/refs.c" after
+	)
+'
+
 test_expect_success 'apply moves files as content-identical renames and repoints [labels]' '
 	git organize apply &&
 	git diff --cached -M --name-status >actual &&
@@ -585,6 +635,99 @@ test_expect_success 'the recorded labels carry arbitrary key=value pairs' '
 		git organize apply --labels-only &&
 		# a label the engine does not place still round-trips into [labels]
 		test_grep "^z.c component=? role=lib note=demo" .gitorganize
+	)
+'
+
+test_expect_success 'apply moves a source whose name needs C-quoting' '
+	git init quoted &&
+	(
+		cd quoted &&
+		# a double-quote in the name forces the diff header to C-quote it
+		name="a\"b.c" &&
+		echo blob >"$name" &&
+		git add . &&
+		git commit -m init &&
+		# a labeler for the single quoted source; the NUL-separated
+		# record carries the quote literally
+		write_script quotedlabeler <<-\EOF &&
+		printf "a\"b.c\0component=odb role=lib\0"
+		EOF
+		configure_organize ./quotedlabeler &&
+		git add .gitorganize &&
+		git commit -m declare &&
+		git organize apply --labels-only &&
+		git commit -m labels &&
+		# the rename header C-quotes the path; the move still applies
+		git organize apply &&
+		test_path_is_file "odb/$name" &&
+		test_path_is_missing "$name" &&
+		git diff --cached --name-only >staged &&
+		test_grep "odb/a" staged
+	)
+'
+
+test_expect_success 'apply rejects a malformed reject line' '
+	git init badreject &&
+	(
+		cd badreject &&
+		echo blob >blob.c &&
+		echo refs >refs.c &&
+		git add . &&
+		git commit -m init &&
+		write_labeler &&
+		# the reject path is quoted but unterminated on its line, so
+		# unquoting scans past the newline into the next line
+		write_script rejector <<-\EOF &&
+		cat >/dev/null
+		printf "git-organize 1 organize\n"
+		printf "reject \"a\nb.c\" reason\n"
+		EOF
+		configure_organize ./labeler ./rejector &&
+		git add .gitorganize &&
+		git commit -m declare &&
+		git organize apply --labels-only &&
+		git commit -m labels &&
+		test_must_fail git organize apply 2>err &&
+		test_grep "malformed reject line" err
+	)
+'
+
+test_expect_success 'apply --labels-only rejects a duplicate labeler record' '
+	git init duprec &&
+	(
+		cd duprec &&
+		echo blob >blob.c &&
+		git add . &&
+		git commit -m init &&
+		# the labeler emits the same scoped path twice
+		write_script duprelabeler <<-\EOF &&
+		printf "blob.c\0component=odb role=lib\0"
+		printf "blob.c\0component=refs role=lib\0"
+		EOF
+		configure_organize ./duprelabeler &&
+		git add .gitorganize &&
+		git commit -m declare &&
+		test_must_fail git organize apply --labels-only 2>err &&
+		test_grep "duplicate labeler record" err
+	)
+'
+
+test_expect_success 'status rejects trailing junk after a quoted path' '
+	git init trailing &&
+	(
+		cd trailing &&
+		echo a >a.c &&
+		git add . &&
+		git commit -m init &&
+		# a quoted [labels] path with junk right after the close quote
+		cat >.gitorganize <<-\EOF &&
+		[layout]
+		component:odb = odb
+		[labels]
+		"a.c"junk component=odb
+		EOF
+		test_must_fail git organize status 2>err &&
+		test_grep "trailing text after path" err
 	)
 '
 
