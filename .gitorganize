@@ -1,0 +1,20 @@
+[scope]
+:(glob)*.c
+:(glob)*.h
+[layout]
+role:public = .
+role:program = .
+component:odb = odb
+component:refs = refs
+component:pack = pack
+component:diff = diff
+component:merge = merge
+component:revision = revision
+component:index = index
+component:setup = setup
+component:convert = convert
+component:transport = transport
+component:notes = notes
+component:submodule = submodule
+component:archive = archive
+component:sequencer = sequencer
