@@ -6,27 +6,30 @@
  * are not in yet (the moves), the backlog (files with no matching rule), and a
  * declared path that no longer exists. apply moves the misplaced files and
  * stages the result; apply --labels-only instead runs the labeler and records
- * the labels.
+ * the labels. --label <key[=value]> (repeatable) limits status and the move
+ * apply to files carrying a matching label.
  */
 #include "builtin.h"
 #include "gettext.h"
 #include "organize/organize.h"
 #include "parse-options.h"
 #include "repository.h"
+#include "strvec.h"
 
 static const char *const organize_usage[] = {
-	"git organize status [--exit-code]",
-	"git organize apply",
+	"git organize status [--exit-code] [--label <key[=value]>...]",
+	"git organize apply [--label <key[=value]>...]",
 	"git organize apply --labels-only [--reseed]",
 	NULL
 };
 
-static int organize_status(struct repository *repo, int exit_code)
+static int organize_status(struct repository *repo,
+			   const struct strvec *selectors, int exit_code)
 {
 	struct organize_plan plan = ORGANIZE_PLAN_INIT;
 	int to_move, backlog, unrecorded, orphans;
 
-	organize_plan_build(repo, &plan);
+	organize_plan_build(repo, selectors, &plan);
 	to_move = (int)plan.moves_nr;
 	backlog = (int)plan.backlog.nr;
 	unrecorded = (int)plan.unrecorded.nr;
@@ -70,12 +73,12 @@ static int organize_status(struct repository *repo, int exit_code)
 	return exit_code && (to_move || unrecorded || orphans) ? 1 : 0;
 }
 
-static int organize_apply(struct repository *repo)
+static int organize_apply(struct repository *repo, const struct strvec *selectors)
 {
 	struct organize_plan plan = ORGANIZE_PLAN_INIT;
 	int moved = 0, rejected = 0;
 
-	organize_plan_build(repo, &plan);
+	organize_plan_build(repo, selectors, &plan);
 	if (!plan.moves_nr) {
 		printf(_("organize apply: nothing to do\n"));
 		organize_plan_release(&plan);
@@ -106,8 +109,11 @@ int cmd_organize(int argc,
 		 const char *prefix,
 		 struct repository *repo)
 {
+	struct strvec selectors = STRVEC_INIT;
 	int exit_code = 0, labels_only = 0, reseed = 0;
 	struct option options[] = {
+		OPT_STRVEC(0, "label", &selectors, N_("key[=value]"),
+			   N_("limit to files carrying a matching label (repeatable)")),
 		OPT_BOOL(0, "exit-code", &exit_code,
 			 N_("exit non-zero from status when a file is out of place")),
 		OPT_BOOL(0, "labels-only", &labels_only,
@@ -128,7 +134,7 @@ int cmd_organize(int argc,
 	if (!strcmp(subcmd, "status")) {
 		if (labels_only)
 			die(_("git organize: --labels-only is an apply option"));
-		ret = organize_status(repo, exit_code);
+		ret = organize_status(repo, &selectors, exit_code);
 	} else if (!strcmp(subcmd, "apply")) {
 		if (labels_only) {
 			organize_run_labeler(repo, reseed);
@@ -136,11 +142,12 @@ int cmd_organize(int argc,
 				 "staged; nothing is committed.\n"));
 			ret = 0;
 		} else {
-			ret = organize_apply(repo);
+			ret = organize_apply(repo, &selectors);
 		}
 	} else {
 		die(_("git organize: unknown subcommand '%s'"), subcmd);
 	}
 
+	strvec_clear(&selectors);
 	return ret;
 }
