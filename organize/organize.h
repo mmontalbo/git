@@ -4,6 +4,7 @@
 #include "string-list.h"
 
 struct repository;
+struct strvec;
 
 /*
  * The git organize engine. A project declares where each file belongs, and
@@ -74,9 +75,11 @@ struct organize_plan {
  * rule names a directory it is not in as a move. Also record the backlog
  * (recorded files that match no rule), the unrecorded files (in scope,
  * no [labels] line), and the orphans (declared paths
- * that no longer exist).
+ * that no longer exist). selectors limit the moves to files carrying one of the
+ * named labels; an empty strvec keeps them all.
  */
-void organize_plan_build(struct repository *repo, struct organize_plan *plan);
+void organize_plan_build(struct repository *repo, const struct strvec *selectors,
+			 struct organize_plan *plan);
 
 /*
  * Perform the plan: consult the organizer when one is configured, then apply

@@ -98,6 +98,22 @@ test_expect_success 'status --exit-code fails when a file is out of place' '
 	test_expect_code 1 git organize status --exit-code
 '
 
+test_expect_success 'status --label filters by a recorded label' '
+	git organize status --label component=odb >actual &&
+	test_grep "blob.c  *-> odb/blob.c" actual &&
+	test_grep ! refs.c actual &&
+	# a non-placement label selects too (role, not just the placing component)
+	git organize status --label role=lib >bylib &&
+	test_grep "blob.c  *-> odb/blob.c" bylib &&
+	test_grep "refs.c  *-> refs/refs.c" bylib &&
+	# header.h (role=public, in place) is not over-included by the filter
+	test_grep ! "header.h" bylib &&
+	# a bare key matches any value of that label
+	git organize status --label component >bykey &&
+	test_grep "blob.c  *-> odb/blob.c" bykey &&
+	test_grep "refs.c  *-> refs/refs.c" bykey
+'
+
 test_expect_success 'apply moves files as content-identical renames and repoints [labels]' '
 	git organize apply &&
 	git diff --cached -M --name-status >actual &&
