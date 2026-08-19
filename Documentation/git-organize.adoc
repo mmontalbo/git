@@ -9,7 +9,7 @@ git-organize - Reconcile a source tree against a declared layout
 SYNOPSIS
 --------
 [verse]
-'git organize status'
+'git organize status' [--exit-code]
 'git organize apply'
 'git organize apply' --labels-only [--reseed]
 
@@ -44,7 +44,9 @@ is not in yet.
 `git organize status` reads `[labels]` and reports the out-of-place files,
 the backlog, a file in scope that `[labels]` does not record, and a
 recorded path that no longer exists. status runs no
-configured command and changes nothing.
+configured command and changes nothing. With `--exit-code` it exits
+non-zero when a file is out of place, a file in scope is unrecorded, or a
+recorded path is missing; a standing backlog alone does not fail it.
 
 `git organize apply` reconciles the tree. It moves each out-of-place file
 into its directory. A move that git organize makes on its own is a
@@ -72,7 +74,9 @@ status::
 	in (the moves), the backlog (recorded files with no matching
 	rule), a file in scope that `[labels]` does not record, and a recorded
 	path that no longer exists. Runs no configured
-	command and changes nothing.
+	command and changes nothing. With `--exit-code`, exit non-zero when a
+	file is out of place, a file in scope is unrecorded, or a recorded path
+	is missing.
 
 apply::
 	Move each out-of-place file into its directory as a content-identical
@@ -91,6 +95,11 @@ never do.
 
 OPTIONS
 -------
+
+--exit-code::
+	Exit non-zero from status when a file is out of place, a file in scope
+	is unrecorded, or a recorded path is missing. A standing backlog alone
+	does not fail it. Changes no output.
 
 --labels-only::
 	With apply, run the labeler and record the labels; move no file. A
