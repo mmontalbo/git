@@ -30,6 +30,30 @@ static const char *organize_command(struct repository *repo, const char *key)
 }
 
 /*
+ * Whether a file's labels satisfy any --label selector. labels is the file's
+ * space-separated "key=value" list. A "key=value" selector must equal a label
+ * exactly; a bare "key" matches any value of that label.
+ */
+static int label_selected(const char *labels, struct string_list *selectors)
+{
+	for (size_t i = 0; i < selectors->nr; i++) {
+		const char *selector = selectors->items[i].string;
+		size_t sellen = strlen(selector);
+		int bare = !strchr(selector, '=');
+
+		for (const char *l = labels; *l; ) {
+			const char *sp = strchrnul(l, ' ');
+
+			if (!strncmp(l, selector, sellen) &&
+			    (bare ? l[sellen] == '=' : sp == l + sellen))
+				return 1;
+			l = *sp ? sp + 1 : sp;
+		}
+	}
+	return 0;
+}
+
+/*
  * The [layout] rule that places files directly in `path`'s directory, or NULL
  * when `path` is a root file or its directory names no rule. A file so placed
  * sits where the layout puts it, whatever its recorded label, so its directory
@@ -133,13 +157,18 @@ static void add_move(struct organize_plan *plan, const char *src,
 	m->skip_reason = NULL;
 }
 
-void organize_plan_build(struct repository *repo, struct organize_plan *plan)
+void organize_plan_build(struct repository *repo, const struct strvec *selectors,
+			 struct organize_plan *plan)
 {
 	struct organize_ctx ctx = ORGANIZE_CTX_INIT;
+	struct string_list want = STRING_LIST_INIT_NODUP;
 	struct string_list seen = STRING_LIST_INIT_DUP;
 	struct strbuf value_buf = STRBUF_INIT;
 
 	organize_ctx_load(repo, &ctx);
+
+	for (size_t i = 0; i < selectors->nr; i++)
+		string_list_append(&want, selectors->v[i]);
 
 	/*
 	 * Classify each recorded entry by the rule its labels match: a rule to
@@ -175,7 +204,7 @@ void organize_plan_build(struct repository *repo, struct organize_plan *plan)
 
 		if (!strcmp(dst.buf, path))
 			plan->in_place++;	/* already in place */
-		else
+		else if (!want.nr || label_selected(labels, &want))
 			add_move(plan, path, strbuf_detach(&dst, NULL), rule->value);
 		strbuf_release(&dst);
 	}
@@ -206,6 +235,7 @@ void organize_plan_build(struct repository *repo, struct organize_plan *plan)
 			string_list_append(&plan->orphans, ctx.gitorg.records.items[i].string);
 
 	organize_ctx_release(&ctx);
+	string_list_clear(&want, 0);
 	string_list_clear(&seen, 0);
 	strbuf_release(&value_buf);
 }
