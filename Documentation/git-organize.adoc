@@ -9,8 +9,8 @@ git-organize - Reconcile a source tree against a declared layout
 SYNOPSIS
 --------
 [verse]
-'git organize status' [--exit-code]
-'git organize apply'
+'git organize status' [--exit-code] [--label <key[=value]>...]
+'git organize apply' [--label <key[=value]>...]
 'git organize apply' --labels-only [--reseed]
 
 
@@ -74,15 +74,18 @@ status::
 	in (the moves), the backlog (recorded files with no matching
 	rule), a file in scope that `[labels]` does not record, and a recorded
 	path that no longer exists. Runs no configured
-	command and changes nothing. With `--exit-code`, exit non-zero when a
-	file is out of place, a file in scope is unrecorded, or a recorded path
-	is missing.
+	command and changes nothing. With `--label`, limit the moves to the
+	files a label selects (see OPTIONS); the backlog, unrecorded, and
+	missing lists are always reported. With `--exit-code`, exit non-zero
+	when a file is out of place, a file in scope is unrecorded, or a
+	recorded path is missing.
 
 apply::
 	Move each out-of-place file into its directory as a content-identical
 	rename, apply the organizer's edits, repoint each carved file's
-	`[labels]` line to its new path, and stage the result. apply requires a
-	clean worktree, so the change can be discarded as a whole.
+	`[labels]` line to its new path, and stage the result. With `--label`,
+	reconcile only the files a label selects. apply requires a clean
+	worktree, so the change can be discarded as a whole.
 +
 With `--labels-only`, apply instead records the `[labels]` line for every root
 file in scope and stages the file. A file already recorded keeps its line, so a
@@ -95,6 +98,14 @@ never do.
 
 OPTIONS
 -------
+
+--label <key[=value]>::
+	Limit the moves that status reports and apply makes to the files a
+	label selects. A `<key>=<value>` selector matches a file whose
+	recorded labels include it; a bare `<key>` matches any value of that
+	label. A selector can name any recorded label, not only the ones
+	`[layout]` places files by. Repeatable; the selectors combine, so a
+	file matching any of them is included.
 
 --exit-code::
 	Exit non-zero from status when a file is out of place, a file in scope
