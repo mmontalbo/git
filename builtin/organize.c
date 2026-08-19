@@ -15,13 +15,13 @@
 #include "repository.h"
 
 static const char *const organize_usage[] = {
-	"git organize status",
+	"git organize status [--exit-code]",
 	"git organize apply",
 	"git organize apply --labels-only",
 	NULL
 };
 
-static int organize_status(struct repository *repo)
+static int organize_status(struct repository *repo, int exit_code)
 {
 	struct organize_plan plan = ORGANIZE_PLAN_INIT;
 	int to_move, backlog, unrecorded, orphans;
@@ -67,7 +67,7 @@ static int organize_status(struct repository *repo)
 	}
 
 	organize_plan_release(&plan);
-	return 0;
+	return exit_code && (to_move || unrecorded || orphans) ? 1 : 0;
 }
 
 static int organize_apply(struct repository *repo)
@@ -106,8 +106,10 @@ int cmd_organize(int argc,
 		 const char *prefix,
 		 struct repository *repo)
 {
-	int labels_only = 0;
+	int exit_code = 0, labels_only = 0;
 	struct option options[] = {
+		OPT_BOOL(0, "exit-code", &exit_code,
+			 N_("exit non-zero from status when a file is out of place")),
 		OPT_BOOL(0, "labels-only", &labels_only,
 			 N_("with apply, run the labeler and record the labels")),
 		OPT_END()
@@ -122,7 +124,7 @@ int cmd_organize(int argc,
 	if (!strcmp(subcmd, "status")) {
 		if (labels_only)
 			die(_("git organize: --labels-only is an apply option"));
-		ret = organize_status(repo);
+		ret = organize_status(repo, exit_code);
 	} else if (!strcmp(subcmd, "apply")) {
 		if (labels_only) {
 			organize_run_labeler(repo);
