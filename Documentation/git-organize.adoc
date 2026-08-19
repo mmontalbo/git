@@ -9,8 +9,8 @@ git-organize - Reconcile a source tree against a declared layout
 SYNOPSIS
 --------
 [verse]
-'git organize status' [--exit-code]
-'git organize apply'
+'git organize status' [--exit-code] [--label <key[=value]>...]
+'git organize apply' [--label <key[=value]>...]
 'git organize apply' --labels-only [--reseed]
 
 
@@ -24,16 +24,18 @@ file belongs in.
 
 `.gitorganize` at the repository root has three sections. `[scope]` names
 the files in scope, one pathspec per line; with no `[scope]` section
-nothing is in scope. `[layout]` is the project's placement map, authored by
-hand: ordered `<label>:<value> = <directory>` rules (`.` is the repository
-root). A file's labels are matched against the rules in order, and the first
-rule it satisfies places it; a file matching no rule is the backlog.
-`[labels]` holds the recorded labels, one line per
-source in scope, `<path> <key>=<value> ...`, with every label the project
-defines. A placed file is listed too, so its `[labels]` line records its
-labels, independently of the directory name. Only a label named in a rule
-places a file; a label named in no rule places nothing and is recorded for a
-reader.
+nothing is in scope. `[layout]` is the project's map of where each file
+belongs, authored by hand: ordered `<label>:<value> = <directory>` rules
+(`.` is the repository root). A file's labels are matched against the rules in
+order, and the first rule it satisfies gives the file its directory; a file
+matching no rule is the backlog.
+`[labels]` holds the recorded labels: one line, `<path> <key>=<value>
+...`, per recorded in-scope source, with every label the project
+defines. apply repoints a moved file's line to its new path and keeps
+it, so a placed file keeps its record. A file that already sits inside a
+`[layout]` directory before it is recorded has no line; its location
+alone places it. Only a label named in a rule places a file; a label
+named in no rule places nothing and is recorded for a reader.
 
 The labeler and organizer live in config: `organize.labeler` and
 `organize.organizer`. A label is a key and value the labeler attaches to a
@@ -60,7 +62,7 @@ own references. A project supplies those edits with an organizer, its
 `organize.organizer` command. apply hands the organizer its
 moves. The organizer returns a patch of the edits and, for any move it
 cannot complete, a reason to skip it. When the organizer edits a file as it
-moves, git's rename detection matches it while its similarity stays above
+moves, Git's rename detection matches it while its similarity stays above
 the rename threshold. apply applies the moves and the patch as one
 transaction. With no organizer configured, apply moves the files and makes
 no other edit.
@@ -70,31 +72,42 @@ COMMANDS
 --------
 
 status::
-	Report the files whose placement value names a directory they are not
+	Report the files whose matching rule names a directory they are not
 	in (the moves), the backlog (recorded files with no matching
 	rule), a file in scope that `[labels]` does not record, and a recorded
 	path that no longer exists. Runs no configured
-	command and changes nothing. With `--exit-code`, exit non-zero when a
-	file is out of place, a file in scope is unrecorded, or a recorded path
-	is missing.
+	command and changes nothing. With `--label`, limit the moves to the
+	files a label selects (see OPTIONS); the backlog, unrecorded, and
+	missing lists are always reported. With `--exit-code`, exit non-zero
+	when a file is out of place, a file in scope is unrecorded, or a
+	recorded path is missing.
 
 apply::
 	Move each out-of-place file into its directory as a content-identical
 	rename, apply the organizer's edits, repoint each carved file's
-	`[labels]` line to its new path, and stage the result. apply requires a
-	clean worktree, so the change can be discarded as a whole.
+	`[labels]` line to its new path, and stage the result. With `--label`,
+	reconcile only the files a label selects. apply requires a clean
+	worktree, so the change can be discarded as a whole.
 +
 With `--labels-only`, apply instead records the `[labels]` line for every root
 file in scope and stages the file. A file already recorded keeps its line, so a
-placement chosen by hand or in an earlier run stands; the labeler only seeds a
+directory chosen by hand or in an earlier run stands; the labeler only seeds a
 file that has no line yet. With `--reseed`, re-derive every line from the
-labeler, discarding the recorded placements. This is the only path that runs a
+labeler, discarding the recorded lines. This is the only path that runs a
 labeler; `git organize apply` without `--labels-only` and `git organize status`
 never do.
 
 
 OPTIONS
 -------
+
+--label <key[=value]>::
+	Limit the moves that status reports and apply makes to the files a
+	label selects. A `<key>=<value>` selector matches a file whose
+	recorded labels include it; a bare `<key>` matches any value of that
+	label. A selector can name any recorded label, not only the ones
+	`[layout]` places files by. Repeatable; the selectors combine, so a
+	file matching any of them is included.
 
 --exit-code::
 	Exit non-zero from status when a file is out of place, a file in scope
@@ -107,9 +120,11 @@ OPTIONS
 	line yet.
 
 --reseed::
-	With apply `--labels-only`, re-derive every `[labels]` line from the
-	labeler, discarding the recorded placements. Use it to re-apply the
-	labeler after its map changes; without it a recorded line is kept.
+	With apply `--labels-only`, discard the recorded lines and re-derive
+	them from the labeler. A file already placed in a `[layout]`
+	directory keeps its line, because the labeler derives labels from the
+	sources at the root. Use it to re-apply the labeler after its map
+	changes; without it a recorded line is kept.
 
 
 CONFIGURATION
@@ -119,20 +134,23 @@ organize.labeler::
 	--labels-only` runs it over the root files in scope. It writes one
 	record per file on its standard output: the path, a NUL, its
 	space-separated `key=value` labels, a NUL. A file in scope with no
-	record is unrecorded, reported apart from the backlog. Use user or
-	system config for this setting; do
-	not take it from a repository file.
+	record is unrecorded, reported apart from the backlog. This command is
+	honored from config at any level, repo-local `.git/config` included, and
+	so requires the trust you give `core.hooksPath`.
 
 organize.organizer::
 	The command that returns move edits. apply runs it over the moves. It
 	reads the pending moves on its standard input and returns a patch and
 	any skip reasons; see PROTOCOL. Optional. Without it, apply performs the
-	moves and makes no other edit. Use user or system config for this
-	setting; do not take it from a repository file.
+	moves and makes no other edit. This command is honored from config at
+	any level, repo-local `.git/config` included, and so requires the trust
+	you give `core.hooksPath`.
 
 The labeler and organizer are trusted, the way a clean or smudge filter or a
-hook is trusted. Set them in user or system config, so a repository you clone
-cannot supply its own.
+hook is trusted. Both are honored from config at any level, repo-local
+`.git/config` included. A repository you clone does not ship its `.git/config`,
+so a clone cannot supply them by that route, but treat a command written into
+`.git/config` with the same care you give `core.hooksPath`.
 
 
 FILES
@@ -140,16 +158,17 @@ FILES
 `.gitorganize`::
 	The declaration, at the repository root, in three sections. `[scope]`
 	names the files in scope, one pathspec per line; with no `[scope]`
-	section nothing is in scope. `[layout]` is the project's placement map:
-	ordered `<label>:<value> = <directory>` rules (`.` is the root), where a
-	file takes the directory of the first rule its labels satisfy, and a
-	file matching no rule is the backlog. `[labels]` holds the recorded
-	labels, one `<path> <key>=<value> ...` line per source in scope,
-	including placed files. The project writes `[scope]` and `[layout]`;
-	`git organize apply --labels-only` writes `[labels]`, and the move apply
-	repoints a carved file's line. A `#` line is a comment; git organize
-	rewrites the file whole, keeping the hand-authored `[scope]` and
-	`[layout]` verbatim.
+	section nothing is in scope. `[layout]` is the project's map of where
+	each file belongs: ordered `<label>:<value> = <directory>` rules (`.` is
+	the root), where a file takes the directory of the first rule its labels
+	satisfy, and a file matching no rule is the backlog. `[labels]` holds
+	the recorded labels, one `<path> <key>=<value> ...` line per in-scope
+	source that a rule, not its location, places; a file already inside a
+	`[layout]` directory is placed by its location and has no line. The
+	project writes `[scope]` and `[layout]`; `git organize apply
+	--labels-only` writes `[labels]`, and the move apply repoints a carved
+	file's line. A `#` line is a comment; git organize rewrites the file
+	whole, keeping the hand-authored `[scope]` and `[layout]` verbatim.
 
 
 PROTOCOL
@@ -159,9 +178,20 @@ version line `git-organize 1 organize`, then a `move <src> <dst> <label>`
 line per pending move, with C-quoted paths. The organizer replies with the
 same version line. For each declined move, it writes `reject <src>
 <reason>`. It may then write `patch`, followed by a git patch that runs to
-the end of its output. The patch may edit referring files and may rename a
-moved file as it edits it, but it must not add, delete, or copy files, and
-any rename must match a planned move.
+the end of its output.
+
+Before it runs `git apply`, git organize checks each entry in the patch with
+Git's own diff-header parser and refuses the patch if an entry adds, deletes,
+or copies a file, changes a file's mode, or renames a file to anything but a
+planned move. An in-place edit must repoint a move: it must leave the file
+where it is and mention a directory the plan moves into. So the patch git
+organize accepts is limited to edits of referring files and to renames that
+match a planned move.
+
+The organizer is a trusted, config-defined command, honored the way a clean or
+smudge filter is. These checks catch a well-meaning organizer's mistakes; they
+do not sandbox a hostile one, and they do not certify that the whole patch is
+sound.
 
 
 GIT
