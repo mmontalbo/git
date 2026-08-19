@@ -156,6 +156,10 @@ test_expect_success 'status reports the files to move' '
 	test_grep "2 file(s) would move" actual
 '
 
+test_expect_success 'status --exit-code fails when a file is out of place' '
+	test_expect_code 1 git organize status --exit-code
+'
+
 test_expect_success 'apply moves files as content-identical renames and repoints [labels]' '
 	git organize apply &&
 	git diff --cached -M --name-status >actual &&
@@ -169,6 +173,7 @@ test_expect_success 'apply moves files as content-identical renames and repoints
 	git diff --cached --name-only >staged &&
 	test_grep "^.gitorganize$" staged &&
 	git commit -m reconciled &&
+	git organize status --exit-code &&
 	git organize status >actual &&
 	test_grep "nothing to move" actual &&
 	test_grep "^odb/blob.c component=odb" .gitorganize &&
@@ -435,7 +440,8 @@ test_expect_success 'a basename shared across directories does not collide' '
 		test_path_is_file odb/dup.c &&
 		test_path_is_file sub/dup.c &&
 		test_path_is_missing dup.c &&
-		git commit -m reconciled
+		git commit -m reconciled &&
+		git organize status --exit-code
 	)
 '
 
@@ -484,17 +490,19 @@ test_expect_success 'a file in scope with no recorded label is unrecorded' '
 		git commit -m declare &&
 		git organize apply --labels-only &&
 		git commit -m labels &&
-		# a.c is recorded but matches no rule: backlog
+		# a.c is recorded but matches no rule: backlog, which does not redden
 		git organize status >actual &&
 		test_grep "backlog:" actual &&
 		test_grep "^  a.c$" actual &&
-		# a source in scope that [labels] never recorded is unrecorded
+		git organize status --exit-code &&
+		# a source in scope that [labels] never recorded is unrecorded drift
 		echo b >b.c &&
 		git add b.c &&
 		git commit -m add-b &&
 		git organize status >actual &&
 		test_grep "in scope but unrecorded:" actual &&
-		test_grep "^  b.c$" actual
+		test_grep "^  b.c$" actual &&
+		test_expect_code 1 git organize status --exit-code
 	)
 '
 
@@ -519,7 +527,8 @@ test_expect_success 'status reports a recorded path that no longer exists' '
 		git commit -m drop-b &&
 		git organize status >actual &&
 		test_grep "declared but missing" actual &&
-		test_grep "  b.c" actual
+		test_grep "  b.c" actual &&
+		test_expect_code 1 git organize status --exit-code
 	)
 '
 
