@@ -33,7 +33,7 @@
 #include "setup/setup.h"
 #include "index/sparse-index.h"
 #include "strvec.h"
-#include "submodule.h"
+#include "submodule/submodule.h"
 #include "index/symlinks.h"
 #include "trace2.h"
 #include "odb/tree.h"
