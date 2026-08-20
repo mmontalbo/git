@@ -3,7 +3,7 @@
 #include "test-tool.h"
 #include "bloom.h"
 #include "hex.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "repository.h"
 #include "setup.h"
 

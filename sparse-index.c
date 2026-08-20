@@ -9,7 +9,7 @@
 #include "read-cache-ll.h"
 #include "repository.h"
 #include "sparse-index.h"
-#include "tree.h"
+#include "odb/tree.h"
 #include "pathspec.h"
 #include "trace2.h"
 #include "cache-tree.h"

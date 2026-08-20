@@ -3,7 +3,7 @@
 #include "test-tool.h"
 #include "hex.h"
 #include "repository.h"
-#include "odb.h"
+#include "odb/odb.h"
 #include "setup.h"
 
 /*

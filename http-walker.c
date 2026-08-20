@@ -9,8 +9,8 @@
 #include "list.h"
 #include "transport.h"
 #include "packfile.h"
-#include "object-file.h"
-#include "odb.h"
+#include "odb/object-file.h"
+#include "odb/odb.h"
 
 struct alt_base {
 	char *base;

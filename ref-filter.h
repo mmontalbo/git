@@ -2,8 +2,8 @@
 #define REF_FILTER_H
 
 #include "gettext.h"
-#include "oid-array.h"
-#include "commit.h"
+#include "odb/oid-array.h"
+#include "odb/commit.h"
 #include "string-list.h"
 #include "strvec.h"
 #include "commit-reach.h"

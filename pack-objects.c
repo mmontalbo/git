@@ -1,5 +1,5 @@
 #include "git-compat-util.h"
-#include "object.h"
+#include "odb/object.h"
 #include "pack.h"
 #include "pack-objects.h"
 #include "packfile.h"

@@ -15,7 +15,7 @@
 #include "quote.h"
 #include "dir.h"
 #include "gettext.h"
-#include "object-name.h"
+#include "odb/object-name.h"
 #include "strbuf.h"
 #include "parse-options.h"
 #include "resolve-undo.h"
@@ -26,7 +26,7 @@
 #include "setup.h"
 #include "sparse-index.h"
 #include "submodule.h"
-#include "odb.h"
+#include "odb/odb.h"
 #include "hex.h"
 
 

@@ -3,7 +3,7 @@
 #include "test-tool.h"
 #include "hex.h"
 #include "strbuf.h"
-#include "odb.h"
+#include "odb/odb.h"
 #include "packfile.h"
 #include "pack-mtimes.h"
 #include "setup.h"

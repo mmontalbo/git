@@ -1,7 +1,7 @@
 #ifndef REMOTE_H
 #define REMOTE_H
 
-#include "hash.h"
+#include "odb/hash.h"
 #include "hashmap.h"
 #include "refspec.h"
 #include "string-list.h"

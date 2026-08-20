@@ -2,8 +2,8 @@
 
 #include "test-tool.h"
 #include "config.h"
-#include "hash.h"
-#include "object-name.h"
+#include "odb/hash.h"
+#include "odb/object-name.h"
 #include "repository.h"
 #include "setup.h"
 #include "submodule-config.h"
