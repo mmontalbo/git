@@ -22,7 +22,7 @@
 
 #include "odb/alloc.h"
 #include "advice.h"
-#include "attr.h"
+#include "convert/attr.h"
 #include "index/cache-tree.h"
 #include "odb/commit.h"
 #include "revision/commit-reach.h"

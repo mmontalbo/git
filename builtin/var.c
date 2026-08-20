@@ -8,7 +8,7 @@
 
 #include "builtin.h"
 
-#include "attr.h"
+#include "convert/attr.h"
 #include "setup/config.h"
 #include "editor.h"
 #include "setup/environment.h"

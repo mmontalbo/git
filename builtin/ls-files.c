@@ -10,7 +10,7 @@
 
 #include "builtin.h"
 #include "setup/config.h"
-#include "convert.h"
+#include "convert/convert.h"
 #include "setup/environment.h"
 #include "quote.h"
 #include "index/dir.h"
