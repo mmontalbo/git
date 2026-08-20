@@ -1,7 +1,7 @@
 #ifndef APPLY_H
 #define APPLY_H
 
-#include "hash.h"
+#include "odb/hash.h"
 #include "lockfile.h"
 #include "string-list.h"
 #include "strmap.h"

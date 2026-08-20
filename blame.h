@@ -1,7 +1,7 @@
 #ifndef BLAME_H
 #define BLAME_H
 
-#include "oidset.h"
+#include "odb/oidset.h"
 #include "xdiff-interface.h"
 #include "prio-queue.h"
 

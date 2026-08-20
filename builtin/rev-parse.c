@@ -12,14 +12,14 @@
 #include "abspath.h"
 #include "bisect.h"
 #include "config.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "environment.h"
 #include "gettext.h"
-#include "hash.h"
+#include "odb/hash.h"
 #include "hex.h"
 #include "refs.h"
 #include "quote.h"
-#include "object-name.h"
+#include "odb/object-name.h"
 #include "parse-options.h"
 #include "path.h"
 #include "diff.h"
@@ -32,7 +32,7 @@
 #include "submodule.h"
 #include "commit-reach.h"
 #include "shallow.h"
-#include "object-file-convert.h"
+#include "odb/object-file-convert.h"
 
 #define DO_REVS		1
 #define DO_NOREV	2

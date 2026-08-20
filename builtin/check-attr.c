@@ -4,7 +4,7 @@
 #include "attr.h"
 #include "environment.h"
 #include "gettext.h"
-#include "object-name.h"
+#include "odb/object-name.h"
 #include "quote.h"
 #include "setup.h"
 #include "parse-options.h"

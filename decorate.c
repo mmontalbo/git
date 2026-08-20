@@ -4,7 +4,7 @@
  */
 
 #include "git-compat-util.h"
-#include "object.h"
+#include "odb/object.h"
 #include "decorate.h"
 
 static unsigned int hash_obj(const struct object *obj, unsigned int n)

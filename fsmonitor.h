@@ -4,7 +4,7 @@
 #include "fsmonitor-ll.h"
 #include "dir.h"
 #include "fsmonitor-settings.h"
-#include "object.h"
+#include "odb/object.h"
 #include "read-cache-ll.h"
 #include "trace.h"
 
