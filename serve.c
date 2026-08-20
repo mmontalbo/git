@@ -4,7 +4,7 @@
 #include "odb/hash.h"
 #include "pkt-line.h"
 #include "version.h"
-#include "ls-refs.h"
+#include "refs/ls-refs.h"
 #include "protocol-caps.h"
 #include "serve.h"
 #include "upload-pack.h"

@@ -17,7 +17,7 @@
 #include "sparse-index.h"
 #include "trace2.h"
 #include "promisor-remote.h"
-#include "refs.h"
+#include "refs/refs.h"
 
 /*
  * We do not define `USE_THE_REPOSITORY_VARIABLE` in this file because we do

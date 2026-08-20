@@ -20,14 +20,14 @@
 #include "path.h"
 
 #include "pretty.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "exec-cmd.h"
 #include "run-command.h"
 #include "parse-options.h"
 #include "string-list.h"
 #include "notes-merge.h"
 #include "notes-utils.h"
-#include "worktree.h"
+#include "refs/worktree.h"
 #include "write-or-die.h"
 
 static const char *separator = "\n";

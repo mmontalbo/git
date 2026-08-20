@@ -14,7 +14,7 @@
 #include "environment.h"
 #include "ident.h"
 #include "pager.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "path.h"
 #include "strbuf.h"
 #include "run-command.h"

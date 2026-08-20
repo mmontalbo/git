@@ -9,7 +9,7 @@
 #include "hex.h"
 #include "parse-options.h"
 #include "run-command.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "wildmatch.h"
 #include "odb/object-name.h"
 #include "odb/odb.h"
@@ -23,7 +23,7 @@
 #include "color.h"
 #include "odb/tag.h"
 #include "quote.h"
-#include "ref-filter.h"
+#include "refs/ref-filter.h"
 #include "revision.h"
 #include "utf8.h"
 #include "versioncmp.h"
@@ -31,7 +31,7 @@
 #include "wt-status.h"
 #include "odb/commit-slab.h"
 #include "commit-reach.h"
-#include "worktree.h"
+#include "refs/worktree.h"
 #include "hashmap.h"
 
 static struct ref_msg {

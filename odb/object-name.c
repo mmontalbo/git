@@ -12,7 +12,7 @@
 #include "odb/commit.h"
 #include "odb/tree.h"
 #include "odb/tree-walk.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "remote.h"
 #include "dir.h"
 #include "odb/odb.h"
