@@ -5,7 +5,7 @@
 #include "diff.h"
 #include "environment.h"
 #include "gettext.h"
-#include "hash.h"
+#include "odb/hash.h"
 #include "hex.h"
 #include "parse-options.h"
 #include "setup.h"

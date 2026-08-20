@@ -4,7 +4,7 @@
 #include "test-tool.h"
 #include "gettext.h"
 #include "hex.h"
-#include "tree.h"
+#include "odb/tree.h"
 #include "cache-tree.h"
 #include "parse-options.h"
 #include "read-cache-ll.h"

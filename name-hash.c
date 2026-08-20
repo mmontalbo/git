@@ -13,7 +13,7 @@
 #include "environment.h"
 #include "gettext.h"
 #include "name-hash.h"
-#include "object.h"
+#include "odb/object.h"
 #include "read-cache-ll.h"
 #include "thread-utils.h"
 #include "trace.h"

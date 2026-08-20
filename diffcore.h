@@ -4,7 +4,7 @@
 #ifndef DIFFCORE_H
 #define DIFFCORE_H
 
-#include "hash.h"
+#include "odb/hash.h"
 
 struct diff_options;
 struct mem_pool;

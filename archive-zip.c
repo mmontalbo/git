@@ -11,7 +11,7 @@
 #include "git-zlib.h"
 #include "hex.h"
 #include "utf8.h"
-#include "odb.h"
+#include "odb/odb.h"
 #include "odb/streaming.h"
 #include "strbuf.h"
 #include "userdiff.h"

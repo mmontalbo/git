@@ -13,7 +13,7 @@
 #include "hex.h"
 
 #include "packfile.h"
-#include "odb.h"
+#include "odb/odb.h"
 #include "strbuf.h"
 
 #define BLKSIZE 512

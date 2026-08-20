@@ -2,22 +2,22 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "odb.h"
-#include "commit.h"
+#include "odb/odb.h"
+#include "odb/commit.h"
 #include "convert.h"
 #include "diff.h"
 #include "diffcore.h"
 #include "environment.h"
 #include "hex.h"
-#include "object-name.h"
+#include "odb/object-name.h"
 #include "quote.h"
 #include "xdiff-interface.h"
 #include "xdiff/xmacros.h"
 #include "log-tree.h"
 #include "refs.h"
-#include "tree.h"
+#include "odb/tree.h"
 #include "userdiff.h"
-#include "oid-array.h"
+#include "odb/oid-array.h"
 #include "revision.h"
 
 static int compare_paths(const struct combine_diff_path *one,

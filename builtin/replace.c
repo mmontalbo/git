@@ -18,11 +18,11 @@
 #include "parse-options.h"
 #include "path.h"
 #include "run-command.h"
-#include "object-file.h"
-#include "object-name.h"
-#include "odb.h"
-#include "replace-object.h"
-#include "tag.h"
+#include "odb/object-file.h"
+#include "odb/object-name.h"
+#include "odb/odb.h"
+#include "odb/replace-object.h"
+#include "odb/tag.h"
 #include "wildmatch.h"
 
 static const char * const git_replace_usage[] = {

@@ -1,8 +1,8 @@
 #ifndef REFS_H
 #define REFS_H
 
-#include "object-name.h"
-#include "commit.h"
+#include "odb/object-name.h"
+#include "odb/commit.h"
 #include "repository.h"
 #include "repo-settings.h"
 
