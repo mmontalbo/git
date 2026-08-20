@@ -16,7 +16,7 @@
 #include "parse-options.h"
 #include "path.h"
 #include "strvec.h"
-#include "branch.h"
+#include "sequencer/branch.h"
 #include "index/read-cache-ll.h"
 #include "refs/refs.h"
 #include "transport/remote.h"

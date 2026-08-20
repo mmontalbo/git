@@ -13,7 +13,7 @@
 #include "pager.h"
 #include "revision/revision.h"
 #include "string-list.h"
-#include "mailmap.h"
+#include "sequencer/mailmap.h"
 #include "revision/log-tree.h"
 #include "notes/notes.h"
 #include "color.h"

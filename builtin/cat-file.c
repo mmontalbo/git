@@ -26,7 +26,7 @@
 #include "odb/streaming.h"
 #include "odb/replace-object.h"
 #include "transport/promisor-remote.h"
-#include "mailmap.h"
+#include "sequencer/mailmap.h"
 #include "write-or-die.h"
 #include "setup/alias.h"
 #include "transport/remote.h"

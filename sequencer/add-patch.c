@@ -2,7 +2,7 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "add-patch.h"
+#include "sequencer/add-patch.h"
 #include "advice.h"
 #include "odb/commit.h"
 #include "setup/config.h"

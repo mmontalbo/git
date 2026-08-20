@@ -35,7 +35,7 @@
 #include "index/dir-iterator.h"
 #include "iterator.h"
 #include "sigchain.h"
-#include "branch.h"
+#include "sequencer/branch.h"
 #include "transport/remote.h"
 #include "run-command.h"
 #include "setup/setup.h"

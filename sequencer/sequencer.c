@@ -17,7 +17,7 @@
 #include "odb/object.h"
 #include "pager.h"
 #include "odb/commit.h"
-#include "sequencer.h"
+#include "sequencer/sequencer.h"
 #include "run-command.h"
 #include "setup/hook.h"
 #include "utf8.h"
@@ -45,9 +45,9 @@
 #include "odb/commit-slab.h"
 #include "setup/alias.h"
 #include "revision/commit-reach.h"
-#include "rebase-interactive.h"
-#include "reset.h"
-#include "branch.h"
+#include "sequencer/rebase-interactive.h"
+#include "sequencer/reset.h"
+#include "sequencer/branch.h"
 
 #define GIT_REFLOG_ACTION "GIT_REFLOG_ACTION"
 

@@ -1,7 +1,7 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "add-interactive.h"
+#include "sequencer/add-interactive.h"
 #include "color.h"
 #include "diff/diffcore.h"
 #include "gettext.h"

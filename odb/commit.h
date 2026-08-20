@@ -2,7 +2,7 @@
 #define COMMIT_H
 
 #include "odb/object.h"
-#include "add-interactive.h"
+#include "sequencer/add-interactive.h"
 
 struct signature_check;
 struct strbuf;

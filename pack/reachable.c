@@ -19,7 +19,7 @@
 #include "pack/pack-mtimes.h"
 #include "setup/config.h"
 #include "run-command.h"
-#include "sequencer.h"
+#include "sequencer/sequencer.h"
 
 struct connectivity_progress {
 	struct progress *progress;

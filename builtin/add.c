@@ -25,7 +25,7 @@
 #include "revision/revision.h"
 #include "strvec.h"
 #include "submodule/submodule.h"
-#include "add-interactive.h"
+#include "sequencer/add-interactive.h"
 
 static const char * const builtin_add_usage[] = {
 	N_("git add [<options>] [--] <pathspec>..."),

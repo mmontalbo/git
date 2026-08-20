@@ -13,7 +13,7 @@
 #include "string-list.h"
 #include "strbuf.h"
 #include "run-command.h"
-#include "rebase.h"
+#include "sequencer/rebase.h"
 #include "refs/refs.h"
 #include "refs/refspec.h"
 #include "odb/odb.h"

@@ -10,7 +10,7 @@
 #include "odb/object-name.h"
 #include "parse-options.h"
 #include "refs/refs.h"
-#include "replay.h"
+#include "sequencer/replay.h"
 #include "revision/revision.h"
 
 enum ref_action_mode {

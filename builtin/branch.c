@@ -18,7 +18,7 @@
 #include "odb/object-name.h"
 #include "transport/remote.h"
 #include "parse-options.h"
-#include "branch.h"
+#include "sequencer/branch.h"
 #include "path.h"
 #include "string-list.h"
 #include "column.h"

@@ -6,9 +6,9 @@
 #include "merge/merge-ort.h"
 #include "odb/object-name.h"
 #include "refs/refs.h"
-#include "replay.h"
+#include "sequencer/replay.h"
 #include "revision/revision.h"
-#include "sequencer.h"
+#include "sequencer/sequencer.h"
 #include "strmap.h"
 #include "odb/tree.h"
 

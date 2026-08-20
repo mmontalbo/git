@@ -1,7 +1,7 @@
 #include "git-compat-util.h"
 #include "setup/environment.h"
 #include "string-list.h"
-#include "mailmap.h"
+#include "sequencer/mailmap.h"
 #include "odb/object-name.h"
 #include "odb/odb.h"
 #include "setup/setup.h"

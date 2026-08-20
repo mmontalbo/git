@@ -18,7 +18,7 @@
 #include "revision/pretty.h"
 #include "setup/repository.h"
 #include "diff/userdiff.h"
-#include "apply.h"
+#include "sequencer/apply.h"
 #include "revision/revision.h"
 
 struct patch_util {

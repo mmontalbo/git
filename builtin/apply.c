@@ -2,7 +2,7 @@
 #include "builtin.h"
 #include "gettext.h"
 #include "odb/hash.h"
-#include "apply.h"
+#include "sequencer/apply.h"
 
 static const char * const apply_usage[] = {
 	N_("git apply [<options>] [<patch>...]"),

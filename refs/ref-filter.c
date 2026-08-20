@@ -17,7 +17,7 @@
 #include "setup/repo-settings.h"
 #include "setup/repository.h"
 #include "odb/commit.h"
-#include "mailmap.h"
+#include "sequencer/mailmap.h"
 #include "setup/ident.h"
 #include "transport/remote.h"
 #include "color.h"

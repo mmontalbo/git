@@ -33,7 +33,7 @@
 #include "utf8.h"
 #include "refs/worktree.h"
 #include "lockfile.h"
-#include "sequencer.h"
+#include "sequencer/sequencer.h"
 #include "index/fsmonitor-settings.h"
 
 #define AB_DELAY_WARNING_IN_MS (2 * 1000)

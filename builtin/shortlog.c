@@ -9,7 +9,7 @@
 #include "string-list.h"
 #include "revision/revision.h"
 #include "utf8.h"
-#include "mailmap.h"
+#include "sequencer/mailmap.h"
 #include "setup/setup.h"
 #include "shortlog.h"
 #include "parse-options.h"

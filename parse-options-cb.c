@@ -2,7 +2,7 @@
 
 #include "git-compat-util.h"
 #include "parse-options.h"
-#include "branch.h"
+#include "sequencer/branch.h"
 #include "odb/commit.h"
 #include "color.h"
 #include "date.h"

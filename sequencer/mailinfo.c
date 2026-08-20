@@ -7,7 +7,7 @@
 #include "hex-ll.h"
 #include "utf8.h"
 #include "strbuf.h"
-#include "mailinfo.h"
+#include "sequencer/mailinfo.h"
 
 static void cleanup_space(struct strbuf *sb)
 {

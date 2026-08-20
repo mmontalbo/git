@@ -33,7 +33,7 @@
 #include "index/read-cache.h"
 #include "setup/repository.h"
 #include "merge/rerere.h"
-#include "apply.h"
+#include "sequencer/apply.h"
 #include "index/entry.h"
 #include "setup/setup.h"
 #include "index/symlinks.h"

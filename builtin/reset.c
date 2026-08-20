@@ -24,7 +24,7 @@
 #include "diff/diff.h"
 #include "diff/diffcore.h"
 #include "odb/tree.h"
-#include "branch.h"
+#include "sequencer/branch.h"
 #include "odb/object-name.h"
 #include "parse-options.h"
 #include "path.h"
@@ -37,7 +37,7 @@
 #include "trace.h"
 #include "trace2.h"
 #include "index/dir.h"
-#include "add-interactive.h"
+#include "sequencer/add-interactive.h"
 
 #define REFRESH_INDEX_DELAY_WARNING_IN_MS (2 * 1000)
 

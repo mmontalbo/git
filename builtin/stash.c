@@ -29,7 +29,7 @@
 #include "diff/diffcore.h"
 #include "refs/reflog.h"
 #include "refs/reflog-walk.h"
-#include "add-interactive.h"
+#include "sequencer/add-interactive.h"
 #include "odb/oid-array.h"
 #include "odb/commit.h"
 

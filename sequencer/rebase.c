@@ -1,5 +1,5 @@
 #include "git-compat-util.h"
-#include "rebase.h"
+#include "sequencer/rebase.h"
 #include "parse.h"
 #include "gettext.h"
 

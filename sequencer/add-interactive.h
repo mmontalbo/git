@@ -1,7 +1,7 @@
 #ifndef ADD_INTERACTIVE_H
 #define ADD_INTERACTIVE_H
 
-#include "add-patch.h"
+#include "sequencer/add-patch.h"
 
 struct pathspec;
 struct repository;

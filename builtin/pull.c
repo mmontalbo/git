@@ -23,14 +23,14 @@
 #include "index/dir.h"
 #include "path.h"
 #include "index/read-cache-ll.h"
-#include "rebase.h"
+#include "sequencer/rebase.h"
 #include "refs/refs.h"
 #include "refs/refspec.h"
 #include "submodule/submodule.h"
 #include "submodule/submodule-config.h"
 #include "index/wt-status.h"
 #include "revision/commit-reach.h"
-#include "sequencer.h"
+#include "sequencer/sequencer.h"
 
 /**
  * Parses the value of --rebase. If value is a false value, returns

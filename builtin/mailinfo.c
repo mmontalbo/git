@@ -8,7 +8,7 @@
 #include "setup/environment.h"
 #include "gettext.h"
 #include "strbuf.h"
-#include "mailinfo.h"
+#include "sequencer/mailinfo.h"
 #include "parse-options.h"
 
 static const char * const mailinfo_usage[] = {

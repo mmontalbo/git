@@ -13,7 +13,7 @@
 #include "revision/revision.h"
 #include "odb/tag.h"
 #include "string-list.h"
-#include "branch.h"
+#include "sequencer/branch.h"
 #include "merge/fmt-merge-msg.h"
 #include "revision/commit-reach.h"
 #include "gpg-interface.h"

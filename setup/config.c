@@ -10,7 +10,7 @@
 #include "abspath.h"
 #include "advice.h"
 #include "date.h"
-#include "branch.h"
+#include "sequencer/branch.h"
 #include "setup/config.h"
 #include "index/dir.h"
 #include "parse.h"

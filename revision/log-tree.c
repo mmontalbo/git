@@ -25,7 +25,7 @@
 #include "string-list.h"
 #include "color.h"
 #include "gpg-interface.h"
-#include "sequencer.h"
+#include "sequencer/sequencer.h"
 #include "revision/line-log.h"
 #include "help.h"
 #include "diff/range-diff.h"

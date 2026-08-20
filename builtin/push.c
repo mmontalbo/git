@@ -6,7 +6,7 @@
 
 #include "builtin.h"
 #include "advice.h"
-#include "branch.h"
+#include "sequencer/branch.h"
 #include "setup/config.h"
 #include "index/dir.h"
 #include "setup/environment.h"

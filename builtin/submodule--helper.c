@@ -31,7 +31,7 @@
 #include "odb/odb.h"
 #include "odb/source.h"
 #include "advice.h"
-#include "branch.h"
+#include "sequencer/branch.h"
 #include "revision/list-objects-filter-options.h"
 #include "wildmatch.h"
 #include "strbuf.h"

@@ -5,7 +5,7 @@
 #include "lockfile.h"
 #include "odb/object-name.h"
 #include "refs/refs.h"
-#include "reset.h"
+#include "sequencer/reset.h"
 #include "odb/tree-walk.h"
 #include "odb/tree.h"
 #include "index/unpack-trees.h"

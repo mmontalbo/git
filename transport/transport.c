@@ -17,7 +17,7 @@
 #include "gettext.h"
 #include "refs/refs.h"
 #include "refs/refspec.h"
-#include "branch.h"
+#include "sequencer/branch.h"
 #include "url.h"
 #include "submodule/submodule.h"
 #include "strbuf.h"

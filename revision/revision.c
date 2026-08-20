@@ -27,7 +27,7 @@
 #include "string-list.h"
 #include "revision/line-log.h"
 #include "revision/log-tree.h"
-#include "mailmap.h"
+#include "sequencer/mailmap.h"
 #include "odb/commit-slab.h"
 #include "index/cache-tree.h"
 #include "revision/bisect.h"

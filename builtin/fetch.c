@@ -34,7 +34,7 @@
 #include "transport/pkt-line.h"
 #include "revision/list-objects-filter-options.h"
 #include "revision/commit-reach.h"
-#include "branch.h"
+#include "sequencer/branch.h"
 #include "transport/promisor-remote.h"
 #include "pack/commit-graph.h"
 #include "revision/shallow.h"

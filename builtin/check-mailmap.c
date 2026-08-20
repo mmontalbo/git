@@ -4,7 +4,7 @@
 #include "setup/environment.h"
 #include "gettext.h"
 #include "setup/ident.h"
-#include "mailmap.h"
+#include "sequencer/mailmap.h"
 #include "parse-options.h"
 #include "strbuf.h"
 #include "string-list.h"

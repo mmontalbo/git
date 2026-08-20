@@ -2,7 +2,7 @@
 #include "organizer-protocol.h"
 #include "organize.h"
 #include "gitorganize-format.h"
-#include "apply.h"
+#include "sequencer/apply.h"
 #include "gettext.h"
 #include "quote.h"
 #include "run-command.h"

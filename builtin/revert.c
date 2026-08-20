@@ -8,8 +8,8 @@
 #include "gettext.h"
 #include "revision/revision.h"
 #include "merge/rerere.h"
-#include "sequencer.h"
-#include "branch.h"
+#include "sequencer/sequencer.h"
+#include "sequencer/branch.h"
 
 /*
  * This implements the builtins revert and cherry-pick.

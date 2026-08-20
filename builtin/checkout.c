@@ -3,7 +3,7 @@
 
 #include "builtin.h"
 #include "advice.h"
-#include "branch.h"
+#include "sequencer/branch.h"
 #include "index/cache-tree.h"
 #include "index/checkout.h"
 #include "odb/commit.h"
@@ -29,7 +29,7 @@
 #include "setup/repo-settings.h"
 #include "index/resolve-undo.h"
 #include "revision/revision.h"
-#include "sequencer.h"
+#include "sequencer/sequencer.h"
 #include "setup/setup.h"
 #include "index/sparse-index.h"
 #include "strvec.h"
@@ -43,7 +43,7 @@
 #include "diff/xdiff-interface.h"
 #include "index/entry.h"
 #include "index/parallel-checkout.h"
-#include "add-interactive.h"
+#include "sequencer/add-interactive.h"
 
 struct checkout_opts {
 	int patch_mode;

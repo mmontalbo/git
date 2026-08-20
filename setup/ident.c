@@ -10,7 +10,7 @@
 #include "setup/config.h"
 #include "date.h"
 #include "gettext.h"
-#include "mailmap.h"
+#include "sequencer/mailmap.h"
 #include "strbuf.h"
 
 static struct strbuf git_default_name = STRBUF_INIT;

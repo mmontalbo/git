@@ -18,7 +18,7 @@
 #include "revision/revision.h"
 #include "quote.h"
 #include "string-list.h"
-#include "mailmap.h"
+#include "sequencer/mailmap.h"
 #include "parse-options.h"
 #include "prio-queue.h"
 #include "utf8.h"
