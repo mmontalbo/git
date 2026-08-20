@@ -1,7 +1,7 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "git-compat-util.h"
-#include "transport.h"
+#include "transport/transport.h"
 #include "quote.h"
 #include "run-command.h"
 #include "odb/commit.h"
@@ -10,15 +10,15 @@
 #include "hex.h"
 #include "odb/object-name.h"
 #include "setup/repository.h"
-#include "remote.h"
+#include "transport/remote.h"
 #include "string-list.h"
 #include "thread-utils.h"
 #include "sigchain.h"
 #include "strvec.h"
 #include "refs/refs.h"
 #include "refs/refspec.h"
-#include "transport-internal.h"
-#include "protocol.h"
+#include "transport/transport-internal.h"
+#include "transport/protocol.h"
 #include "pack/packfile.h"
 
 static int debug;

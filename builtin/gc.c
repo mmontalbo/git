@@ -36,7 +36,7 @@
 #include "rerere.h"
 #include "revision/revision.h"
 #include "refs/refs.h"
-#include "remote.h"
+#include "transport/remote.h"
 #include "exec-cmd.h"
 #include "gettext.h"
 #include "setup/hook.h"

@@ -11,7 +11,7 @@ struct packfile_list;
 
 #include "gettext.h"
 #include "strbuf.h"
-#include "remote.h"
+#include "transport/remote.h"
 
 #define DEFAULT_MAX_REQUESTS 5
 
