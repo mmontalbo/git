@@ -19,7 +19,7 @@
 #include "parse-options.h"
 #include "userdiff.h"
 #include "odb/oid-array.h"
-#include "packfile.h"
+#include "pack/packfile.h"
 #include "odb/object-file.h"
 #include "odb/object-name.h"
 #include "odb/odb.h"

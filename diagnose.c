@@ -8,7 +8,7 @@
 #include "hex.h"
 #include "strvec.h"
 #include "odb/odb.h"
-#include "packfile.h"
+#include "pack/packfile.h"
 #include "parse-options.h"
 #include "repository.h"
 #include "write-or-die.h"

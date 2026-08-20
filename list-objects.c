@@ -13,7 +13,7 @@
 #include "list-objects.h"
 #include "list-objects-filter.h"
 #include "list-objects-filter-options.h"
-#include "packfile.h"
+#include "pack/packfile.h"
 #include "odb/odb.h"
 #include "trace.h"
 #include "environment.h"

@@ -1,11 +1,11 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "repack.h"
+#include "pack/repack.h"
 #include "repository.h"
 #include "hex.h"
-#include "midx.h"
-#include "packfile.h"
+#include "pack/midx.h"
+#include "pack/packfile.h"
 
 static uint32_t pack_geometry_weight(struct packed_git *p)
 {

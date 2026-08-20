@@ -12,7 +12,7 @@
 #include "gettext.h"
 #include "hex.h"
 
-#include "packfile.h"
+#include "pack/packfile.h"
 #include "odb/odb.h"
 #include "strbuf.h"
 
