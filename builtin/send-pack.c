@@ -9,7 +9,7 @@
 #include "send-pack.h"
 #include "quote.h"
 #include "transport.h"
-#include "oid-array.h"
+#include "odb/oid-array.h"
 #include "gettext.h"
 #include "protocol.h"
 #include "parse-options.h"

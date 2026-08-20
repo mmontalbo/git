@@ -3,16 +3,16 @@
 #include "git-compat-util.h"
 #include "parse-options.h"
 #include "branch.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "color.h"
 #include "date.h"
 #include "environment.h"
 #include "gettext.h"
-#include "object-name.h"
+#include "odb/object-name.h"
 #include "setup.h"
 #include "string-list.h"
 #include "strvec.h"
-#include "oid-array.h"
+#include "odb/oid-array.h"
 
 /*----- some often used options -----*/
 

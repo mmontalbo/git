@@ -5,15 +5,15 @@
 #include "environment.h"
 #include "hex.h"
 #include "list-objects-filter-options.h"
-#include "object-name.h"
-#include "object.h"
+#include "odb/object-name.h"
+#include "odb/object.h"
 #include "pretty.h"
 #include "revision.h"
 #include "setup.h"
 #include "parse-options.h"
 #include "strbuf.h"
 #include "path-walk.h"
-#include "oid-array.h"
+#include "odb/oid-array.h"
 
 static const char * const path_walk_usage[] = {
 	N_("test-tool path-walk <options> -- <revision-options>"),

@@ -2,13 +2,13 @@
 
 #include "test-tool.h"
 #include "commit-graph.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "environment.h"
 #include "hex.h"
-#include "object.h"
+#include "odb/object.h"
 #include "repository.h"
 #include "setup.h"
-#include "tree.h"
+#include "odb/tree.h"
 
 static void test_parse_commit_in_graph(const char *gitdir, const char *worktree,
 				       const struct object_id *commit_oid)

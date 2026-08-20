@@ -1,7 +1,7 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "git-compat-util.h"
-#include "odb.h"
+#include "odb/odb.h"
 #include "odb/streaming.h"
 #include "dir.h"
 #include "environment.h"

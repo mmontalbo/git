@@ -4,15 +4,15 @@
 #include "dir.h"
 #include "gettext.h"
 #include "hex.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "diff.h"
 #include "revision.h"
 #include "list-objects-filter.h"
 #include "list-objects-filter-options.h"
-#include "oidmap.h"
-#include "oidset.h"
-#include "object-name.h"
-#include "odb.h"
+#include "odb/oidmap.h"
+#include "odb/oidset.h"
+#include "odb/object-name.h"
+#include "odb/odb.h"
 
 /* Remember to update object flag allocation in object.h */
 /*

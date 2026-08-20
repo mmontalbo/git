@@ -1,9 +1,9 @@
 #include "git-compat-util.h"
-#include "object-file.h"
-#include "odb.h"
+#include "odb/object-file.h"
+#include "odb/odb.h"
 #include "odb/source-inmemory.h"
 #include "odb/streaming.h"
-#include "oidtree.h"
+#include "odb/oidtree.h"
 #include "repository.h"
 
 struct inmemory_object {

@@ -3,7 +3,7 @@
 #include "test-tool.h"
 #include "git-compat-util.h"
 #include "hex.h"
-#include "odb.h"
+#include "odb/odb.h"
 #include "pack-bitmap.h"
 #include "pseudo-merge.h"
 #include "setup.h"

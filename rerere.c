@@ -18,8 +18,8 @@
 #include "merge-ll.h"
 #include "path.h"
 #include "pathspec.h"
-#include "object-file.h"
-#include "odb.h"
+#include "odb/object-file.h"
+#include "odb/odb.h"
 #include "strmap.h"
 
 #define RESOLVED 0

@@ -14,7 +14,7 @@
 #include "environment.h"
 #include "gettext.h"
 #include "name-hash.h"
-#include "object-file.h"
+#include "odb/object-file.h"
 #include "path.h"
 #include "pathspec.h"
 #include "lockfile.h"

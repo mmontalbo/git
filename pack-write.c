@@ -6,7 +6,7 @@
 #include "csum-file.h"
 #include "remote.h"
 #include "chunk-format.h"
-#include "object-file.h"
+#include "odb/object-file.h"
 #include "pack-mtimes.h"
 #include "pack-objects.h"
 #include "pack-revindex.h"
