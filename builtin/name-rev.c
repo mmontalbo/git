@@ -14,7 +14,7 @@
 #include "parse-options.h"
 #include "odb/hash-lookup.h"
 #include "odb/commit-slab.h"
-#include "commit-graph.h"
+#include "pack/commit-graph.h"
 #include "wildmatch.h"
 #include "mem-pool.h"
 #include "pretty.h"

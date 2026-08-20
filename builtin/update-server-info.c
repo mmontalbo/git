@@ -3,7 +3,7 @@
 #include "environment.h"
 #include "gettext.h"
 #include "parse-options.h"
-#include "server-info.h"
+#include "pack/server-info.h"
 
 static const char * const update_server_info_usage[] = {
 	"git update-server-info [-f | --force]",
