@@ -7,7 +7,7 @@
 #include "setup/environment.h"
 #include "gettext.h"
 #include "index/pathspec.h"
-#include "attr.h"
+#include "convert/attr.h"
 #include "index/read-cache.h"
 #include "setup/repository.h"
 #include "setup/setup.h"

@@ -9,8 +9,8 @@
 
 #include "git-compat-util.h"
 #include "setup/config.h"
-#include "convert.h"
-#include "attr.h"
+#include "convert/convert.h"
+#include "convert/attr.h"
 #include "diff/xdiff-interface.h"
 #include "run-command.h"
 #include "merge/merge-ll.h"
