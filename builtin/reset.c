@@ -19,7 +19,7 @@
 #include "hex.h"
 #include "lockfile.h"
 #include "odb/object.h"
-#include "pretty.h"
+#include "revision/pretty.h"
 #include "refs/refs.h"
 #include "diff/diff.h"
 #include "diff/diffcore.h"

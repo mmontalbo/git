@@ -30,9 +30,9 @@
 #include "odb/object-name.h"
 #include "preload-index.h"
 #include "sequencer.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "merge/merge-ort-wrappers.h"
-#include "log-tree.h"
+#include "revision/log-tree.h"
 #include "notes-utils.h"
 #include "merge/rerere.h"
 #include "mailinfo.h"
@@ -40,7 +40,7 @@
 #include "string-list.h"
 #include "pager.h"
 #include "path.h"
-#include "pretty.h"
+#include "revision/pretty.h"
 
 /**
  * Returns the length of the first line of msg.

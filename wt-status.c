@@ -14,7 +14,7 @@
 #include "hex.h"
 #include "odb/object-name.h"
 #include "path.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "diff/diffcore.h"
 #include "quote.h"
 #include "repository.h"

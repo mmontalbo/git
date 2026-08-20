@@ -36,7 +36,7 @@
 #include "refs/reflog.h"
 #include "pack/repack.h"
 #include "merge/rerere.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "odb/blob.h"
 #include "odb/tree.h"
 #include "promisor-remote.h"

@@ -11,7 +11,7 @@
 #include "diff/xdiff-interface.h"
 #include "kwset.h"
 #include "odb/oidset.h"
-#include "pretty.h"
+#include "revision/pretty.h"
 #include "quote.h"
 
 typedef int (*pickaxe_fn)(mmfile_t *one, mmfile_t *two,

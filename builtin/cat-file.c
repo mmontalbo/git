@@ -15,7 +15,7 @@
 #include "gettext.h"
 #include "hex.h"
 #include "ident.h"
-#include "list-objects-filter-options.h"
+#include "revision/list-objects-filter-options.h"
 #include "parse-options.h"
 #include "diff/userdiff.h"
 #include "odb/oid-array.h"
