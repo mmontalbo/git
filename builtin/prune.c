@@ -1,7 +1,7 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "builtin.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "diff.h"
 #include "dir.h"
 #include "environment.h"
@@ -13,10 +13,10 @@
 #include "path.h"
 #include "progress.h"
 #include "prune-packed.h"
-#include "replace-object.h"
-#include "object-file.h"
-#include "object-name.h"
-#include "odb.h"
+#include "odb/replace-object.h"
+#include "odb/object-file.h"
+#include "odb/object-name.h"
+#include "odb/odb.h"
 #include "shallow.h"
 
 static const char * const prune_usage[] = {

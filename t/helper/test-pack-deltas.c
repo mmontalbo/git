@@ -4,7 +4,7 @@
 #include "git-compat-util.h"
 #include "delta.h"
 #include "git-zlib.h"
-#include "hash.h"
+#include "odb/hash.h"
 #include "hex.h"
 #include "pack.h"
 #include "pack-objects.h"

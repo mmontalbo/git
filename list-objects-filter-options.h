@@ -2,7 +2,7 @@
 #define LIST_OBJECTS_FILTER_OPTIONS_H
 
 #include "gettext.h"
-#include "object.h"
+#include "odb/object.h"
 #include "strbuf.h"
 
 struct option;

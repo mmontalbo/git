@@ -2,9 +2,9 @@
 
 #include "git-compat-util.h"
 #include "merge-ll.h"
-#include "blob.h"
+#include "odb/blob.h"
 #include "merge-blobs.h"
-#include "odb.h"
+#include "odb/odb.h"
 
 static int fill_mmfile_blob(mmfile_t *f, struct blob *obj)
 {

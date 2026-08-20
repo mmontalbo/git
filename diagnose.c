@@ -7,7 +7,7 @@
 #include "gettext.h"
 #include "hex.h"
 #include "strvec.h"
-#include "odb.h"
+#include "odb/odb.h"
 #include "packfile.h"
 #include "parse-options.h"
 #include "repository.h"

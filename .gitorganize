@@ -30,8 +30,6 @@ advice.c component=? role=lib prefix=advice includes=setup:2 cochange=transport:
 advice.h component=? role=public prefix=advice cochange=transport:14,index:9,odb:6,submodule:4,pack:3
 alias.c component=setup role=lib prefix=alias includes=setup:2 cochange=setup:8,diff:4,transport:3,convert:2,index:2
 alias.h component=setup role=header prefix=completion cochange=setup:3,transport:2,pack:1,revision:1
-alloc.c component=odb role=lib prefix=alloc includes=odb:6,setup:1 cochange=odb:54,revision:8,diff:6,pack:6,index:3
-alloc.h component=odb role=header prefix=alloc cochange=odb:16,refs:1,revision:1
 apply.c component=? role=lib prefix=apply includes=index:5,setup:4,odb:3,diff:2,merge:2 cochange=index:93,setup:43,diff:41,odb:26,merge:24
 apply.h component=? role=public prefix=apply includes=odb:1 cochange=diff:2
 archive-tar.c component=archive role=lib prefix=archive-tar includes=archive:1,odb:1,setup:1 cochange=archive:59,index:12,diff:9,odb:9,transport:8
@@ -47,8 +45,6 @@ bisect.c component=revision role=lib prefix=bisect includes=odb:5,revision:5,set
 bisect.h component=revision role=header prefix=bisect cochange=revision:29,odb:2
 blame.c component=revision role=lib prefix=blame includes=odb:5,diff:2,index:2,pack:2,revision:2 cochange=diff:68,revision:66,odb:56,index:29,pack:22
 blame.h component=revision role=header prefix=blame includes=diff:1,odb:1 cochange=revision:19,odb:7,diff:4,archive:1,index:1
-blob.c component=odb role=lib prefix=object includes=odb:2 cochange=odb:131,transport:12,pack:11,revision:10,refs:5
-blob.h component=odb role=header prefix=blob includes=odb:1 cochange=odb:33,revision:4,pack:3,transport:2
 bloom.c component=pack role=lib prefix=bloom includes=odb:4,diff:2,pack:2,setup:2 cochange=pack:38,revision:25,diff:15,odb:6,index:2
 bloom.h component=pack role=header prefix=bloom cochange=pack:28,revision:12,odb:1
 branch.c component=? role=lib prefix=branch includes=refs:3,setup:3,odb:2,submodule:1,transport:1 cochange=refs:62,transport:41,setup:28,index:19,revision:12
@@ -60,8 +56,6 @@ bundle.c component=transport role=lib prefix=bundle includes=odb:3,revision:3,se
 bundle.h component=transport role=header prefix=bundle includes=revision:1 cochange=transport:37,revision:5
 cache-tree.c component=index role=lib prefix=cache-tree includes=odb:5,index:2,setup:1,transport:1 cochange=index:94,odb:69,revision:27,transport:21,diff:20
 cache-tree.h component=index role=header prefix=cache-tree includes=odb:2 cochange=index:42,diff:4,revision:4,odb:3,refs:1
-cbtree.c component=odb role=lib prefix=cbtree includes=odb:1 cochange=odb:9,diff:1,merge:1,pack:1
-cbtree.h component=odb role=header prefix=cbtree cochange=odb:12,pack:3,setup:1,transport:1
 chdir-notify.c component=? role=lib prefix=chdir-notify includes=revision:1 cochange=index:2,archive:1,merge:1,revision:1
 chdir-notify.h component=? role=public prefix=chdir-notify
 checkout.c component=index role=lib prefix=checkout includes=setup:2,index:1,odb:1,refs:1,transport:1 cochange=transport:16,refs:6,setup:5,index:3,odb:2
@@ -77,11 +71,6 @@ commit-graph.c component=pack role=lib prefix=commit-graph includes=odb:9,pack:4
 commit-graph.h component=pack role=header prefix=commit-graph includes=odb:2 cochange=pack:92,odb:14,setup:9,revision:8,transport:5
 commit-reach.c component=revision role=lib prefix=commit-reach includes=revision:3,odb:2,pack:1,refs:1 cochange=revision:38,odb:17,pack:15,transport:9,index:5
 commit-reach.h component=revision role=header prefix=commit-reach includes=odb:2 cochange=revision:32,odb:9,transport:8,pack:3,refs:3
-commit-slab-decl.h component=odb role=header prefix=commit-slab cochange=odb:6,revision:1
-commit-slab-impl.h component=odb role=header prefix=commit-slab cochange=odb:7,pack:3,revision:1,setup:1,transport:1
-commit-slab.h component=odb role=header prefix=commit-slab includes=odb:2 cochange=odb:8,revision:2,transport:2,index:1,merge:1
-commit.c component=odb role=lib prefix=commit includes=odb:10,setup:4,revision:3,diff:1,index:1 cochange=odb:403,revision:147,transport:87,pack:57,setup:45
-commit.h component=odb role=header prefix=commit includes=odb:1 cochange=odb:237,revision:205,transport:49,pack:25,notes:22
 common-exit.c component=? role=lib prefix=common-main
 common-init.c component=? role=lib prefix=common-main includes=odb:2,setup:2,convert:1 cochange=setup:1
 common-init.h component=? role=public prefix=common-main
@@ -146,8 +135,6 @@ fetch-pack.h component=transport role=header prefix=fetch-pack includes=odb:1,re
 fmt-merge-msg.c component=merge role=lib prefix=fmt-merge-msg includes=odb:3,diff:2,revision:2,setup:2,merge:1 cochange=revision:10,odb:7,index:6,diff:4,setup:4
 fmt-merge-msg.h component=merge role=header prefix=fmt-merge-msg cochange=merge:3,setup:2
 for-each-ref.h component=? role=public prefix=?
-fsck.c component=odb role=lib prefix=fsck includes=odb:9,setup:3,convert:1,index:1,pack:1 cochange=odb:113,revision:46,transport:43,pack:20,setup:15
-fsck.h component=odb role=header prefix=fsck includes=odb:2 cochange=odb:50,diff:5,revision:5,transport:5,refs:4
 fsmonitor--daemon.h component=index role=header prefix=fsmonitor--daemon includes=index:1 cochange=index:1
 fsmonitor-ipc.c component=index role=lib prefix=fsmonitor includes=index:1,setup:1 cochange=index:6,transport:2,merge:1,notes:1,pack:1
 fsmonitor-ipc.h component=index role=header prefix=fsmonitor cochange=index:2
@@ -170,10 +157,6 @@ graph.c component=revision role=lib prefix=graph includes=revision:2,odb:1,setup
 graph.h component=revision role=header prefix=graph includes=diff:1 cochange=revision:19,diff:2,odb:1
 grep.c component=? role=lib prefix=grep includes=diff:4,odb:1,revision:1,setup:1 cochange=diff:40,revision:28,transport:10,index:7,refs:7
 grep.h component=? role=public prefix=grep includes=diff:1 cochange=revision:23,diff:10,transport:4,index:2,refs:2
-hash-lookup.c component=odb role=lib prefix=hash includes=odb:2,index:1 cochange=pack:14,odb:12,diff:1,index:1,merge:1
-hash-lookup.h component=odb role=header prefix=hash-lookup cochange=odb:10,pack:8,diff:1,merge:1,revision:1
-hash.c component=odb role=lib prefix=hash includes=odb:1 cochange=odb:15,diff:2,setup:2,index:1,transport:1
-hash.h component=odb role=header prefix=hash includes=setup:1 cochange=odb:32,pack:11,index:9,diff:7,transport:4
 hashmap.c component=? role=lib prefix=hashmap cochange=diff:33,revision:19,index:17,refs:13,submodule:13
 hashmap.h component=? role=public prefix=hashmap cochange=diff:39,revision:23,index:18,submodule:14,refs:13
 help.c component=? role=lib prefix=help includes=setup:4,index:1,odb:1,refs:1,transport:1 cochange=setup:19,transport:19,diff:9,index:8,odb:7
@@ -218,16 +201,12 @@ lockfile.c component=? role=lib prefix=lockfile includes=setup:1 cochange=refs:1
 lockfile.h component=? role=public prefix=lockfile cochange=index:5,revision:4,diff:3,refs:3,odb:2
 log-tree.c component=revision role=lib prefix=format-patch includes=odb:8,revision:5,diff:3,setup:3,refs:2 cochange=revision:222,diff:112,odb:112,refs:31,transport:16
 log-tree.h component=revision role=header prefix=format-patch cochange=revision:64,diff:11,refs:3,odb:2,transport:2
-loose.c component=odb role=lib prefix=loose includes=odb:5,setup:1 cochange=odb:31,pack:18,setup:7,transport:6,refs:2
-loose.h component=odb role=header prefix=loose cochange=odb:8,setup:3
 ls-refs.c component=refs role=lib prefix=ls-refs includes=setup:3,refs:2,odb:1,transport:1 cochange=refs:26,transport:17,pack:10,revision:5,odb:4
 ls-refs.h component=refs role=header prefix=ls-refs cochange=transport:11,refs:5,submodule:1
 mailinfo.c component=? role=lib prefix=mailinfo includes=setup:2 cochange=transport:5,index:3,notes:3,odb:3,revision:3
 mailinfo.h component=? role=public prefix=mailinfo
 mailmap.c component=? role=lib prefix=mailmap includes=setup:3,odb:2 cochange=setup:13,transport:11,refs:10,index:8,revision:5
 mailmap.h component=? role=public prefix=mailmap cochange=setup:8,revision:4,transport:2,diff:1,index:1
-match-trees.c component=odb role=lib prefix=match-trees includes=odb:5,setup:1 cochange=odb:33,index:15,notes:15,revision:12,pack:10
-match-trees.h component=odb role=header prefix=match-trees cochange=merge:1,odb:1
 mem-pool.c component=? role=lib prefix=mem-pool cochange=index:6
 mem-pool.h component=? role=public prefix=mem-pool cochange=index:4
 merge-blobs.c component=merge role=lib prefix=object-store includes=merge:2,odb:2 cochange=merge:9,notes:3,diff:2,convert:1,odb:1
@@ -254,24 +233,55 @@ notes-utils.c component=notes role=lib prefix=commit includes=setup:2,notes:1,od
 notes-utils.h component=notes role=header prefix=notes includes=notes:1 cochange=notes:17,odb:6
 notes.c component=notes role=lib prefix=notes includes=odb:4,setup:2,notes:1,refs:1 cochange=notes:63,odb:58,revision:41,transport:36,index:24
 notes.h component=notes role=header prefix=notes cochange=notes:55,revision:20,setup:9,odb:3,refs:2
-object-file-convert.c component=odb role=lib prefix=object-file-convert includes=odb:5,setup:1 cochange=odb:8,setup:2,transport:1
-object-file-convert.h component=odb role=header prefix=object-file-convert includes=odb:1 cochange=odb:4
-object-file.c component=odb role=lib prefix=object-file includes=odb:6,index:2,pack:2,setup:2,convert:1 cochange=odb:183,pack:96,index:55,setup:30,transport:27
-object-file.h component=odb role=header prefix=object-file includes=odb:2 cochange=odb:113,pack:30,index:12,notes:5,transport:5
-object-name.c component=odb role=lib prefix=object-name includes=odb:8,setup:5,index:2,revision:2,pack:1 cochange=odb:46,pack:31,revision:23,setup:19,refs:18
-object-name.h component=odb role=header prefix=object-name includes=odb:1 cochange=odb:5,revision:3,refs:2,index:1
-object.c component=odb role=lib prefix=object includes=odb:8,index:1,pack:1 cochange=odb:265,pack:61,revision:55,transport:34,refs:17
-object.h component=odb role=header prefix=object includes=odb:1 cochange=odb:187,revision:54,transport:41,pack:29,refs:20
-odb.c component=odb role=lib prefix=odb includes=odb:7,pack:3,setup:3,index:1,submodule:1 cochange=odb:123,pack:64,setup:13,transport:12,index:8
-odb.h component=odb role=header prefix=odb includes=odb:3 cochange=odb:117,pack:71,transport:16,setup:13,index:10
-oid-array.c component=odb role=lib prefix=oid-array includes=odb:2 cochange=odb:13,pack:10,merge:2,diff:1,revision:1
-oid-array.h component=odb role=header prefix=oid-array includes=odb:1 cochange=odb:3,diff:1,index:1,refs:1,revision:1
-oidmap.c component=odb role=lib prefix=oidmap includes=odb:2 cochange=diff:11,revision:7,odb:6,refs:5,index:4
-oidmap.h component=odb role=header prefix=oidmap includes=odb:1 cochange=odb:6,revision:4,index:2,transport:2,convert:1
-oidset.c component=odb role=lib prefix=oidset includes=odb:1 cochange=odb:17,convert:2,diff:2,transport:2,index:1
-oidset.h component=odb role=header prefix=oidset cochange=odb:17,revision:1,transport:1
-oidtree.c component=odb role=lib prefix=oidtree includes=odb:2 cochange=odb:14,index:3,setup:2,diff:1,merge:1
-oidtree.h component=odb role=header prefix=oidtree includes=odb:2 cochange=odb:9
+odb/alloc.c component=odb role=lib prefix=alloc includes=odb:6,setup:1 cochange=odb:54,revision:8,diff:6,pack:6,index:3
+odb/alloc.h component=odb role=header prefix=alloc cochange=odb:16,refs:1,revision:1
+odb/blob.c component=odb role=lib prefix=object includes=odb:2 cochange=odb:131,transport:12,pack:11,revision:10,refs:5
+odb/blob.h component=odb role=header prefix=blob includes=odb:1 cochange=odb:33,revision:4,pack:3,transport:2
+odb/cbtree.c component=odb role=lib prefix=cbtree includes=odb:1 cochange=odb:9,diff:1,merge:1,pack:1
+odb/cbtree.h component=odb role=header prefix=cbtree cochange=odb:12,pack:3,setup:1,transport:1
+odb/commit-slab-decl.h component=odb role=header prefix=commit-slab cochange=odb:6,revision:1
+odb/commit-slab-impl.h component=odb role=header prefix=commit-slab cochange=odb:7,pack:3,revision:1,setup:1,transport:1
+odb/commit-slab.h component=odb role=header prefix=commit-slab includes=odb:2 cochange=odb:8,revision:2,transport:2,index:1,merge:1
+odb/commit.c component=odb role=lib prefix=commit includes=odb:10,setup:4,revision:3,diff:1,index:1 cochange=odb:403,revision:147,transport:87,pack:57,setup:45
+odb/commit.h component=odb role=header prefix=commit includes=odb:1 cochange=odb:237,revision:205,transport:49,pack:25,notes:22
+odb/fsck.c component=odb role=lib prefix=fsck includes=odb:9,setup:3,convert:1,index:1,pack:1 cochange=odb:113,revision:46,transport:43,pack:20,setup:15
+odb/fsck.h component=odb role=header prefix=fsck includes=odb:2 cochange=odb:50,diff:5,revision:5,transport:5,refs:4
+odb/hash-lookup.c component=odb role=lib prefix=hash includes=odb:2,index:1 cochange=pack:14,odb:12,diff:1,index:1,merge:1
+odb/hash-lookup.h component=odb role=header prefix=hash-lookup cochange=odb:10,pack:8,diff:1,merge:1,revision:1
+odb/hash.c component=odb role=lib prefix=hash includes=odb:1 cochange=odb:15,diff:2,setup:2,index:1,transport:1
+odb/hash.h component=odb role=header prefix=hash includes=setup:1 cochange=odb:32,pack:11,index:9,diff:7,transport:4
+odb/loose.c component=odb role=lib prefix=loose includes=odb:5,setup:1 cochange=odb:31,pack:18,setup:7,transport:6,refs:2
+odb/loose.h component=odb role=header prefix=loose cochange=odb:8,setup:3
+odb/match-trees.c component=odb role=lib prefix=match-trees includes=odb:5,setup:1 cochange=odb:33,index:15,notes:15,revision:12,pack:10
+odb/match-trees.h component=odb role=header prefix=match-trees cochange=merge:1,odb:1
+odb/object-file-convert.c component=odb role=lib prefix=object-file-convert includes=odb:5,setup:1 cochange=odb:8,setup:2,transport:1
+odb/object-file-convert.h component=odb role=header prefix=object-file-convert includes=odb:1 cochange=odb:4
+odb/object-file.c component=odb role=lib prefix=object-file includes=odb:6,index:2,pack:2,setup:2,convert:1 cochange=odb:183,pack:96,index:55,setup:30,transport:27
+odb/object-file.h component=odb role=header prefix=object-file includes=odb:2 cochange=odb:113,pack:30,index:12,notes:5,transport:5
+odb/object-name.c component=odb role=lib prefix=object-name includes=odb:8,setup:5,index:2,revision:2,pack:1 cochange=odb:46,pack:31,revision:23,setup:19,refs:18
+odb/object-name.h component=odb role=header prefix=object-name includes=odb:1 cochange=odb:5,revision:3,refs:2,index:1
+odb/object.c component=odb role=lib prefix=object includes=odb:8,index:1,pack:1 cochange=odb:265,pack:61,revision:55,transport:34,refs:17
+odb/object.h component=odb role=header prefix=object includes=odb:1 cochange=odb:187,revision:54,transport:41,pack:29,refs:20
+odb/odb.c component=odb role=lib prefix=odb includes=odb:7,pack:3,setup:3,index:1,submodule:1 cochange=odb:123,pack:64,setup:13,transport:12,index:8
+odb/odb.h component=odb role=header prefix=odb includes=odb:3 cochange=odb:117,pack:71,transport:16,setup:13,index:10
+odb/oid-array.c component=odb role=lib prefix=oid-array includes=odb:2 cochange=odb:13,pack:10,merge:2,diff:1,revision:1
+odb/oid-array.h component=odb role=header prefix=oid-array includes=odb:1 cochange=odb:3,diff:1,index:1,refs:1,revision:1
+odb/oidmap.c component=odb role=lib prefix=oidmap includes=odb:2 cochange=diff:11,revision:7,odb:6,refs:5,index:4
+odb/oidmap.h component=odb role=header prefix=oidmap includes=odb:1 cochange=odb:6,revision:4,index:2,transport:2,convert:1
+odb/oidset.c component=odb role=lib prefix=oidset includes=odb:1 cochange=odb:17,convert:2,diff:2,transport:2,index:1
+odb/oidset.h component=odb role=header prefix=oidset cochange=odb:17,revision:1,transport:1
+odb/oidtree.c component=odb role=lib prefix=oidtree includes=odb:2 cochange=odb:14,index:3,setup:2,diff:1,merge:1
+odb/oidtree.h component=odb role=header prefix=oidtree includes=odb:2 cochange=odb:9
+odb/replace-object.c component=odb role=lib prefix=refs includes=odb:4,refs:1,setup:1 cochange=odb:8,setup:6,refs:5,pack:3,diff:2
+odb/replace-object.h component=odb role=header prefix=replace-object includes=odb:2,setup:1 cochange=odb:11,setup:9,pack:4,revision:3,merge:1
+odb/tag.c component=odb role=lib prefix=tag includes=odb:7,setup:2,pack:1 cochange=odb:189,transport:36,pack:32,revision:29,refs:14
+odb/tag.h component=odb role=header prefix=tag includes=odb:1 cochange=odb:60,transport:10,revision:8,refs:7,pack:6
+odb/tmp-objdir.c component=odb role=lib prefix=tmp-objdir includes=odb:3,setup:2,index:1 cochange=pack:24,odb:23,setup:8,transport:5,revision:3
+odb/tmp-objdir.h component=odb role=header prefix=tmp-objdir cochange=odb:8,revision:3,setup:1
+odb/tree-walk.c component=odb role=lib prefix=tree-walk includes=odb:4,index:3,setup:1 cochange=odb:70,index:61,diff:31,revision:24,pack:13
+odb/tree-walk.h component=odb role=header prefix=tree-walk includes=odb:1 cochange=odb:64,diff:23,index:23,revision:21,notes:7
+odb/tree.c component=odb role=lib prefix=tree includes=odb:6,setup:2 cochange=odb:212,revision:45,index:36,pack:25,transport:21
+odb/tree.h component=odb role=header prefix=tree includes=odb:1 cochange=odb:75,revision:12,archive:8,index:6,pack:5
 pack-bitmap-write.c component=pack role=lib prefix=pack-bitmap-write includes=odb:7,pack:6,revision:2,setup:2,diff:1 cochange=pack:132,odb:32,revision:27,transport:10,diff:4
 pack-bitmap.c component=pack role=lib prefix=pack-bitmap includes=pack:7,odb:3,revision:3,setup:2,diff:1 cochange=pack:232,revision:30,odb:18,transport:14,refs:7
 pack-bitmap.h component=pack role=header prefix=pack-bitmap includes=pack:2,refs:1 cochange=pack:117,refs:5,odb:2,setup:2,revision:1
@@ -363,8 +373,6 @@ repack-midx.c component=pack role=lib prefix=repack includes=odb:3,pack:3,refs:1
 repack-promisor.c component=pack role=lib prefix=repack-promisor includes=pack:3,setup:1 cochange=pack:8,odb:3,revision:2
 repack.c component=pack role=lib prefix=repack includes=pack:3,index:1,odb:1,setup:1 cochange=pack:31,transport:2,odb:1
 repack.h component=pack role=header prefix=repack includes=revision:1 cochange=pack:28
-replace-object.c component=odb role=lib prefix=refs includes=odb:4,refs:1,setup:1 cochange=odb:8,setup:6,refs:5,pack:3,diff:2
-replace-object.h component=odb role=header prefix=replace-object includes=odb:2,setup:1 cochange=odb:11,setup:9,pack:4,revision:3,merge:1
 replay.c component=? role=lib prefix=replay includes=odb:2,merge:1,refs:1,revision:1,setup:1 cochange=transport:1
 replay.h component=? role=public prefix=replay includes=odb:1
 repo-settings.c component=setup role=lib prefix=repo-settings includes=setup:4,pack:2 cochange=setup:65,pack:17,index:8,transport:8,odb:6
@@ -428,15 +436,11 @@ submodule.c component=submodule role=lib prefix=submodule includes=odb:5,setup:4
 submodule.h component=submodule role=header prefix=submodule cochange=submodule:128,index:22,diff:21,transport:17,setup:6
 symlinks.c component=index role=lib prefix=symlinks includes=index:1,setup:1 cochange=index:23,diff:3,archive:2,convert:1,revision:1
 symlinks.h component=index role=header prefix=symlinks cochange=index:9,diff:1
-tag.c component=odb role=lib prefix=tag includes=odb:7,setup:2,pack:1 cochange=odb:189,transport:36,pack:32,revision:29,refs:14
-tag.h component=odb role=header prefix=tag includes=odb:1 cochange=odb:60,transport:10,revision:8,refs:7,pack:6
 tar.h component=? role=public prefix=tar-tree
 tempfile.c component=? role=lib prefix=tempfile cochange=pack:5,setup:4,index:3,odb:3,revision:3
 tempfile.h component=? role=public prefix=tempfile includes=revision:1 cochange=revision:3,diff:2,index:2,setup:2
 thread-utils.c component=? role=lib prefix=thread-utils cochange=diff:1
 thread-utils.h component=? role=public prefix=thread-utils cochange=transport:1
-tmp-objdir.c component=odb role=lib prefix=tmp-objdir includes=odb:3,setup:2,index:1 cochange=pack:24,odb:23,setup:8,transport:5,revision:3
-tmp-objdir.h component=odb role=header prefix=tmp-objdir cochange=odb:8,revision:3,setup:1
 trace.c component=? role=lib prefix=trace includes=setup:2 cochange=setup:26,transport:13,index:11,odb:4,diff:2
 trace.h component=? role=public prefix=trace cochange=transport:6,index:5,odb:4,pack:3,revision:3
 trace2.c component=? role=lib prefix=trace2 includes=setup:2 cochange=setup:2
@@ -448,10 +452,6 @@ transport-internal.h component=transport role=header prefix=transport includes=t
 transport.c component=transport role=lib prefix=transport includes=transport:12,setup:3,odb:2,refs:2,submodule:1 cochange=transport:482,refs:35,setup:31,submodule:29,revision:21
 transport.h component=transport role=header prefix=transport includes=transport:2,revision:1 cochange=transport:249,submodule:6,odb:4,revision:2,diff:1
 tree-diff.c component=diff role=lib prefix=tree-diff includes=odb:3,diff:2,index:1,setup:1 cochange=diff:115,odb:56,revision:53,index:36,notes:12
-tree-walk.c component=odb role=lib prefix=tree-walk includes=odb:4,index:3,setup:1 cochange=odb:70,index:61,diff:31,revision:24,pack:13
-tree-walk.h component=odb role=header prefix=tree-walk includes=odb:1 cochange=odb:64,diff:23,index:23,revision:21,notes:7
-tree.c component=odb role=lib prefix=tree includes=odb:6,setup:2 cochange=odb:212,revision:45,index:36,pack:25,transport:21
-tree.h component=odb role=header prefix=tree includes=odb:1 cochange=odb:75,revision:12,archive:8,index:6,pack:5
 unicode-width.h component=? role=public prefix=unicode
 unix-socket.c component=? role=lib prefix=unix-socket cochange=diff:3,revision:2,setup:1
 unix-socket.h component=? role=public prefix=unix-socket

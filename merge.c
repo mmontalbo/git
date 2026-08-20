@@ -2,16 +2,16 @@
 
 #include "git-compat-util.h"
 #include "gettext.h"
-#include "hash.h"
+#include "odb/hash.h"
 #include "hex.h"
 #include "lockfile.h"
 #include "merge.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "repository.h"
 #include "run-command.h"
 #include "resolve-undo.h"
-#include "tree.h"
-#include "tree-walk.h"
+#include "odb/tree.h"
+#include "odb/tree-walk.h"
 #include "unpack-trees.h"
 
 static const char *merge_argument(struct commit *commit)

@@ -2,7 +2,7 @@
 #define ODB_TRANSACTION_H
 
 #include "gettext.h"
-#include "odb.h"
+#include "odb/odb.h"
 
 /*
  * A transaction may be started for an object database prior to writing new

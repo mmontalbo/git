@@ -1,9 +1,9 @@
 #include "unit-test.h"
 #include "hex.h"
-#include "object-file.h"
+#include "odb/object-file.h"
 #include "odb/source-inmemory.h"
 #include "odb/streaming.h"
-#include "oidset.h"
+#include "odb/oidset.h"
 #include "repository.h"
 #include "strbuf.h"
 

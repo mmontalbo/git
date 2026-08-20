@@ -4,10 +4,10 @@
 #include "hex.h"
 #include "parse-options.h"
 #include "strbuf.h"
-#include "replace-object.h"
-#include "object-file.h"
-#include "odb.h"
-#include "fsck.h"
+#include "odb/replace-object.h"
+#include "odb/object-file.h"
+#include "odb/odb.h"
+#include "odb/fsck.h"
 #include "config.h"
 
 static char const * const builtin_mktag_usage[] = {

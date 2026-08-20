@@ -6,10 +6,10 @@
 #include "convert.h"
 #include "environment.h"
 #include "repository.h"
-#include "odb.h"
+#include "odb/odb.h"
 #include "odb/source.h"
 #include "odb/streaming.h"
-#include "replace-object.h"
+#include "odb/replace-object.h"
 
 #define FILTER_BUFFER (1024*16)
 
