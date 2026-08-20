@@ -18,7 +18,7 @@
 #include "url.h"
 #include "utf8.h"
 #include "odb/oidset.h"
-#include "packfile.h"
+#include "pack/packfile.h"
 #include "submodule-config.h"
 #include "config.h"
 #include "help.h"

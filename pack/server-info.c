@@ -8,11 +8,11 @@
 #include "odb/object.h"
 #include "odb/commit.h"
 #include "odb/tag.h"
-#include "packfile.h"
+#include "pack/packfile.h"
 #include "path.h"
 #include "odb/object-file.h"
 #include "odb/odb.h"
-#include "server-info.h"
+#include "pack/server-info.h"
 #include "strbuf.h"
 #include "tempfile.h"
 

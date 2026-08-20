@@ -1,8 +1,8 @@
 #include "git-compat-util.h"
 #include "odb/object.h"
-#include "pack.h"
-#include "pack-objects.h"
-#include "packfile.h"
+#include "pack/pack.h"
+#include "pack/pack-objects.h"
+#include "pack/packfile.h"
 #include "parse.h"
 #include "repository.h"
 

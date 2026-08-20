@@ -7,7 +7,7 @@
 #include "hex.h"
 #include "odb/object-file.h"
 #include "odb/object.h"
-#include "pack.h"
+#include "pack/pack.h"
 #include "parse-options.h"
 #include "parse.h"
 #include "repository.h"

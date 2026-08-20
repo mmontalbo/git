@@ -13,7 +13,7 @@
 #include "setup.h"
 #include "submodule-config.h"
 #include "path.h"
-#include "packfile.h"
+#include "pack/packfile.h"
 #include "odb/odb.h"
 #include "lockfile.h"
 #include "exec-cmd.h"

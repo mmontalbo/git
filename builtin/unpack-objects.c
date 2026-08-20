@@ -12,15 +12,15 @@
 #include "odb/streaming.h"
 #include "odb/transaction.h"
 #include "odb/object.h"
-#include "delta.h"
-#include "pack.h"
+#include "pack/delta.h"
+#include "pack/pack.h"
 #include "odb/blob.h"
 #include "odb/replace-object.h"
 #include "strbuf.h"
 #include "progress.h"
 #include "decorate.h"
 #include "odb/fsck.h"
-#include "packfile.h"
+#include "pack/packfile.h"
 
 static int dry_run, quiet, recover, has_errors, strict;
 static const char unpack_usage[] = "git unpack-objects [-n] [-q] [-r] [--strict]";

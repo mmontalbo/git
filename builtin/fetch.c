@@ -36,7 +36,7 @@
 #include "commit-reach.h"
 #include "branch.h"
 #include "promisor-remote.h"
-#include "commit-graph.h"
+#include "pack/commit-graph.h"
 #include "shallow.h"
 #include "trace.h"
 #include "trace2.h"
