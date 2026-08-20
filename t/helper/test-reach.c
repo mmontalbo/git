@@ -6,7 +6,7 @@
 #include "gettext.h"
 #include "hex.h"
 #include "odb/object-name.h"
-#include "ref-filter.h"
+#include "refs/ref-filter.h"
 #include "setup.h"
 #include "string-list.h"
 #include "odb/tag.h"

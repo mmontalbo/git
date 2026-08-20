@@ -5,7 +5,7 @@
 #include "odb/commit.h"
 #include "environment.h"
 #include "gettext.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "notes-utils.h"
 #include "strbuf.h"
 

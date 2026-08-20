@@ -8,7 +8,7 @@
 #include "strbuf.h"
 #include "config.h"
 #include "string-list.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "pack-bitmap.h"
 #include "odb/commit.h"
 #include "alloc.h"

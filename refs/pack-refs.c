@@ -1,9 +1,9 @@
 #include "builtin.h"
 #include "config.h"
 #include "environment.h"
-#include "pack-refs.h"
+#include "refs/pack-refs.h"
 #include "parse-options.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "revision.h"
 
 int pack_refs_core(int argc,

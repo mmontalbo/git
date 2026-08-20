@@ -13,7 +13,7 @@
 #include "odb/object-name.h"
 #include "parse-options.h"
 #include "gpg-interface.h"
-#include "ref-filter.h"
+#include "refs/ref-filter.h"
 
 static const char * const verify_tag_usage[] = {
 		N_("git verify-tag [-v | --verbose] [--format=<format>] [--raw] <tag>..."),

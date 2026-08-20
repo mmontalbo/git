@@ -30,7 +30,7 @@
 #include "path.h"
 #include "utf8.h"
 #include "color.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "setup.h"
 #include "strvec.h"
 #include "trace2.h"

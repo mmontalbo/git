@@ -9,7 +9,7 @@
 #include "gettext.h"
 #include "hex.h"
 #include "lockfile.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "pkt-line.h"
 #include "odb/commit.h"
 #include "odb/tag.h"

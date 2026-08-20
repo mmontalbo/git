@@ -13,7 +13,7 @@
 #include "simple-ipc.h"
 #include "fsmonitor-ipc.h"
 #include "fsmonitor-settings.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "dir.h"
 #include "packfile.h"
 #include "help.h"
