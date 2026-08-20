@@ -38,7 +38,7 @@
 #include "setup/setup.h"
 #include "index/symlinks.h"
 #include "wildmatch.h"
-#include "ws.h"
+#include "convert/ws.h"
 
 struct gitdiff_data {
 	struct strbuf *root;

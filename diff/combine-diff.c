@@ -4,7 +4,7 @@
 #include "git-compat-util.h"
 #include "odb/odb.h"
 #include "odb/commit.h"
-#include "convert.h"
+#include "convert/convert.h"
 #include "diff/diff.h"
 #include "diff/diffcore.h"
 #include "setup/environment.h"

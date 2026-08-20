@@ -1,7 +1,7 @@
 #define USE_THE_REPOSITORY_VARIABLE
 #include "builtin.h"
 #include "setup/config.h"
-#include "attr.h"
+#include "convert/attr.h"
 #include "setup/environment.h"
 #include "gettext.h"
 #include "odb/object-name.h"
