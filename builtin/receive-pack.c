@@ -27,7 +27,7 @@
 #include "parse-options.h"
 #include "pkt-line.h"
 #include "protocol.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "remote.h"
 #include "run-command.h"
 #include "server-info.h"
@@ -40,7 +40,7 @@
 #include "trace.h"
 #include "trace2.h"
 #include "version.h"
-#include "worktree.h"
+#include "refs/worktree.h"
 
 static const char * const receive_pack_usage[] = {
 	N_("git receive-pack <git-dir>"),

@@ -5,7 +5,7 @@
 #include "khash.h"
 #include "pack.h"
 #include "pack-objects.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "string-list.h"
 
 struct commit;

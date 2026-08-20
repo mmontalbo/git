@@ -17,7 +17,7 @@
 #include "log-tree.h"
 #include "notes.h"
 #include "color.h"
-#include "reflog-walk.h"
+#include "refs/reflog-walk.h"
 #include "gpg-interface.h"
 #include "trailer.h"
 #include "run-command.h"

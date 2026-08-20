@@ -16,7 +16,7 @@
 #include "tempfile.h"
 #include "lockfile.h"
 #include "cache-tree.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "dir.h"
 #include "odb/object-file.h"
 #include "odb/odb.h"

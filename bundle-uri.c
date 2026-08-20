@@ -6,7 +6,7 @@
 #include "bundle.h"
 #include "copy.h"
 #include "gettext.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "run-command.h"
 #include "hashmap.h"
 #include "pkt-line.h"

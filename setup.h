@@ -1,7 +1,7 @@
 #ifndef SETUP_H
 #define SETUP_H
 
-#include "refs.h"
+#include "refs/refs.h"
 #include "string-list.h"
 
 int is_inside_git_dir(struct repository *repo);

@@ -7,7 +7,7 @@
 #include "pretty.h"
 #include "repository.h"
 #include "odb/commit.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "strbuf.h"
 
 static int notes_cache_match_validity(struct repository *r,
