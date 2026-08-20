@@ -9,9 +9,9 @@
 #include "odb/replace-object.h"
 #include "upload-pack.h"
 #include "serve.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "odb/commit.h"
-#include "environment.h"
+#include "setup/environment.h"
 
 static const char * const upload_pack_usage[] = {
 	N_("git-upload-pack [--[no-]strict] [--timeout=<n>] [--stateless-rpc]\n"

@@ -24,7 +24,7 @@
 #include "test-tool.h"
 #include "parse-options.h"
 #include "progress.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "strbuf.h"
 #include "string-list.h"
 

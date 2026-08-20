@@ -1,11 +1,11 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "git-compat-util.h"
-#include "config.h"
+#include "setup/config.h"
 #include "gettext.h"
 #include "hex.h"
 #include "path.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "strbuf.h"
 #include "index/fsmonitor-ll.h"
 #include "index/fsmonitor-ipc.h"

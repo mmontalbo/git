@@ -2,11 +2,11 @@
 
 #include "builtin.h"
 #include "abspath.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "hex.h"
 
-#include "config.h"
+#include "setup/config.h"
 #include "parse-options.h"
 #include "quote.h"
 #include "path.h"
@@ -14,7 +14,7 @@
 #include "index/preload-index.h"
 #include "index/dir.h"
 #include "index/read-cache.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "index/sparse-index.h"
 #include "submodule.h"
 #include "submodule-config.h"

@@ -2,7 +2,7 @@
 #include "abspath.h"
 #include "odb/blob.h"
 #include "chdir-notify.h"
-#include "config.h"
+#include "setup/config.h"
 #include "gettext.h"
 #include "lockfile.h"
 #include "odb/object-file.h"

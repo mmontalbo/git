@@ -2,9 +2,9 @@
 
 #include "test-tool.h"
 #include "advice.h"
-#include "config.h"
-#include "environment.h"
-#include "setup.h"
+#include "setup/config.h"
+#include "setup/environment.h"
+#include "setup/setup.h"
 
 int cmd__advise_if_enabled(int argc, const char **argv)
 {

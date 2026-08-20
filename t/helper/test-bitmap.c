@@ -6,7 +6,7 @@
 #include "odb/odb.h"
 #include "pack/pack-bitmap.h"
 #include "pack/pseudo-merge.h"
-#include "setup.h"
+#include "setup/setup.h"
 
 static int bitmap_list_commits(void)
 {

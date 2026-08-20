@@ -15,9 +15,9 @@
 #include "diff/diff.h"
 #include "revision/line-log.h"
 #include "odb/object-name.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "revision/revision.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "string-list.h"
 
 static void print_commit(struct commit *commit)
