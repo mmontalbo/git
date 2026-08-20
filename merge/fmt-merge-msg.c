@@ -14,7 +14,7 @@
 #include "odb/tag.h"
 #include "string-list.h"
 #include "branch.h"
-#include "fmt-merge-msg.h"
+#include "merge/fmt-merge-msg.h"
 #include "revision/commit-reach.h"
 #include "gpg-interface.h"
 #include "wildmatch.h"

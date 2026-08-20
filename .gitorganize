@@ -93,8 +93,6 @@ editor.c component=? role=lib prefix=editor includes=setup:2 cochange=transport:
 editor.h component=? role=public prefix=editor cochange=transport:1
 exec-cmd.c component=? role=lib prefix=strvec includes=setup:1
 exec-cmd.h component=? role=public prefix=argv-array cochange=refs:4,transport:4,odb:1,setup:1,submodule:1
-fmt-merge-msg.c component=merge role=lib prefix=fmt-merge-msg includes=odb:3,diff:2,revision:2,setup:2,merge:1 cochange=revision:10,odb:7,index:6,diff:4,setup:4
-fmt-merge-msg.h component=merge role=header prefix=fmt-merge-msg cochange=merge:3,setup:2
 for-each-ref.h component=? role=public prefix=?
 gettext.c component=? role=lib prefix=gettext includes=setup:1 cochange=pack:5,refs:3,setup:2,transport:2,merge:1
 gettext.h component=? role=public prefix=i18n cochange=transport:2,setup:1
@@ -180,16 +178,20 @@ mailmap.c component=? role=lib prefix=mailmap includes=setup:3,odb:2 cochange=se
 mailmap.h component=? role=public prefix=mailmap cochange=setup:8,revision:4,transport:2,diff:1,index:1
 mem-pool.c component=? role=lib prefix=mem-pool cochange=index:6
 mem-pool.h component=? role=public prefix=mem-pool cochange=index:4
-merge-blobs.c component=merge role=lib prefix=object-store includes=merge:2,odb:2 cochange=merge:9,notes:3,diff:2,convert:1,odb:1
-merge-blobs.h component=merge role=header prefix=merge-blobs cochange=merge:2
-merge-ll.c component=merge role=lib prefix=merge-ll includes=convert:2,diff:1,merge:1,setup:1 cochange=merge:11,diff:6,transport:4,convert:2,index:2
-merge-ll.h component=merge role=header prefix=merge-ll cochange=merge:11,diff:2,convert:1,notes:1
-merge-ort-wrappers.c component=merge role=lib prefix=merge-ort includes=odb:4,merge:2,index:1,setup:1 cochange=merge:7,odb:2,notes:1,revision:1
-merge-ort-wrappers.h component=merge role=header prefix=merge includes=merge:1 cochange=merge:9,odb:2,revision:1
-merge-ort.c component=merge role=lib prefix=merge-ort includes=odb:8,index:6,diff:3,merge:2,revision:2 cochange=diff:41,merge:32,index:23,odb:23,revision:16
-merge-ort.h component=merge role=header prefix=merge-ort includes=odb:1 cochange=merge:19,odb:2,revision:2,diff:1
-merge.c component=merge role=lib prefix=merge includes=odb:4,index:2,merge:1,setup:1 cochange=index:22,merge:6,setup:4,diff:2,odb:2
-merge.h component=merge role=header prefix=merge cochange=merge:1
+merge/fmt-merge-msg.c component=merge role=lib prefix=fmt-merge-msg includes=odb:3,diff:2,revision:2,setup:2,merge:1 cochange=revision:10,odb:7,index:6,diff:4,setup:4
+merge/fmt-merge-msg.h component=merge role=header prefix=fmt-merge-msg cochange=merge:3,setup:2
+merge/merge-blobs.c component=merge role=lib prefix=object-store includes=merge:2,odb:2 cochange=merge:9,notes:3,diff:2,convert:1,odb:1
+merge/merge-blobs.h component=merge role=header prefix=merge-blobs cochange=merge:2
+merge/merge-ll.c component=merge role=lib prefix=merge-ll includes=convert:2,diff:1,merge:1,setup:1 cochange=merge:11,diff:6,transport:4,convert:2,index:2
+merge/merge-ll.h component=merge role=header prefix=merge-ll cochange=merge:11,diff:2,convert:1,notes:1
+merge/merge-ort-wrappers.c component=merge role=lib prefix=merge-ort includes=odb:4,merge:2,index:1,setup:1 cochange=merge:7,odb:2,notes:1,revision:1
+merge/merge-ort-wrappers.h component=merge role=header prefix=merge includes=merge:1 cochange=merge:9,odb:2,revision:1
+merge/merge-ort.c component=merge role=lib prefix=merge-ort includes=odb:8,index:6,diff:3,merge:2,revision:2 cochange=diff:41,merge:32,index:23,odb:23,revision:16
+merge/merge-ort.h component=merge role=header prefix=merge-ort includes=odb:1 cochange=merge:19,odb:2,revision:2,diff:1
+merge/merge.c component=merge role=lib prefix=merge includes=odb:4,index:2,merge:1,setup:1 cochange=index:22,merge:6,setup:4,diff:2,odb:2
+merge/merge.h component=merge role=header prefix=merge cochange=merge:1
+merge/rerere.c component=merge role=lib prefix=rerere includes=index:4,merge:2,odb:2,setup:2,diff:1 cochange=index:54,merge:29,pack:26,odb:25,transport:25
+merge/rerere.h component=merge role=header prefix=rerere cochange=merge:16,odb:1
 mergesort.h component=? role=public prefix=mergesort cochange=odb:1
 notes-cache.c component=notes role=lib prefix=notes includes=odb:3,notes:1,refs:1,revision:1,setup:1 cochange=notes:37,odb:29,diff:10,index:10,revision:9
 notes-cache.h component=notes role=header prefix=notes-cache includes=notes:1 cochange=diff:7,notes:3
@@ -334,8 +336,6 @@ refs/worktree.c component=refs role=lib prefix=worktree includes=setup:4,index:2
 refs/worktree.h component=refs role=header prefix=worktree includes=refs:1 cochange=refs:61,revision:10,pack:5,setup:5,odb:4
 replay.c component=? role=lib prefix=replay includes=odb:2,merge:1,refs:1,revision:1,setup:1 cochange=transport:1
 replay.h component=? role=public prefix=replay includes=odb:1
-rerere.c component=merge role=lib prefix=rerere includes=index:4,merge:2,odb:2,setup:2,diff:1 cochange=index:54,merge:29,pack:26,odb:25,transport:25
-rerere.h component=merge role=header prefix=rerere cochange=merge:16,odb:1
 reset.c component=? role=lib prefix=reset includes=odb:3,index:2,refs:1,setup:1 cochange=index:9,merge:5,odb:3,notes:2,revision:2
 reset.h component=? role=public prefix=reset includes=odb:1,setup:1
 revision/bisect.c component=revision role=lib prefix=bisect includes=odb:5,revision:5,setup:2,diff:1,index:1 cochange=revision:61,odb:32,transport:31,refs:13,diff:9

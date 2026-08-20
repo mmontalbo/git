@@ -32,7 +32,7 @@
 #include "index/read-cache.h"
 #include "setup/repository.h"
 #include "string-list.h"
-#include "rerere.h"
+#include "merge/rerere.h"
 #include "index/unpack-trees.h"
 #include "column.h"
 #include "sequencer.h"

@@ -33,7 +33,7 @@
 #include "odb/odb.h"
 #include "path.h"
 #include "refs/reflog.h"
-#include "rerere.h"
+#include "merge/rerere.h"
 #include "revision/revision.h"
 #include "refs/refs.h"
 #include "transport/remote.h"
