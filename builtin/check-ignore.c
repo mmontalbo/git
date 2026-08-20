@@ -7,7 +7,7 @@
 #include "quote.h"
 #include "index/pathspec.h"
 #include "parse-options.h"
-#include "submodule.h"
+#include "submodule/submodule.h"
 #include "write-or-die.h"
 
 static int quiet, verbose, stdin_paths, show_non_matching, no_index;
