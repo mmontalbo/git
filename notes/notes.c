@@ -5,7 +5,7 @@
 #include "setup/config.h"
 #include "setup/environment.h"
 #include "hex.h"
-#include "notes.h"
+#include "notes/notes.h"
 #include "odb/object-file.h"
 #include "odb/object-name.h"
 #include "odb/odb.h"

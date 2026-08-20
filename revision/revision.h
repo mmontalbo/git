@@ -3,7 +3,7 @@
 
 #include "odb/commit.h"
 #include "grep.h"
-#include "notes.h"
+#include "notes/notes.h"
 #include "odb/object-name.h"
 #include "odb/oidset.h"
 #include "revision/pretty.h"
