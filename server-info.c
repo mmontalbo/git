@@ -4,7 +4,7 @@
 #include "dir.h"
 #include "hex.h"
 #include "repository.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "odb/object.h"
 #include "odb/commit.h"
 #include "odb/tag.h"

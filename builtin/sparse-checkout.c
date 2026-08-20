@@ -19,7 +19,7 @@
 #include "quote.h"
 #include "setup.h"
 #include "sparse-index.h"
-#include "worktree.h"
+#include "refs/worktree.h"
 
 static const char *empty_base = "";
 

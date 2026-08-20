@@ -8,9 +8,9 @@
 #include "revision.h"
 #include "reachable.h"
 #include "wildmatch.h"
-#include "worktree.h"
-#include "reflog.h"
-#include "refs.h"
+#include "refs/worktree.h"
+#include "refs/reflog.h"
+#include "refs/refs.h"
 #include "parse-options.h"
 
 #define BUILTIN_REFLOG_SHOW_USAGE \
