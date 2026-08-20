@@ -20,7 +20,7 @@
 #pragma GCC diagnostic ignored "-Wsign-compare"
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include "setup/config.h"
 #endif
 
 /* Make sure no one compiles this code with a C++ compiler.  */

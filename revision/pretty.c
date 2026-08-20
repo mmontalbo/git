@@ -2,9 +2,9 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "config.h"
+#include "setup/config.h"
 #include "odb/commit.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "odb/hash.h"
 #include "hex.h"

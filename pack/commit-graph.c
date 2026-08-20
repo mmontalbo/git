@@ -1,9 +1,9 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "config.h"
+#include "setup/config.h"
 #include "csum-file.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "hex.h"
 #include "lockfile.h"

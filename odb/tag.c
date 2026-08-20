@@ -1,7 +1,7 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "odb/tag.h"
 #include "odb/object-name.h"
 #include "odb/odb.h"
@@ -12,7 +12,7 @@
 #include "gpg-interface.h"
 #include "hex.h"
 #include "pack/packfile.h"
-#include "repository.h"
+#include "setup/repository.h"
 
 const char *tag_type = "tag";
 

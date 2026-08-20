@@ -3,7 +3,7 @@
 
 #include "git-compat-util.h"
 #include "git-zlib.h"
-#include "config.h"
+#include "setup/config.h"
 #include "builtin.h"
 #include "exec-cmd.h"
 #include "run-command.h"
@@ -14,13 +14,13 @@
 #include "command-list.h"
 #include "string-list.h"
 #include "column.h"
-#include "version.h"
+#include "setup/version.h"
 #include "refs/refs.h"
 #include "parse-options.h"
 #include "prompt.h"
 #include "index/fsmonitor-ipc.h"
-#include "repository.h"
-#include "alias.h"
+#include "setup/repository.h"
+#include "setup/alias.h"
 #include "utf8.h"
 
 #ifndef NO_CURL

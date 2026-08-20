@@ -5,15 +5,15 @@
 #include "hex.h"
 #include "odb/odb.h"
 #include "promisor-remote.h"
-#include "config.h"
+#include "setup/config.h"
 #include "trace2.h"
 #include "transport.h"
 #include "strvec.h"
 #include "pack/packfile.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "url.h"
 #include "urlmatch.h"
-#include "version.h"
+#include "setup/version.h"
 #include "wildmatch.h"
 
 struct promisor_remote_config {

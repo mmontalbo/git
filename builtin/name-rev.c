@@ -2,10 +2,10 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "builtin.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "hex.h"
-#include "config.h"
+#include "setup/config.h"
 #include "odb/commit.h"
 #include "odb/tag.h"
 #include "refs/refs.h"

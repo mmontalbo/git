@@ -9,7 +9,7 @@
 #include "gettext.h"
 #include "lockfile.h"
 #include "parse.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "strbuf.h"
 #include "wrapper.h"
 

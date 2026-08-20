@@ -8,8 +8,8 @@
 
 #include "builtin.h"
 #include "advice.h"
-#include "config.h"
-#include "environment.h"
+#include "setup/config.h"
+#include "setup/environment.h"
 #include "lockfile.h"
 #include "index/dir.h"
 #include "gettext.h"
@@ -20,7 +20,7 @@
 #include "index/read-cache.h"
 
 #include "string-list.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "index/sparse-index.h"
 #include "submodule.h"
 #include "index/pathspec.h"

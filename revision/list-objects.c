@@ -16,7 +16,7 @@
 #include "pack/packfile.h"
 #include "odb/odb.h"
 #include "trace.h"
-#include "environment.h"
+#include "setup/environment.h"
 
 struct traversal_context {
 	struct rev_info *revs;

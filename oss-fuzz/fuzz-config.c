@@ -1,5 +1,5 @@
 #include "git-compat-util.h"
-#include "config.h"
+#include "setup/config.h"
 
 int LLVMFuzzerTestOneInput(const uint8_t *, size_t);
 static int config_parser_callback(const char *, const char *,

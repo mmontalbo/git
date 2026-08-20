@@ -14,7 +14,7 @@
 #include "git-compat-util.h"
 #include "pager.h"
 #include "progress.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "strbuf.h"
 #include "trace.h"
 #include "trace2.h"

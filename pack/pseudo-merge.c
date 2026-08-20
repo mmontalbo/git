@@ -6,7 +6,7 @@
 #include "date.h"
 #include "odb/oid-array.h"
 #include "strbuf.h"
-#include "config.h"
+#include "setup/config.h"
 #include "string-list.h"
 #include "refs/refs.h"
 #include "pack/pack-bitmap.h"
