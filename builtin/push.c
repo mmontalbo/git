@@ -8,7 +8,7 @@
 #include "advice.h"
 #include "branch.h"
 #include "config.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "environment.h"
 #include "gettext.h"
 #include "hex.h"

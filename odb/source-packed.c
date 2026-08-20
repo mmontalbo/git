@@ -1,7 +1,7 @@
 #include "git-compat-util.h"
 #include "abspath.h"
 #include "chdir-notify.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "git-zlib.h"
 #include "revision/list-objects-filter-options.h"
 #include "mergesort.h"

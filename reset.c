@@ -1,5 +1,5 @@
 #include "git-compat-util.h"
-#include "cache-tree.h"
+#include "index/cache-tree.h"
 #include "gettext.h"
 #include "hex.h"
 #include "lockfile.h"
@@ -8,7 +8,7 @@
 #include "reset.h"
 #include "odb/tree-walk.h"
 #include "odb/tree.h"
-#include "unpack-trees.h"
+#include "index/unpack-trees.h"
 #include "hook.h"
 
 static int update_refs(struct repository *repo,

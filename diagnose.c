@@ -2,7 +2,7 @@
 #include "diagnose.h"
 #include "compat/disk.h"
 #include "archive/archive.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "help.h"
 #include "gettext.h"
 #include "hex.h"

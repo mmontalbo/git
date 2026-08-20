@@ -8,7 +8,7 @@
 #include "help.h"
 #include "odb/object-file.h"
 #include "pager.h"
-#include "read-cache-ll.h"
+#include "index/read-cache-ll.h"
 #include "run-command.h"
 #include "alias.h"
 #include "odb/replace-object.h"

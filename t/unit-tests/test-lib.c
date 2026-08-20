@@ -31,7 +31,7 @@ static struct {
  * There are other compilers that do the same, and are not for
  * Windows.
  */
-#include "dir.h"
+#include "index/dir.h"
 
 static const char *make_relative(const char *location)
 {

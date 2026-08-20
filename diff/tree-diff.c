@@ -11,7 +11,7 @@
 #include "odb/tree.h"
 #include "odb/tree-walk.h"
 #include "repository.h"
-#include "dir.h"
+#include "index/dir.h"
 
 /*
  * Some mode bits are also used internally for computations.
