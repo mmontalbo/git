@@ -13,10 +13,10 @@
 #include "test-tool.h"
 #include "odb/commit.h"
 #include "diff/diff.h"
-#include "line-log.h"
+#include "revision/line-log.h"
 #include "odb/object-name.h"
 #include "repository.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "setup.h"
 #include "string-list.h"
 

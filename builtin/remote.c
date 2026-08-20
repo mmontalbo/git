@@ -18,7 +18,7 @@
 #include "refs/refspec.h"
 #include "odb/odb.h"
 #include "strvec.h"
-#include "commit-reach.h"
+#include "revision/commit-reach.h"
 #include "progress.h"
 
 static const char * const builtin_remote_usage[] = {

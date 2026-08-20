@@ -9,9 +9,9 @@
 #include "odb/blob.h"
 #include "http.h"
 #include "diff/diff.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "remote.h"
-#include "list-objects.h"
+#include "revision/list-objects.h"
 #include "setup.h"
 #include "sigchain.h"
 #include "strvec.h"
@@ -21,7 +21,7 @@
 #include "pack/packfile.h"
 #include "odb/object-file.h"
 #include "odb/odb.h"
-#include "commit-reach.h"
+#include "revision/commit-reach.h"
 
 #ifdef EXPAT_NEEDS_XMLPARSE_H
 #include <xmlparse.h>

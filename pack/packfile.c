@@ -4,7 +4,7 @@
 #include "environment.h"
 #include "gettext.h"
 #include "hex.h"
-#include "list.h"
+#include "revision/list.h"
 #include "pack/pack.h"
 #include "repository.h"
 #include "dir.h"

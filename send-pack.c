@@ -15,7 +15,7 @@
 #include "version.h"
 #include "odb/oid-array.h"
 #include "gpg-interface.h"
-#include "shallow.h"
+#include "revision/shallow.h"
 #include "parse-options.h"
 #include "trace2.h"
 #include "write-or-die.h"

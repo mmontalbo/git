@@ -7,7 +7,7 @@
 #include "gettext.h"
 #include "odb/hash.h"
 #include "hex.h"
-#include "pretty.h"
+#include "revision/pretty.h"
 #include "refs/refs.h"
 #include "color.h"
 #include "strvec.h"
