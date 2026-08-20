@@ -259,7 +259,7 @@ Add the `struct rev_info` and the `repo_init_revisions()` call.
 We'll also need to include the `revision.h` header:
 
 ----
-#include "revision.h"
+#include "revision/revision.h"
 
 ...
 
@@ -359,7 +359,7 @@ the walk loop below the `prepare_revision_walk()` call within your
 `walken_commit_walk()`:
 
 ----
-#include "pretty.h"
+#include "revision/pretty.h"
 
 ...
 
@@ -668,7 +668,7 @@ Complete your implementation of `walken_object_walk()`.
 We'll also need to include the `list-objects.h` header.
 
 ----
-#include "list-objects.h"
+#include "revision/list-objects.h"
 
 ...
 

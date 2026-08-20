@@ -9,7 +9,7 @@
 #include "path.h"
 #include "repository.h"
 #include "strbuf.h"
-#include "revision.h"
+#include "revision/revision.h"
 
 struct flag_definition {
 	const char *name;

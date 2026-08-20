@@ -24,7 +24,7 @@
 #include "odb/tag.h"
 #include "parse-options.h"
 #include "diff/diff.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "gpg-interface.h"
 #include "odb/oid-array.h"
 #include "column.h"

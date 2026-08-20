@@ -19,7 +19,7 @@
 #include "promisor-remote.h"
 #include "strmap.h"
 #include "string-list.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "trace2.h"
 #include "progress.h"
 #include "pack/packfile.h"

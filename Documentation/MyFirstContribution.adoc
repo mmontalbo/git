@@ -429,7 +429,7 @@ Add the following includes:
 
 ----
 #include "odb/commit.h"
-#include "pretty.h"
+#include "revision/pretty.h"
 #include "strbuf.h"
 ----
 

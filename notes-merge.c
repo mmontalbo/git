@@ -22,7 +22,7 @@
 #include "strbuf.h"
 #include "trace.h"
 #include "notes-utils.h"
-#include "commit-reach.h"
+#include "revision/commit-reach.h"
 
 struct notes_merge_pair {
 	struct object_id obj, base, local, remote;

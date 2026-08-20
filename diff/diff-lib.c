@@ -14,7 +14,7 @@
 #include "hex.h"
 #include "odb/object-name.h"
 #include "read-cache.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "cache-tree.h"
 #include "unpack-trees.h"
 #include "refs/refs.h"
@@ -24,7 +24,7 @@
 #include "trace.h"
 #include "dir.h"
 #include "fsmonitor.h"
-#include "commit-reach.h"
+#include "revision/commit-reach.h"
 
 /*
  * diff-files

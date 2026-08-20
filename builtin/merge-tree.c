@@ -8,7 +8,7 @@
 #include "gettext.h"
 #include "hex.h"
 #include "odb/commit.h"
-#include "commit-reach.h"
+#include "revision/commit-reach.h"
 #include "merge/merge-ort.h"
 #include "odb/object-name.h"
 #include "odb/odb.h"
