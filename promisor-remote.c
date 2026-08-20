@@ -9,7 +9,7 @@
 #include "trace2.h"
 #include "transport.h"
 #include "strvec.h"
-#include "packfile.h"
+#include "pack/packfile.h"
 #include "environment.h"
 #include "url.h"
 #include "urlmatch.h"

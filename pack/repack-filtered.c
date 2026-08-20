@@ -1,5 +1,5 @@
 #include "git-compat-util.h"
-#include "repack.h"
+#include "pack/repack.h"
 #include "repository.h"
 #include "run-command.h"
 #include "string-list.h"

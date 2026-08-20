@@ -2,8 +2,8 @@
 #include "config.h"
 #include "repo-settings.h"
 #include "repository.h"
-#include "midx.h"
-#include "pack-objects.h"
+#include "pack/midx.h"
+#include "pack/pack-objects.h"
 #include "setup.h"
 
 static void repo_cfg_bool(struct repository *r, const char *key, int *dest,

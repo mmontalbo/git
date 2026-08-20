@@ -2,7 +2,7 @@
 #include "odb/object-file.h"
 #include "odb/source-files.h"
 #include "odb/source.h"
-#include "packfile.h"
+#include "pack/packfile.h"
 
 static const char * const odb_source_names_by_type[] = {
 	[ODB_SOURCE_UNKNOWN] = "unknown",

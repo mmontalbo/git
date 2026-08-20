@@ -15,7 +15,7 @@
 #include "base85.h"
 #include "config.h"
 #include "odb/odb.h"
-#include "delta.h"
+#include "pack/delta.h"
 #include "diff.h"
 #include "dir.h"
 #include "environment.h"
