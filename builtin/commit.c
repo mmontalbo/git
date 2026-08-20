@@ -40,7 +40,7 @@
 #include "mailmap.h"
 #include "help.h"
 #include "commit-reach.h"
-#include "commit-graph.h"
+#include "pack/commit-graph.h"
 #include "pretty.h"
 #include "trailer.h"
 

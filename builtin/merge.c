@@ -50,7 +50,7 @@
 #include "branch.h"
 #include "commit-reach.h"
 #include "wt-status.h"
-#include "commit-graph.h"
+#include "pack/commit-graph.h"
 
 #define DEFAULT_TWOHEAD (1<<0)
 #define DEFAULT_OCTOPUS (1<<1)

@@ -1,13 +1,13 @@
 #include "git-compat-util.h"
 #include "gettext.h"
-#include "pack-revindex.h"
+#include "pack/pack-revindex.h"
 #include "odb/odb.h"
-#include "packfile.h"
+#include "pack/packfile.h"
 #include "strbuf.h"
 #include "trace2.h"
 #include "parse.h"
 #include "repository.h"
-#include "midx.h"
+#include "pack/midx.h"
 #include "csum-file.h"
 
 struct revindex_entry {

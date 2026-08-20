@@ -1,7 +1,7 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "test-tool.h"
-#include "commit-graph.h"
+#include "pack/commit-graph.h"
 #include "odb/commit.h"
 #include "environment.h"
 #include "hex.h"

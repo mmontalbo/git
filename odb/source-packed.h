@@ -2,7 +2,7 @@
 #define ODB_SOURCE_PACKED_H
 
 #include "odb/source.h"
-#include "packfile-list.h"
+#include "pack/packfile-list.h"
 #include "strmap.h"
 
 /*

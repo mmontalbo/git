@@ -21,8 +21,8 @@
 #include "blame.h"
 #include "odb/alloc.h"
 #include "odb/commit-slab.h"
-#include "bloom.h"
-#include "commit-graph.h"
+#include "pack/bloom.h"
+#include "pack/commit-graph.h"
 
 define_commit_slab(blame_suspects, struct blame_origin *);
 static struct blame_suspects blame_suspects;
