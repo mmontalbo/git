@@ -2,7 +2,7 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "odb/odb.h"
 #include "cache-tree.h"
 #include "mergesort.h"

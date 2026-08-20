@@ -8,7 +8,7 @@
 #include "config.h"
 #include "odb/commit.h"
 #include "odb/tag.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "odb/object-name.h"
 #include "pager.h"
 #include "parse-options.h"

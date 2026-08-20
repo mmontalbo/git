@@ -5,7 +5,7 @@
 #include "odb/commit.h"
 #include "../fetch-negotiator.h"
 #include "../prio-queue.h"
-#include "../refs.h"
+#include "refs/refs.h"
 #include "../repository.h"
 #include "odb/tag.h"
 
