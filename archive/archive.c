@@ -19,7 +19,7 @@
 #include "tree.h"
 #include "tree-walk.h"
 #include "attr.h"
-#include "archive.h"
+#include "archive/archive.h"
 #include "parse-options.h"
 #include "unpack-trees.h"
 #include "quote.h"

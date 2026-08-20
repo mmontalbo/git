@@ -1,7 +1,7 @@
 #include "git-compat-util.h"
 #include "diagnose.h"
 #include "compat/disk.h"
-#include "archive.h"
+#include "archive/archive.h"
 #include "dir.h"
 #include "help.h"
 #include "gettext.h"

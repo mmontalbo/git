@@ -34,10 +34,10 @@ alloc.c component=? role=lib
 alloc.h component=? role=public
 apply.c component=sequencer role=lib
 apply.h component=sequencer role=header
-archive-tar.c component=archive role=lib
-archive-zip.c component=archive role=lib
-archive.c component=archive role=lib
-archive.h component=archive role=header
+archive/archive-tar.c component=archive role=lib
+archive/archive-zip.c component=archive role=lib
+archive/archive.c component=archive role=lib
+archive/archive.h component=archive role=header
 attr.c component=convert role=lib
 attr.h component=convert role=header
 banned.h component=? role=public

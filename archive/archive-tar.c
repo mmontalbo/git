@@ -10,7 +10,7 @@
 #include "git-zlib.h"
 #include "hex.h"
 #include "tar.h"
-#include "archive.h"
+#include "archive/archive.h"
 #include "odb.h"
 #include "odb/streaming.h"
 #include "strbuf.h"
