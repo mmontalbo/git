@@ -13,10 +13,10 @@
 #include "git-compat-util.h"
 #include "abspath.h"
 #include "advice.h"
-#include "attr.h"
+#include "convert/attr.h"
 #include "branch.h"
 #include "color.h"
-#include "convert.h"
+#include "convert/convert.h"
 #include "setup/environment.h"
 #include "gettext.h"
 #include "git-zlib.h"
@@ -35,7 +35,7 @@
 #include "quote.h"
 #include "chdir-notify.h"
 #include "setup/setup.h"
-#include "ws.h"
+#include "convert/ws.h"
 #include "write-or-die.h"
 
 static int pack_compression_seen;
