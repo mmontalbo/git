@@ -2,10 +2,10 @@
 #include "builtin.h"
 #include "gettext.h"
 #include "hex.h"
-#include "transport.h"
-#include "pkt-line.h"
+#include "transport/transport.h"
+#include "transport/pkt-line.h"
 #include "refs/ref-filter.h"
-#include "remote.h"
+#include "transport/remote.h"
 #include "parse-options.h"
 #include "wildmatch.h"
 

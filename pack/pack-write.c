@@ -4,7 +4,7 @@
 #include "hex.h"
 #include "pack/pack.h"
 #include "csum-file.h"
-#include "remote.h"
+#include "transport/remote.h"
 #include "pack/chunk-format.h"
 #include "odb/object-file.h"
 #include "pack/pack-mtimes.h"

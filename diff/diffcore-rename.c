@@ -13,7 +13,7 @@
 #include "mem-pool.h"
 #include "odb/oid-array.h"
 #include "progress.h"
-#include "promisor-remote.h"
+#include "transport/promisor-remote.h"
 #include "string-list.h"
 #include "strmap.h"
 #include "trace2.h"

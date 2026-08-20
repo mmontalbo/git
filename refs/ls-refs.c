@@ -9,7 +9,7 @@
 #include "refs/refs.h"
 #include "strvec.h"
 #include "refs/ls-refs.h"
-#include "pkt-line.h"
+#include "transport/pkt-line.h"
 #include "setup/config.h"
 #include "string-list.h"
 

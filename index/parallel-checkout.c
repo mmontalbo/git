@@ -8,7 +8,7 @@
 #include "odb/hash.h"
 #include "hex.h"
 #include "index/parallel-checkout.h"
-#include "pkt-line.h"
+#include "transport/pkt-line.h"
 #include "progress.h"
 #include "index/read-cache-ll.h"
 #include "run-command.h"

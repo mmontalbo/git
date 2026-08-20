@@ -32,7 +32,7 @@
 #include "diff/patch-ids.h"
 #include "path.h"
 #include "shortlog.h"
-#include "remote.h"
+#include "transport/remote.h"
 #include "string-list.h"
 #include "parse-options.h"
 #include "revision/line-log.h"
@@ -45,7 +45,7 @@
 #include "utf8.h"
 
 #include "revision/commit-reach.h"
-#include "promisor-remote.h"
+#include "transport/promisor-remote.h"
 #include "diff/range-diff.h"
 #include "odb/tmp-objdir.h"
 #include "odb/tree.h"
