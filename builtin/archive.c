@@ -5,9 +5,9 @@
 #include "builtin.h"
 #include "archive/archive.h"
 #include "gettext.h"
-#include "transport.h"
+#include "transport/transport.h"
 #include "parse-options.h"
-#include "pkt-line.h"
+#include "transport/pkt-line.h"
 
 static void create_output_file(const char *output_file)
 {

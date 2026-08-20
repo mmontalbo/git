@@ -2,17 +2,17 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "bundle-uri.h"
-#include "bundle.h"
+#include "transport/bundle-uri.h"
+#include "transport/bundle.h"
 #include "copy.h"
 #include "gettext.h"
 #include "refs/refs.h"
 #include "run-command.h"
 #include "hashmap.h"
-#include "pkt-line.h"
+#include "transport/pkt-line.h"
 #include "setup/config.h"
-#include "fetch-pack.h"
-#include "remote.h"
+#include "transport/fetch-pack.h"
+#include "transport/remote.h"
 #include "trace2.h"
 #include "odb/odb.h"
 

@@ -14,7 +14,7 @@
 #include "quote.h"
 #include "index/read-cache-ll.h"
 #include "sigchain.h"
-#include "pkt-line.h"
+#include "transport/pkt-line.h"
 #include "sub-process.h"
 #include "trace.h"
 #include "utf8.h"
