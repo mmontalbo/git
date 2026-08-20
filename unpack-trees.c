@@ -16,7 +16,7 @@
 #include "cache-tree.h"
 #include "unpack-trees.h"
 #include "progress.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "attr.h"
 #include "read-cache.h"
 #include "split-index.h"

@@ -10,7 +10,7 @@
 #include "gettext.h"
 #include "parse-options.h"
 #include "path.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "setup.h"
 #include "strbuf.h"
 
