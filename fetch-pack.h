@@ -3,7 +3,7 @@
 
 #include "string-list.h"
 #include "protocol.h"
-#include "list-objects-filter-options.h"
+#include "revision/list-objects-filter-options.h"
 #include "odb/oidset.h"
 
 struct oid_array;

@@ -3,7 +3,7 @@
 #include "git-compat-util.h"
 #include "config.h"
 #include "gettext.h"
-#include "list-objects-filter-options.h"
+#include "revision/list-objects-filter-options.h"
 #include "promisor-remote.h"
 #include "trace.h"
 #include "url.h"

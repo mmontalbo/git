@@ -11,7 +11,7 @@
 #include "parse-options.h"
 #include "refs/refs.h"
 #include "replay.h"
-#include "revision.h"
+#include "revision/revision.h"
 
 enum ref_action_mode {
 	REF_ACTION_UPDATE,
