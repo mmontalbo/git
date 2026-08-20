@@ -4,7 +4,7 @@
 #include "odb/commit.h"
 #include "diff/diff.h"
 #include "index/dir.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "hex.h"
 #include "revision/revision.h"

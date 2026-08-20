@@ -6,7 +6,7 @@
 #include "../fetch-negotiator.h"
 #include "../prio-queue.h"
 #include "refs/refs.h"
-#include "../repository.h"
+#include "setup/repository.h"
 #include "odb/tag.h"
 
 /* Remember to update object flag allocation in object.h */

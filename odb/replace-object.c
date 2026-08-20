@@ -5,7 +5,7 @@
 #include "odb/odb.h"
 #include "odb/replace-object.h"
 #include "refs/refs.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "odb/commit.h"
 
 static int register_replace_ref(const struct reference *ref, void *cb_data)

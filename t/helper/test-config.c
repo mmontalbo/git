@@ -2,8 +2,8 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "test-tool.h"
-#include "config.h"
-#include "setup.h"
+#include "setup/config.h"
+#include "setup/setup.h"
 #include "string-list.h"
 
 /*

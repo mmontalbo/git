@@ -4,7 +4,7 @@
 #include "pack/pack-objects.h"
 #include "pack/packfile.h"
 #include "parse.h"
-#include "repository.h"
+#include "setup/repository.h"
 
 static uint32_t locate_object_entry_hash(struct packing_data *pdata,
 					 const struct object_id *oid,

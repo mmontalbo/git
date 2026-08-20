@@ -2,7 +2,7 @@
 
 #include "git-compat-util.h"
 #include "abspath.h"
-#include "config.h"
+#include "setup/config.h"
 #include "credential.h"
 #include "gettext.h"
 #include "string-list.h"
@@ -12,9 +12,9 @@
 #include "sigchain.h"
 #include "strbuf.h"
 #include "urlmatch.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "trace2.h"
-#include "repository.h"
+#include "setup/repository.h"
 
 void credential_init(struct credential *c)
 {

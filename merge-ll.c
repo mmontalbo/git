@@ -8,7 +8,7 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "config.h"
+#include "setup/config.h"
 #include "convert.h"
 #include "attr.h"
 #include "diff/xdiff-interface.h"

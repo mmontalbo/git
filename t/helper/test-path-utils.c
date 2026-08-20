@@ -3,10 +3,10 @@
 
 #include "test-tool.h"
 #include "abspath.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "path.h"
 #include "index/read-cache-ll.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "string-list.h"
 #include "trace.h"
 #include "utf8.h"

@@ -17,7 +17,7 @@
 #include "pack/pack-objects.h"
 #include "pack/delta-islands.h"
 #include "odb/oid-array.h"
-#include "config.h"
+#include "setup/config.h"
 
 KHASH_INIT(str, const char *, void *, 1, kh_str_hash_func, kh_str_hash_equal)
 

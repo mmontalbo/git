@@ -2,7 +2,7 @@
 
 #include "git-compat-util.h"
 #include "pack/commit-graph.h"
-#include "repository.h"
+#include "setup/repository.h"
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size);
 

@@ -8,7 +8,7 @@
 #include "odb/tree-walk.h"
 #include "odb/object-file.h"
 #include "odb/odb.h"
-#include "repository.h"
+#include "setup/repository.h"
 
 static int score_missing(unsigned mode)
 {

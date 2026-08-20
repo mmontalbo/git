@@ -1,6 +1,6 @@
 #include "builtin.h"
-#include "config.h"
-#include "environment.h"
+#include "setup/config.h"
+#include "setup/environment.h"
 #include "refs/pack-refs.h"
 #include "parse-options.h"
 #include "refs/refs.h"

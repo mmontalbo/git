@@ -8,11 +8,11 @@
 #include "strbuf.h"
 #include "help.h"
 #include "compat/compiler.h"
-#include "hook.h"
+#include "setup/hook.h"
 #include "hook-list.h"
 #include "diagnose.h"
-#include "setup.h"
-#include "version.h"
+#include "setup/setup.h"
+#include "setup/version.h"
 
 static void get_system_info(struct strbuf *sys_info)
 {

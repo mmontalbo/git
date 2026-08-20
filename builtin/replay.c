@@ -5,7 +5,7 @@
 #include "git-compat-util.h"
 
 #include "builtin.h"
-#include "config.h"
+#include "setup/config.h"
 #include "hex.h"
 #include "odb/object-name.h"
 #include "parse-options.h"

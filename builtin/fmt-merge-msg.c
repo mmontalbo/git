@@ -1,5 +1,5 @@
 #include "builtin.h"
-#include "config.h"
+#include "setup/config.h"
 #include "fmt-merge-msg.h"
 #include "gettext.h"
 #include "parse-options.h"

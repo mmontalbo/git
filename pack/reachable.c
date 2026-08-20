@@ -17,7 +17,7 @@
 #include "odb/object-file.h"
 #include "pack/pack-bitmap.h"
 #include "pack/pack-mtimes.h"
-#include "config.h"
+#include "setup/config.h"
 #include "run-command.h"
 #include "sequencer.h"
 

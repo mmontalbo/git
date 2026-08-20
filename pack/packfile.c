@@ -1,12 +1,12 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "hex.h"
 #include "revision/list.h"
 #include "pack/pack.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "index/dir.h"
 #include "pack/packfile.h"
 #include "pack/delta.h"

@@ -1,8 +1,8 @@
 #define USE_THE_REPOSITORY_VARIABLE
 #include "builtin.h"
 #include "abspath.h"
-#include "config.h"
-#include "environment.h"
+#include "setup/config.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "parse-options.h"
 #include "pack/midx.h"
@@ -12,7 +12,7 @@
 #include "odb/source.h"
 #include "odb/source-files.h"
 #include "odb/replace-object.h"
-#include "repository.h"
+#include "setup/repository.h"
 
 #define BUILTIN_MIDX_WRITE_USAGE \
 	N_("git multi-pack-index [<options>] write [--preferred-pack=<pack>]\n" \

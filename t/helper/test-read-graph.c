@@ -2,10 +2,10 @@
 
 #include "test-tool.h"
 #include "pack/commit-graph.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "odb/odb.h"
 #include "pack/bloom.h"
-#include "setup.h"
+#include "setup/setup.h"
 
 static void dump_graph_info(struct commit_graph *graph)
 {

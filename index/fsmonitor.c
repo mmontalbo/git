@@ -2,14 +2,14 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "config.h"
+#include "setup/config.h"
 #include "index/dir.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "ewah/ewok.h"
 #include "index/fsmonitor.h"
 #include "index/fsmonitor-ipc.h"
 #include "index/name-hash.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "run-command.h"
 #include "strbuf.h"
 #include "trace2.h"

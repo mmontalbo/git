@@ -1,9 +1,9 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "git-compat-util.h"
-#include "config.h"
+#include "setup/config.h"
 #include "odb/commit.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "refs/refs.h"
 #include "notes-utils.h"

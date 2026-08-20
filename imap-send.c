@@ -26,13 +26,13 @@
 
 #include "git-compat-util.h"
 #include "advice.h"
-#include "config.h"
+#include "setup/config.h"
 #include "credential.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "run-command.h"
 #include "parse-options.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "strbuf.h"
 #ifdef USE_CURL_FOR_IMAP_SEND
 #include "http.h"

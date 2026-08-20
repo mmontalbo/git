@@ -2,7 +2,7 @@
 #define URL_MATCH_H
 
 #include "string-list.h"
-#include "config.h"
+#include "setup/config.h"
 
 struct url_info {
 	/* normalized url on success, must be freed, otherwise NULL */

@@ -2,8 +2,8 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "config.h"
-#include "environment.h"
+#include "setup/config.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "hex.h"
 #include "odb/object-name.h"
@@ -18,7 +18,7 @@
 #include "diff/diff-merges.h"
 #include "refs/refs.h"
 #include "revision/revision.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "revision/graph.h"
 #include "grep.h"
 #include "refs/reflog-walk.h"
@@ -35,7 +35,7 @@
 #include "refs/worktree.h"
 #include "path.h"
 #include "index/read-cache.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "index/sparse-index.h"
 #include "strvec.h"
 #include "trace2.h"

@@ -9,7 +9,7 @@
 #include "hex.h"
 #include "index/preload-index.h"
 #include "index/read-cache-ll.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "revision/revision.h"
 #include "refs/refs.h"
 #include "string-list.h"
