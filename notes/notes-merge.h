@@ -1,7 +1,7 @@
 #ifndef NOTES_MERGE_H
 #define NOTES_MERGE_H
 
-#include "notes-utils.h"
+#include "notes/notes-utils.h"
 #include "strbuf.h"
 
 struct commit;
