@@ -37,7 +37,7 @@
 #include "revision/log-tree.h"
 #include "index/wt-status.h"
 #include "hashmap.h"
-#include "notes-utils.h"
+#include "notes/notes-utils.h"
 #include "sigchain.h"
 #include "index/unpack-trees.h"
 #include "odb/oidmap.h"
