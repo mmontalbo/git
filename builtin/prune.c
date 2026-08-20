@@ -3,7 +3,7 @@
 #include "builtin.h"
 #include "odb/commit.h"
 #include "diff/diff.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "environment.h"
 #include "gettext.h"
 #include "hex.h"

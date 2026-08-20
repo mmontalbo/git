@@ -18,7 +18,7 @@
 #include "refs/refs.h"
 #include "parse-options.h"
 #include "prompt.h"
-#include "fsmonitor-ipc.h"
+#include "index/fsmonitor-ipc.h"
 #include "repository.h"
 #include "alias.h"
 #include "utf8.h"

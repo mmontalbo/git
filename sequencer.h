@@ -3,7 +3,7 @@
 
 #include "strbuf.h"
 #include "strvec.h"
-#include "wt-status.h"
+#include "index/wt-status.h"
 
 struct commit;
 struct index_state;

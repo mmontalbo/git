@@ -9,7 +9,7 @@
 #include "string-list.h"
 #include "xdiff/xdiff.h"
 #include "diff/xdiff-interface.h"
-#include "pathspec.h"
+#include "index/pathspec.h"
 
 static const char * const rerere_usage[] = {
 	N_("git rerere [clear | forget <pathspec>... | diff | status | remaining | gc]"),

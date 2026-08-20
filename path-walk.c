@@ -5,7 +5,7 @@
 #include "path-walk.h"
 #include "odb/blob.h"
 #include "odb/commit.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "hashmap.h"
 #include "hex.h"
 #include "revision/list-objects.h"

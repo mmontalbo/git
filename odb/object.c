@@ -8,7 +8,7 @@
 #include "odb/object-file.h"
 #include "odb/streaming.h"
 #include "odb/blob.h"
-#include "statinfo.h"
+#include "index/statinfo.h"
 #include "odb/tree.h"
 #include "odb/commit.h"
 #include "odb/tag.h"

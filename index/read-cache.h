@@ -1,9 +1,9 @@
 #ifndef READ_CACHE_H
 #define READ_CACHE_H
 
-#include "read-cache-ll.h"
+#include "index/read-cache-ll.h"
 #include "odb/object.h"
-#include "pathspec.h"
+#include "index/pathspec.h"
 #include "environment.h"
 
 /*
