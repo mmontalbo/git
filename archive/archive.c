@@ -19,7 +19,7 @@
 #include "odb/tree.h"
 #include "odb/tree-walk.h"
 #include "attr.h"
-#include "archive.h"
+#include "archive/archive.h"
 #include "parse-options.h"
 #include "index/unpack-trees.h"
 #include "quote.h"
