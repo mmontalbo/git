@@ -42,10 +42,6 @@ base85.h component=? role=public prefix=base85 cochange=diff:1
 branch.c component=? role=lib prefix=branch includes=refs:3,setup:3,odb:2,submodule:1,transport:1 cochange=refs:62,transport:41,setup:28,index:19,revision:12
 branch.h component=? role=public prefix=branch cochange=setup:8,refs:4,submodule:4
 builtin.h component=? role=public prefix=builtin includes=setup:1 cochange=diff:15,index:15,transport:12,odb:6,notes:5
-bundle-uri.c component=transport role=lib prefix=bundle-uri includes=transport:5,odb:1,refs:1,setup:1 cochange=transport:28,setup:7,odb:4,merge:2,pack:2
-bundle-uri.h component=transport role=header prefix=bundle-uri cochange=transport:14
-bundle.c component=transport role=lib prefix=bundle includes=odb:3,revision:3,setup:2,transport:2,diff:1 cochange=transport:63,odb:24,revision:21,refs:17,pack:10
-bundle.h component=transport role=header prefix=bundle includes=revision:1 cochange=transport:37,revision:5
 chdir-notify.c component=? role=lib prefix=chdir-notify includes=revision:1 cochange=index:2,archive:1,merge:1,revision:1
 chdir-notify.h component=? role=public prefix=chdir-notify
 color.c component=? role=lib prefix=color includes=setup:1 cochange=diff:21,index:14,revision:13,setup:7,transport:7
@@ -56,10 +52,6 @@ common-exit.c component=? role=lib prefix=common-main
 common-init.c component=? role=lib prefix=common-main includes=odb:2,setup:2,convert:1 cochange=setup:1
 common-init.h component=? role=public prefix=common-main
 common-main.c component=? role=lib prefix=common-main cochange=setup:5,transport:4,convert:3,index:1
-connect.c component=transport role=lib prefix=connect includes=transport:7,setup:4,odb:1,refs:1 cochange=transport:238,setup:19,diff:13,index:10,refs:10
-connect.h component=transport role=header prefix=connect includes=transport:1 cochange=transport:58,refs:1
-connected.c component=transport role=lib prefix=connected includes=transport:3,odb:1,pack:1 cochange=transport:39,pack:31,odb:7,diff:6,index:5
-connected.h component=transport role=header prefix=connected cochange=transport:23
 convert.c component=convert role=lib prefix=convert includes=convert:2,index:1,merge:1,odb:1,setup:1 cochange=convert:59,diff:43,index:41,setup:30,transport:30
 convert.h component=convert role=header prefix=convert includes=odb:1 cochange=convert:29,index:18,diff:8,setup:8,archive:4
 copy.c component=? role=lib prefix=copy cochange=pack:6,transport:5,diff:3,odb:3,merge:2
@@ -101,19 +93,12 @@ editor.c component=? role=lib prefix=editor includes=setup:2 cochange=transport:
 editor.h component=? role=public prefix=editor cochange=transport:1
 exec-cmd.c component=? role=lib prefix=strvec includes=setup:1
 exec-cmd.h component=? role=public prefix=argv-array cochange=refs:4,transport:4,odb:1,setup:1,submodule:1
-fetch-negotiator.c component=transport role=lib prefix=repo-settings includes=setup:1,transport:1 cochange=setup:8,transport:7,index:2,odb:1
-fetch-negotiator.h component=transport role=header prefix=fetch-negotiator cochange=transport:7,setup:3,odb:1,pack:1,revision:1
-fetch-object-info.c component=transport role=lib prefix=cat-file includes=transport:3,odb:2 cochange=transport:7,odb:1
-fetch-object-info.h component=transport role=header prefix=cat-file includes=transport:2 cochange=transport:7,odb:1
-fetch-pack.c component=transport role=lib prefix=fetch-pack includes=transport:8,odb:7,setup:4,pack:3,revision:2 cochange=transport:303,odb:96,revision:46,pack:40,setup:25
-fetch-pack.h component=transport role=header prefix=fetch-pack includes=odb:1,revision:1,transport:1 cochange=transport:108,odb:2,pack:2,refs:2,diff:1
 fmt-merge-msg.c component=merge role=lib prefix=fmt-merge-msg includes=odb:3,diff:2,revision:2,setup:2,merge:1 cochange=revision:10,odb:7,index:6,diff:4,setup:4
 fmt-merge-msg.h component=merge role=header prefix=fmt-merge-msg cochange=merge:3,setup:2
 for-each-ref.h component=? role=public prefix=?
 gettext.c component=? role=lib prefix=gettext includes=setup:1 cochange=pack:5,refs:3,setup:2,transport:2,merge:1
 gettext.h component=? role=public prefix=i18n cochange=transport:2,setup:1
 git-compat-util.h component=? role=public prefix=git-compat-util cochange=setup:48,index:35,odb:22,pack:21,diff:17
-git-curl-compat.h component=transport role=header prefix=git-curl-compat cochange=transport:22
 git-zlib.c component=? role=lib prefix=git-zlib cochange=archive:2,odb:1,transport:1
 git-zlib.h component=? role=public prefix=git-zlib cochange=archive:3,setup:2,odb:1,transport:1
 git.c component=? role=lib prefix=git includes=setup:4,odb:2,convert:1,index:1,revision:1 cochange=setup:70,revision:54,transport:47,index:28,diff:25
@@ -132,9 +117,6 @@ hex.h component=? role=public prefix=hex includes=odb:1 cochange=revision:3,odb:
 http-backend.c component=? role=program prefix=http-backend includes=setup:4,odb:3,transport:2,pack:1,refs:1 cochange=transport:57,pack:41,setup:19,refs:14,revision:13
 http-fetch.c component=? role=program prefix=http-fetch includes=setup:3,transport:2 cochange=transport:46,setup:10,pack:9,index:7,refs:7
 http-push.c component=? role=program prefix=http-push includes=odb:7,revision:3,setup:3,transport:2,diff:1 cochange=transport:272,odb:134,revision:82,pack:60,diff:34
-http-walker.c component=transport role=lib prefix=http includes=transport:3,odb:2,pack:1,revision:1,setup:1 cochange=transport:73,pack:40,odb:17,index:11,refs:7
-http.c component=transport role=lib prefix=http includes=transport:4,setup:3,odb:2,pack:2 cochange=transport:195,pack:71,odb:27,diff:8,setup:8
-http.h component=transport role=header prefix=http includes=transport:1 cochange=transport:149,pack:15,diff:6,odb:4,archive:3
 imap-send.c component=? role=program prefix=imap-send includes=setup:3,transport:1 cochange=transport:47,diff:16,index:16,refs:9,odb:8
 index/cache-tree.c component=index role=lib prefix=cache-tree includes=odb:5,index:2,setup:1,transport:1 cochange=index:94,odb:69,revision:27,transport:21,diff:20
 index/cache-tree.h component=index role=header prefix=cache-tree includes=odb:2 cochange=index:42,diff:4,revision:4,odb:3,refs:1
@@ -322,20 +304,12 @@ path-walk.c component=? role=lib prefix=path-walk includes=odb:9,revision:3,inde
 path-walk.h component=? role=public prefix=path-walk includes=odb:1 cochange=index:2
 path.c component=? role=lib prefix=path includes=setup:2,index:1,odb:1,pack:1,refs:1 cochange=setup:78,refs:29,index:26,transport:15,odb:12
 path.h component=? role=public prefix=path includes=setup:1 cochange=setup:23,refs:13,odb:11,index:10,pack:8
-pkt-line.c component=transport role=lib prefix=pkt-line includes=transport:2 cochange=transport:102,pack:6,convert:5,diff:5,odb:3
-pkt-line.h component=transport role=header prefix=pkt-line cochange=transport:94,pack:5,convert:4,odb:2,diff:1
 prio-queue.c component=? role=lib prefix=prio-queue cochange=odb:5,revision:5,diff:2,pack:2,transport:2
 prio-queue.h component=? role=public prefix=prio-queue cochange=odb:3,revision:2,transport:2,pack:1
 progress.c component=? role=lib prefix=progress includes=setup:1 cochange=index:11,diff:6,setup:6,pack:4,revision:2
 progress.h component=? role=public prefix=progress cochange=index:5,diff:3
-promisor-remote.c component=transport role=lib prefix=promisor-remote includes=setup:3,transport:2,odb:1,pack:1 cochange=transport:32,setup:15,odb:6,pack:5,index:4
-promisor-remote.h component=transport role=header prefix=promisor-remote includes=setup:1 cochange=transport:18,setup:7,diff:4,index:3,revision:3
 prompt.c component=? role=lib prefix=prompt includes=setup:2 cochange=index:7,setup:6,pack:4,diff:3,transport:2
 prompt.h component=? role=public prefix=prompt cochange=transport:1
-protocol-caps.c component=transport role=lib prefix=protocol-caps includes=odb:3,transport:2,setup:1 cochange=transport:6,odb:3,refs:2,merge:1,setup:1
-protocol-caps.h component=transport role=header prefix=protocol-caps cochange=transport:6,refs:2
-protocol.c component=transport role=lib prefix=protocol includes=setup:2,transport:1 cochange=transport:21,index:4,setup:4,refs:2,diff:1
-protocol.h component=transport role=header prefix=protocol cochange=transport:5
 quote.c component=? role=lib prefix=quote cochange=index:15,diff:12,transport:7,odb:6,revision:6
 quote.h component=? role=public prefix=quote cochange=diff:8,transport:6,index:5,odb:5,refs:5
 rebase-interactive.c component=? role=lib prefix=rebase-interactive includes=odb:3,setup:3,index:1 cochange=revision:4,transport:4,index:3,odb:3,merge:2
@@ -358,9 +332,6 @@ refs/refspec.c component=refs role=lib prefix=refspec includes=refs:2,odb:1,tran
 refs/refspec.h component=refs role=header prefix=refspec cochange=transport:31,refs:29,submodule:3,index:2
 refs/worktree.c component=refs role=lib prefix=worktree includes=setup:4,index:2,refs:2 cochange=refs:73,setup:53,index:22,submodule:13,pack:11
 refs/worktree.h component=refs role=header prefix=worktree includes=refs:1 cochange=refs:61,revision:10,pack:5,setup:5,odb:4
-remote-curl.c component=transport role=lib prefix=remote-curl includes=transport:9,setup:3,odb:1 cochange=transport:226,diff:9,revision:6,setup:5,archive:4
-remote.c component=transport role=lib prefix=remote includes=odb:3,setup:3,transport:3,refs:2,revision:2 cochange=transport:272,refs:91,revision:56,index:51,odb:30
-remote.h component=transport role=header prefix=remote includes=odb:1,refs:1 cochange=transport:245,refs:24,index:12,revision:6,setup:2
 replay.c component=? role=lib prefix=replay includes=odb:2,merge:1,refs:1,revision:1,setup:1 cochange=transport:1
 replay.h component=? role=public prefix=replay includes=odb:1
 rerere.c component=merge role=lib prefix=rerere includes=index:4,merge:2,odb:2,setup:2,diff:1 cochange=index:54,merge:29,pack:26,odb:25,transport:25
@@ -400,12 +371,8 @@ run-command.c component=? role=lib prefix=run-command includes=setup:2,index:1,p
 run-command.h component=? role=public prefix=run-command cochange=transport:21,setup:8,odb:6,submodule:5,refs:4
 sane-ctype.h component=? role=public prefix=sane-ctype
 scalar.c component=? role=lib prefix=scalar includes=index:3,setup:2,pack:1,refs:1 cochange=setup:9,transport:7,pack:4,index:3,merge:3
-send-pack.c component=transport role=lib prefix=send-pack includes=transport:6,odb:3,setup:2,revision:1 cochange=transport:177,odb:29,revision:17,refs:15,pack:8
-send-pack.h component=transport role=header prefix=send-pack cochange=transport:39
 sequencer.c component=? role=lib prefix=sequencer includes=odb:8,index:5,merge:4,setup:4,revision:3 cochange=revision:84,odb:83,index:77,refs:60,transport:55
 sequencer.h component=? role=public prefix=sequencer includes=index:1 cochange=revision:5,index:4,notes:3,odb:3,transport:3
-serve.c component=transport role=lib prefix=serve includes=transport:6,setup:3,odb:1,refs:1 cochange=transport:53,refs:7,odb:4,setup:3,index:1
-serve.h component=transport role=header prefix=serve cochange=transport:9,refs:3,submodule:1
 setup/alias.c component=setup role=lib prefix=alias includes=setup:2 cochange=setup:8,diff:4,transport:3,convert:2,index:2
 setup/alias.h component=setup role=header prefix=completion cochange=setup:3,transport:2,pack:1,revision:1
 setup/config.c component=setup role=lib prefix=config includes=setup:4,odb:2,convert:1,index:1,refs:1 cochange=setup:274,index:93,diff:75,refs:48,revision:46
@@ -429,8 +396,6 @@ sha1dc_git.c component=? role=lib prefix=sha1dc cochange=diff:3,odb:2,revision:2
 sha1dc_git.h component=? role=public prefix=sha1dc cochange=odb:2
 shell.c component=? role=program prefix=shell includes=setup:1 cochange=transport:10,setup:4,revision:2
 shortlog.h component=? role=public prefix=shortlog cochange=revision:2
-sideband.c component=transport role=lib prefix=sideband includes=transport:2,setup:1 cochange=transport:51,revision:6,diff:5,index:5,refs:4
-sideband.h component=transport role=header prefix=sideband cochange=transport:23
 sigchain.c component=? role=lib prefix=sigchain cochange=diff:2,transport:1
 sigchain.h component=? role=public prefix=sigchain cochange=diff:2
 simple-ipc.h component=? role=public prefix=simple-ipc includes=transport:1 cochange=submodule:1
@@ -460,17 +425,54 @@ trace2.c component=? role=lib prefix=trace2 includes=setup:2 cochange=setup:2
 trace2.h component=? role=public prefix=trace2 cochange=setup:2
 trailer.c component=? role=lib prefix=trailer includes=setup:2,odb:1,revision:1 cochange=transport:13,revision:12,odb:8,index:7,refs:6
 trailer.h component=? role=public prefix=trailer includes=revision:1 cochange=revision:7,refs:1
-transport-helper.c component=transport role=lib prefix=transport-helper includes=transport:4,odb:2,refs:2,setup:2,pack:1 cochange=transport:210,refs:23,revision:16,odb:14,index:12
-transport-internal.h component=transport role=header prefix=transport includes=transport:1 cochange=transport:42,refs:3,odb:1,submodule:1
-transport.c component=transport role=lib prefix=transport includes=transport:12,setup:3,odb:2,refs:2,submodule:1 cochange=transport:482,refs:35,setup:31,submodule:29,revision:21
-transport.h component=transport role=header prefix=transport includes=transport:2,revision:1 cochange=transport:249,submodule:6,odb:4,revision:2,diff:1
+transport/bundle-uri.c component=transport role=lib prefix=bundle-uri includes=transport:5,odb:1,refs:1,setup:1 cochange=transport:28,setup:7,odb:4,merge:2,pack:2
+transport/bundle-uri.h component=transport role=header prefix=bundle-uri cochange=transport:14
+transport/bundle.c component=transport role=lib prefix=bundle includes=odb:3,revision:3,setup:2,transport:2,diff:1 cochange=transport:63,odb:24,revision:21,refs:17,pack:10
+transport/bundle.h component=transport role=header prefix=bundle includes=revision:1 cochange=transport:37,revision:5
+transport/connect.c component=transport role=lib prefix=connect includes=transport:7,setup:4,odb:1,refs:1 cochange=transport:238,setup:19,diff:13,index:10,refs:10
+transport/connect.h component=transport role=header prefix=connect includes=transport:1 cochange=transport:58,refs:1
+transport/connected.c component=transport role=lib prefix=connected includes=transport:3,odb:1,pack:1 cochange=transport:39,pack:31,odb:7,diff:6,index:5
+transport/connected.h component=transport role=header prefix=connected cochange=transport:23
+transport/fetch-negotiator.c component=transport role=lib prefix=repo-settings includes=setup:1,transport:1 cochange=setup:8,transport:7,index:2,odb:1
+transport/fetch-negotiator.h component=transport role=header prefix=fetch-negotiator cochange=transport:7,setup:3,odb:1,pack:1,revision:1
+transport/fetch-object-info.c component=transport role=lib prefix=cat-file includes=transport:3,odb:2 cochange=transport:7,odb:1
+transport/fetch-object-info.h component=transport role=header prefix=cat-file includes=transport:2 cochange=transport:7,odb:1
+transport/fetch-pack.c component=transport role=lib prefix=fetch-pack includes=transport:8,odb:7,setup:4,pack:3,revision:2 cochange=transport:303,odb:96,revision:46,pack:40,setup:25
+transport/fetch-pack.h component=transport role=header prefix=fetch-pack includes=odb:1,revision:1,transport:1 cochange=transport:108,odb:2,pack:2,refs:2,diff:1
+transport/git-curl-compat.h component=transport role=header prefix=git-curl-compat cochange=transport:22
+transport/http-walker.c component=transport role=lib prefix=http includes=transport:3,odb:2,pack:1,revision:1,setup:1 cochange=transport:73,pack:40,odb:17,index:11,refs:7
+transport/http.c component=transport role=lib prefix=http includes=transport:4,setup:3,odb:2,pack:2 cochange=transport:195,pack:71,odb:27,diff:8,setup:8
+transport/http.h component=transport role=header prefix=http includes=transport:1 cochange=transport:149,pack:15,diff:6,odb:4,archive:3
+transport/pkt-line.c component=transport role=lib prefix=pkt-line includes=transport:2 cochange=transport:102,pack:6,convert:5,diff:5,odb:3
+transport/pkt-line.h component=transport role=header prefix=pkt-line cochange=transport:94,pack:5,convert:4,odb:2,diff:1
+transport/promisor-remote.c component=transport role=lib prefix=promisor-remote includes=setup:3,transport:2,odb:1,pack:1 cochange=transport:32,setup:15,odb:6,pack:5,index:4
+transport/promisor-remote.h component=transport role=header prefix=promisor-remote includes=setup:1 cochange=transport:18,setup:7,diff:4,index:3,revision:3
+transport/protocol-caps.c component=transport role=lib prefix=protocol-caps includes=odb:3,transport:2,setup:1 cochange=transport:6,odb:3,refs:2,merge:1,setup:1
+transport/protocol-caps.h component=transport role=header prefix=protocol-caps cochange=transport:6,refs:2
+transport/protocol.c component=transport role=lib prefix=protocol includes=setup:2,transport:1 cochange=transport:21,index:4,setup:4,refs:2,diff:1
+transport/protocol.h component=transport role=header prefix=protocol cochange=transport:5
+transport/remote-curl.c component=transport role=lib prefix=remote-curl includes=transport:9,setup:3,odb:1 cochange=transport:226,diff:9,revision:6,setup:5,archive:4
+transport/remote.c component=transport role=lib prefix=remote includes=odb:3,setup:3,transport:3,refs:2,revision:2 cochange=transport:272,refs:91,revision:56,index:51,odb:30
+transport/remote.h component=transport role=header prefix=remote includes=odb:1,refs:1 cochange=transport:245,refs:24,index:12,revision:6,setup:2
+transport/send-pack.c component=transport role=lib prefix=send-pack includes=transport:6,odb:3,setup:2,revision:1 cochange=transport:177,odb:29,revision:17,refs:15,pack:8
+transport/send-pack.h component=transport role=header prefix=send-pack cochange=transport:39
+transport/serve.c component=transport role=lib prefix=serve includes=transport:6,setup:3,odb:1,refs:1 cochange=transport:53,refs:7,odb:4,setup:3,index:1
+transport/serve.h component=transport role=header prefix=serve cochange=transport:9,refs:3,submodule:1
+transport/sideband.c component=transport role=lib prefix=sideband includes=transport:2,setup:1 cochange=transport:51,revision:6,diff:5,index:5,refs:4
+transport/sideband.h component=transport role=header prefix=sideband cochange=transport:23
+transport/transport-helper.c component=transport role=lib prefix=transport-helper includes=transport:4,odb:2,refs:2,setup:2,pack:1 cochange=transport:210,refs:23,revision:16,odb:14,index:12
+transport/transport-internal.h component=transport role=header prefix=transport includes=transport:1 cochange=transport:42,refs:3,odb:1,submodule:1
+transport/transport.c component=transport role=lib prefix=transport includes=transport:12,setup:3,odb:2,refs:2,submodule:1 cochange=transport:482,refs:35,setup:31,submodule:29,revision:21
+transport/transport.h component=transport role=header prefix=transport includes=transport:2,revision:1 cochange=transport:249,submodule:6,odb:4,revision:2,diff:1
+transport/upload-pack.c component=transport role=lib prefix=upload-pack includes=transport:6,odb:4,revision:4,setup:4,diff:1 cochange=transport:198,odb:88,revision:80,refs:55,pack:34
+transport/upload-pack.h component=transport role=header prefix=upload-pack cochange=transport:18,refs:5,submodule:1
+transport/walker.c component=transport role=lib prefix=refs includes=odb:6,refs:1,setup:1,transport:1 cochange=odb:70,transport:55,revision:42,refs:24,pack:17
+transport/walker.h component=transport role=header prefix=walker includes=transport:1 cochange=transport:19
 unicode-width.h component=? role=public prefix=unicode
 unix-socket.c component=? role=lib prefix=unix-socket cochange=diff:3,revision:2,setup:1
 unix-socket.h component=? role=public prefix=unix-socket
 unix-stream-server.c component=? role=lib prefix=unix-stream-server
 unix-stream-server.h component=? role=public prefix=unix-stream-server
-upload-pack.c component=transport role=lib prefix=upload-pack includes=transport:6,odb:4,revision:4,setup:4,diff:1 cochange=transport:198,odb:88,revision:80,refs:55,pack:34
-upload-pack.h component=transport role=header prefix=upload-pack cochange=transport:18,refs:5,submodule:1
 url.c component=? role=lib prefix=url cochange=transport:12,revision:8,diff:6,index:2,refs:2
 url.h component=? role=public prefix=url cochange=transport:9,revision:4,submodule:1
 urlmatch.c component=? role=lib prefix=urlmatch cochange=diff:3,odb:2,revision:2,setup:2,transport:2
@@ -482,8 +484,6 @@ varint.c component=? role=lib prefix=varint cochange=index:2,transport:1
 varint.h component=? role=public prefix=varint cochange=index:2,transport:1
 versioncmp.c component=? role=lib prefix=versioncmp includes=setup:1 cochange=setup:5,pack:3,transport:3,index:2,refs:2
 versioncmp.h component=? role=public prefix=versioncmp cochange=refs:1
-walker.c component=transport role=lib prefix=refs includes=odb:6,refs:1,setup:1,transport:1 cochange=odb:70,transport:55,revision:42,refs:24,pack:17
-walker.h component=transport role=header prefix=walker includes=transport:1 cochange=transport:19
 wildmatch.c component=? role=lib prefix=hex cochange=index:4,refs:3,diff:1,odb:1,revision:1
 wildmatch.h component=? role=public prefix=? cochange=index:3,refs:2,diff:1,revision:1,setup:1
 wrapper.c component=? role=lib prefix=wrapper cochange=setup:21,index:16,pack:6,transport:5,convert:4
