@@ -3,9 +3,9 @@
 #include "git-compat-util.h"
 #include "gettext.h"
 #include "odb/object-file.h"
-#include "packfile.h"
+#include "pack/packfile.h"
 #include "progress.h"
-#include "prune-packed.h"
+#include "pack/prune-packed.h"
 #include "repository.h"
 
 static struct progress *progress;

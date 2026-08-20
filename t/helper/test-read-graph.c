@@ -1,10 +1,10 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "test-tool.h"
-#include "commit-graph.h"
+#include "pack/commit-graph.h"
 #include "repository.h"
 #include "odb/odb.h"
-#include "bloom.h"
+#include "pack/bloom.h"
 #include "setup.h"
 
 static void dump_graph_info(struct commit_graph *graph)
