@@ -22,7 +22,7 @@
 #include "hook.h"
 #include "utf8.h"
 #include "cache-tree.h"
-#include "diff.h"
+#include "diff/diff.h"
 #include "path.h"
 #include "revision.h"
 #include "rerere.h"

@@ -12,7 +12,7 @@
 #include "builtin.h"
 #include "config.h"
 #include "environment.h"
-#include "diff.h"
+#include "diff/diff.h"
 
 static const char builtin_merge_ours_usage[] =
 	"git merge-ours <base>... -- HEAD <remote>...";

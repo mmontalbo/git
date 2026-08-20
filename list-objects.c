@@ -7,7 +7,7 @@
 #include "hex.h"
 #include "odb/tree.h"
 #include "odb/blob.h"
-#include "diff.h"
+#include "diff/diff.h"
 #include "odb/tree-walk.h"
 #include "revision.h"
 #include "list-objects.h"
