@@ -13,7 +13,7 @@
 #include "utf8.h"
 #include "diff/diff.h"
 #include "revision/revision.h"
-#include "notes.h"
+#include "notes/notes.h"
 #include "odb/alloc.h"
 #include "gpg-interface.h"
 #include "mergesort.h"
