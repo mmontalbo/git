@@ -9,7 +9,7 @@
 #include "abspath.h"
 #include "base85.h"
 #include "setup/config.h"
-#include "convert.h"
+#include "convert/convert.h"
 #include "setup/environment.h"
 #include "gettext.h"
 #include "tempfile.h"
@@ -45,7 +45,7 @@
 #include "index/read-cache-ll.h"
 #include "setup/setup.h"
 #include "strmap.h"
-#include "ws.h"
+#include "convert/ws.h"
 
 #ifdef NO_FAST_WORKING_DIRECTORY
 #define FAST_WORKING_DIRECTORY 0

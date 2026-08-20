@@ -10,7 +10,7 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "git-compat-util.h"
-#include "convert.h"
+#include "convert/convert.h"
 #include "index/dir.h"
 #include "setup/environment.h"
 #include "odb/fsck.h"
