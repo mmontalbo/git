@@ -2,7 +2,7 @@
 
 #include "git-compat-util.h"
 #include "odb/commit.h"
-#include "commit-graph.h"
+#include "pack/commit-graph.h"
 #include "decorate.h"
 #include "hex.h"
 #include "prio-queue.h"

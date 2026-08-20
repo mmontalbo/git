@@ -26,7 +26,7 @@
 #include "trace2.h"
 #include "protocol.h"
 #include "upload-pack.h"
-#include "commit-graph.h"
+#include "pack/commit-graph.h"
 #include "commit-reach.h"
 #include "shallow.h"
 #include "trace.h"

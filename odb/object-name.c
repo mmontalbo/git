@@ -22,7 +22,7 @@
 #include "repo-settings.h"
 #include "repository.h"
 #include "setup.h"
-#include "midx.h"
+#include "pack/midx.h"
 #include "commit-reach.h"
 #include "date.h"
 #include "odb/object-file-convert.h"

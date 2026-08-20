@@ -13,7 +13,7 @@
 #include "odb/commit.h"
 #include "odb/tag.h"
 #include "odb/alloc.h"
-#include "commit-graph.h"
+#include "pack/commit-graph.h"
 
 unsigned int get_max_object_index(const struct repository *repo)
 {

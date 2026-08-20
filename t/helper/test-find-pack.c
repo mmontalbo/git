@@ -3,7 +3,7 @@
 #include "test-tool.h"
 #include "odb/object-name.h"
 #include "odb/odb.h"
-#include "packfile.h"
+#include "pack/packfile.h"
 #include "parse-options.h"
 #include "setup.h"
 

@@ -2,14 +2,14 @@
 
 #include "test-tool.h"
 #include "hex.h"
-#include "midx.h"
+#include "pack/midx.h"
 #include "repository.h"
 #include "odb/odb.h"
-#include "pack-bitmap.h"
-#include "packfile.h"
+#include "pack/pack-bitmap.h"
+#include "pack/packfile.h"
 #include "setup.h"
 #include "gettext.h"
-#include "pack-revindex.h"
+#include "pack/pack-revindex.h"
 
 static struct multi_pack_index *setup_midx(const char *object_dir)
 {

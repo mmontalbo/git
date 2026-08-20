@@ -6,7 +6,7 @@
 #include "hex.h"
 #include "odb/odb.h"
 #include "revision.h"
-#include "reachable.h"
+#include "pack/reachable.h"
 #include "wildmatch.h"
 #include "refs/worktree.h"
 #include "refs/reflog.h"
