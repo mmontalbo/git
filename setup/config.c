@@ -14,7 +14,7 @@
 #include "setup/config.h"
 #include "index/dir.h"
 #include "parse.h"
-#include "convert.h"
+#include "convert/convert.h"
 #include "setup/environment.h"
 #include "gettext.h"
 #include "git-zlib.h"

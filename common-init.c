@@ -4,7 +4,7 @@
 #include "common-init.h"
 #include "exec-cmd.h"
 #include "gettext.h"
-#include "attr.h"
+#include "convert/attr.h"
 #include "odb/odb.h"
 #include "parse.h"
 #include "setup/repository.h"
