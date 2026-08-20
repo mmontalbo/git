@@ -6,7 +6,7 @@
 #include "advice.h"
 #include "odb/commit.h"
 #include "config.h"
-#include "diff.h"
+#include "diff/diff.h"
 #include "editor.h"
 #include "environment.h"
 #include "gettext.h"

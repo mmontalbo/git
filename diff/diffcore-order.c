@@ -4,8 +4,8 @@
 
 #include "git-compat-util.h"
 #include "gettext.h"
-#include "diff.h"
-#include "diffcore.h"
+#include "diff/diff.h"
+#include "diff/diffcore.h"
 #include "wildmatch.h"
 
 static char **order;

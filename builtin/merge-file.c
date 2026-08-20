@@ -3,7 +3,7 @@
 
 #include "builtin.h"
 #include "abspath.h"
-#include "diff.h"
+#include "diff/diff.h"
 #include "hex.h"
 #include "odb/object-file.h"
 #include "odb/object-name.h"
@@ -12,7 +12,7 @@
 #include "gettext.h"
 #include "setup.h"
 #include "xdiff/xdiff.h"
-#include "xdiff-interface.h"
+#include "diff/xdiff-interface.h"
 #include "parse-options.h"
 
 static const char *const merge_file_usage[] = {
