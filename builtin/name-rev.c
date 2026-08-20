@@ -19,7 +19,7 @@
 #include "mem-pool.h"
 #include "revision/pretty.h"
 #include "revision/revision.h"
-#include "notes.h"
+#include "notes/notes.h"
 #include "write-or-die.h"
 
 /*

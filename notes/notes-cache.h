@@ -1,7 +1,7 @@
 #ifndef NOTES_CACHE_H
 #define NOTES_CACHE_H
 
-#include "notes.h"
+#include "notes/notes.h"
 
 struct repository;
 
