@@ -4,9 +4,9 @@
 #include "odb/object-name.h"
 #include "remote.h"
 #include "refs/refspec.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "index/checkout.h"
-#include "config.h"
+#include "setup/config.h"
 #include "strbuf.h"
 
 struct tracking_name_data {

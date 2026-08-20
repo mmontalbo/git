@@ -8,7 +8,7 @@
 #include "odb/source-packed.h"
 #include "odb/oidset.h"
 #include "pack/packfile-list.h"
-#include "repository.h"
+#include "setup/repository.h"
 
 /* in odb.h */
 struct object_info;

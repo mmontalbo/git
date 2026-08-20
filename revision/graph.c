@@ -2,7 +2,7 @@
 
 #include "git-compat-util.h"
 #include "gettext.h"
-#include "config.h"
+#include "setup/config.h"
 #include "odb/commit.h"
 #include "color.h"
 #include "revision/graph.h"

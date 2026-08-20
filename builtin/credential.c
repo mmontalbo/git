@@ -3,8 +3,8 @@
 #include "git-compat-util.h"
 #include "credential.h"
 #include "builtin.h"
-#include "environment.h"
-#include "config.h"
+#include "setup/environment.h"
+#include "setup/config.h"
 
 static const char usage_msg[] =
 	"git credential (fill|approve|reject)";

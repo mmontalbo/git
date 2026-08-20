@@ -10,14 +10,14 @@
 #include "builtin.h"
 
 #include "abspath.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "hex.h"
 #include "run-command.h"
 #include "strvec.h"
 #include "index/dir.h"
 #include "refs/refs.h"
-#include "config.h"
+#include "setup/config.h"
 #include "index/unpack-trees.h"
 #include "lockfile.h"
 #include "odb/object-file.h"
@@ -35,7 +35,7 @@
 #include "rebase-interactive.h"
 #include "reset.h"
 #include "trace2.h"
-#include "hook.h"
+#include "setup/hook.h"
 #include "trailer.h"
 
 static char const * const builtin_rebase_usage[] = {

@@ -10,7 +10,7 @@
 #include "run-command.h"
 #include "hashmap.h"
 #include "pkt-line.h"
-#include "config.h"
+#include "setup/config.h"
 #include "fetch-pack.h"
 #include "remote.h"
 #include "trace2.h"

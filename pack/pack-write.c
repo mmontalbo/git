@@ -1,5 +1,5 @@
 #include "git-compat-util.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "hex.h"
 #include "pack/pack.h"
@@ -11,7 +11,7 @@
 #include "pack/pack-objects.h"
 #include "pack/pack-revindex.h"
 #include "path.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "strbuf.h"
 
 void reset_pack_idx_option(struct pack_idx_option *opts)

@@ -3,10 +3,10 @@
 
 #include "builtin.h"
 #include "abspath.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "hex.h"
-#include "config.h"
+#include "setup/config.h"
 #include "lockfile.h"
 #include "odb/object.h"
 #include "odb/blob.h"

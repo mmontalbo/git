@@ -6,7 +6,7 @@
 #include "odb/hash.h"
 #include "odb/object.h"
 #include "odb/odb.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "string-list.h"
 #include "strbuf.h"
 

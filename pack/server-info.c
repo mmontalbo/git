@@ -3,7 +3,7 @@
 #include "git-compat-util.h"
 #include "index/dir.h"
 #include "hex.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "refs/refs.h"
 #include "odb/object.h"
 #include "odb/commit.h"

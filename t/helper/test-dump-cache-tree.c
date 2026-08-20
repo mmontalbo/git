@@ -6,8 +6,8 @@
 #include "odb/tree.h"
 #include "index/cache-tree.h"
 #include "index/read-cache-ll.h"
-#include "repository.h"
-#include "setup.h"
+#include "setup/repository.h"
+#include "setup/setup.h"
 
 static void dump_one(struct cache_tree *it, const char *pfx, const char *x)
 {

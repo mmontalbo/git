@@ -294,7 +294,7 @@ void format_path(struct strbuf *dest, const char *path,
 
 # ifdef USE_THE_REPOSITORY_VARIABLE
 #  include "strbuf.h"
-#  include "repository.h"
+#  include "setup/repository.h"
 
 #define GIT_PATH_FUNC(func, filename) \
 	const char *func(void) \

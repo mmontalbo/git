@@ -9,9 +9,9 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "builtin.h"
-#include "config.h"
+#include "setup/config.h"
 #include "convert.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "quote.h"
 #include "index/dir.h"
 #include "gettext.h"
@@ -23,7 +23,7 @@
 #include "path.h"
 #include "index/pathspec.h"
 #include "index/read-cache.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "index/sparse-index.h"
 #include "submodule.h"
 #include "odb/odb.h"

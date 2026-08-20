@@ -1,5 +1,5 @@
 #include "builtin.h"
-#include "config.h"
+#include "setup/config.h"
 #include "diff/diff.h"
 #include "diff/diffcore.h"
 #include "gettext.h"
