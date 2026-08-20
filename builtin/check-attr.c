@@ -1,12 +1,12 @@
 #define USE_THE_REPOSITORY_VARIABLE
 #include "builtin.h"
-#include "config.h"
+#include "setup/config.h"
 #include "attr.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "odb/object-name.h"
 #include "quote.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "parse-options.h"
 #include "write-or-die.h"
 

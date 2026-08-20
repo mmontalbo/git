@@ -10,7 +10,7 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "index/name-hash.h"
 #include "odb/object.h"

@@ -3,8 +3,8 @@
 
 #include "strmap.h"
 #include "string-list.h"
-#include "repo-settings.h"
-#include "environment.h"
+#include "setup/repo-settings.h"
+#include "setup/environment.h"
 
 struct config_set;
 struct git_hash_algo;

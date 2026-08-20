@@ -10,8 +10,8 @@
 #include "odb/commit-slab.h"
 #include "odb/tree.h"
 #include "odb/tree-walk.h"
-#include "config.h"
-#include "repository.h"
+#include "setup/config.h"
+#include "setup/repository.h"
 
 define_commit_slab(bloom_filter_slab, struct bloom_filter);
 

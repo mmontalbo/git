@@ -1,6 +1,6 @@
 #include "git-compat-util.h"
-#include "config.h"
-#include "repository.h"
+#include "setup/config.h"
+#include "setup/repository.h"
 #include "index/fsmonitor-ll.h"
 #include "index/fsmonitor-settings.h"
 #include "index/fsmonitor-path-utils.h"

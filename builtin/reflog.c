@@ -1,7 +1,7 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "builtin.h"
-#include "config.h"
+#include "setup/config.h"
 #include "gettext.h"
 #include "hex.h"
 #include "odb/odb.h"

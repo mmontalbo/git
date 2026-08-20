@@ -1,7 +1,7 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "git-compat-util.h"
-#include "config.h"
+#include "setup/config.h"
 #include "strbuf.h"
 #include "trace2.h"
 #include "trace2/tr2_cfg.h"

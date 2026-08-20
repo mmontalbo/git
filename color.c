@@ -1,7 +1,7 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "config.h"
+#include "setup/config.h"
 #include "color.h"
 #include "editor.h"
 #include "gettext.h"

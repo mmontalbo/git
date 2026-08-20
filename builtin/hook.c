@@ -1,9 +1,9 @@
 #define USE_THE_REPOSITORY_VARIABLE
 #include "builtin.h"
-#include "config.h"
-#include "environment.h"
+#include "setup/config.h"
+#include "setup/environment.h"
 #include "gettext.h"
-#include "hook.h"
+#include "setup/hook.h"
 #include "parse-options.h"
 #include "thread-utils.h"
 

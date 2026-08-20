@@ -6,7 +6,7 @@
 #include "pack/packfile.h"
 #include "progress.h"
 #include "pack/prune-packed.h"
-#include "repository.h"
+#include "setup/repository.h"
 
 static struct progress *progress;
 

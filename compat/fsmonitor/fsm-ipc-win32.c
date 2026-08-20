@@ -1,5 +1,5 @@
 #include "git-compat-util.h"
-#include "config.h"
+#include "setup/config.h"
 #include "index/fsmonitor-ipc.h"
 #include "path.h"
 

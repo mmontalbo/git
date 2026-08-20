@@ -1,11 +1,11 @@
 #include "git-compat-util.h"
 #include "date.h"
 #include "index/dir.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "hex.h"
 #include "odb/odb.h"
 #include "path.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "odb/object.h"
 #include "attr.h"
 #include "odb/blob.h"
@@ -20,7 +20,7 @@
 #include "odb/oidset.h"
 #include "pack/packfile.h"
 #include "submodule-config.h"
-#include "config.h"
+#include "setup/config.h"
 #include "help.h"
 
 static ssize_t max_tree_entry_len = 4096;

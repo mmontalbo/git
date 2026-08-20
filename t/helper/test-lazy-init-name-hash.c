@@ -1,12 +1,12 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "test-tool.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "index/name-hash.h"
 #include "parse-options.h"
 #include "index/read-cache-ll.h"
-#include "repository.h"
-#include "setup.h"
+#include "setup/repository.h"
+#include "setup/setup.h"
 #include "trace.h"
 
 static int single;

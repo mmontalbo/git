@@ -7,9 +7,9 @@
 #include "attr.h"
 #include "odb/odb.h"
 #include "parse.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "odb/replace-object.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "strbuf.h"
 #include "trace2.h"
 

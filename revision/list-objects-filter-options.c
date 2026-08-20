@@ -1,7 +1,7 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "git-compat-util.h"
-#include "config.h"
+#include "setup/config.h"
 #include "gettext.h"
 #include "revision/list-objects-filter-options.h"
 #include "promisor-remote.h"

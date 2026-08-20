@@ -10,8 +10,8 @@
 
 #include "git-compat-util.h"
 #include "builtin.h"
-#include "config.h"
-#include "environment.h"
+#include "setup/config.h"
+#include "setup/environment.h"
 #include "diff/diff.h"
 
 static const char builtin_merge_ours_usage[] =

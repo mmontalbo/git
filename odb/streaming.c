@@ -4,8 +4,8 @@
 
 #include "git-compat-util.h"
 #include "convert.h"
-#include "environment.h"
-#include "repository.h"
+#include "setup/environment.h"
+#include "setup/repository.h"
 #include "odb/odb.h"
 #include "odb/source.h"
 #include "odb/streaming.h"
