@@ -2,7 +2,7 @@
 
 #include "git-compat-util.h"
 #include "dir.h"
-#include "hash.h"
+#include "odb/hash.h"
 #include "read-cache.h"
 #include "resolve-undo.h"
 #include "sparse-index.h"

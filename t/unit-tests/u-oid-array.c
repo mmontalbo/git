@@ -2,7 +2,7 @@
 
 #include "unit-test.h"
 #include "lib-oid.h"
-#include "oid-array.h"
+#include "odb/oid-array.h"
 #include "hex.h"
 
 static void fill_array(struct oid_array *array, const char *hexes[], size_t n)

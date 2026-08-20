@@ -2,7 +2,7 @@
 
 #include "builtin.h"
 #include "cache-tree.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "commit-reach.h"
 #include "config.h"
 #include "editor.h"
@@ -11,7 +11,7 @@
 #include "hex.h"
 #include "lockfile.h"
 #include "merge-ort.h"
-#include "oidmap.h"
+#include "odb/oidmap.h"
 #include "parse-options.h"
 #include "path.h"
 #include "read-cache.h"
@@ -21,8 +21,8 @@
 #include "revision.h"
 #include "sequencer.h"
 #include "strvec.h"
-#include "tree.h"
-#include "tree-walk.h"
+#include "odb/tree.h"
+#include "odb/tree-walk.h"
 #include "unpack-trees.h"
 #include "wt-status.h"
 

@@ -1,14 +1,14 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "object.h"
-#include "commit.h"
+#include "odb/object.h"
+#include "odb/commit.h"
 #include "gettext.h"
 #include "hex.h"
-#include "tag.h"
-#include "tree.h"
+#include "odb/tag.h"
+#include "odb/tree.h"
 #include "pack.h"
-#include "tree-walk.h"
+#include "odb/tree-walk.h"
 #include "diff.h"
 #include "progress.h"
 #include "refs.h"
@@ -16,7 +16,7 @@
 #include "pack-bitmap.h"
 #include "pack-objects.h"
 #include "delta-islands.h"
-#include "oid-array.h"
+#include "odb/oid-array.h"
 #include "config.h"
 
 KHASH_INIT(str, const char *, void *, 1, kh_str_hash_func, kh_str_hash_equal)

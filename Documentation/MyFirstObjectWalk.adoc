@@ -779,7 +779,7 @@ be processed in order to populate that list.
 First, add the `struct oidset` and related items we will use to iterate it:
 
 ----
-#include "oidset.h"
+#include "odb/oidset.h"
 
 ...
 

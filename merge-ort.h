@@ -1,7 +1,7 @@
 #ifndef MERGE_ORT_H
 #define MERGE_ORT_H
 
-#include "hash.h"
+#include "odb/hash.h"
 #include "strbuf.h"
 
 struct commit;

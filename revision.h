@@ -1,14 +1,14 @@
 #ifndef REVISION_H
 #define REVISION_H
 
-#include "commit.h"
+#include "odb/commit.h"
 #include "grep.h"
 #include "notes.h"
-#include "object-name.h"
-#include "oidset.h"
+#include "odb/object-name.h"
+#include "odb/oidset.h"
 #include "pretty.h"
 #include "diff.h"
-#include "commit-slab-decl.h"
+#include "odb/commit-slab-decl.h"
 #include "decorate.h"
 #include "ident.h"
 #include "list-objects-filter-options.h"
