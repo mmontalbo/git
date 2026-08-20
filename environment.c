@@ -26,7 +26,7 @@
 #include "odb/object-name.h"
 #include "repository.h"
 #include "config.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "fmt-merge-msg.h"
 #include "odb/commit.h"
 #include "strvec.h"

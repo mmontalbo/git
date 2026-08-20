@@ -21,7 +21,7 @@
 #include "graph.h"
 #include "bisect.h"
 #include "progress.h"
-#include "reflog-walk.h"
+#include "refs/reflog-walk.h"
 #include "odb/oidset.h"
 #include "odb/oidmap.h"
 #include "packfile.h"

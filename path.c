@@ -9,7 +9,7 @@
 #include "strbuf.h"
 #include "string-list.h"
 #include "dir.h"
-#include "worktree.h"
+#include "refs/worktree.h"
 #include "setup.h"
 #include "submodule-config.h"
 #include "path.h"

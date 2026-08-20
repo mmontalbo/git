@@ -17,7 +17,7 @@
 #include "revision.h"
 #include "cache-tree.h"
 #include "unpack-trees.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "repository.h"
 #include "submodule.h"
 #include "symlinks.h"

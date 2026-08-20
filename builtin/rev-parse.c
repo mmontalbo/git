@@ -17,7 +17,7 @@
 #include "gettext.h"
 #include "odb/hash.h"
 #include "hex.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "quote.h"
 #include "odb/object-name.h"
 #include "parse-options.h"

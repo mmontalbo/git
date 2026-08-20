@@ -12,7 +12,7 @@
 #include "../iterator.h"
 #include "../parse.h"
 #include "../path.h"
-#include "../refs.h"
+#include "refs/refs.h"
 #include "../reftable/reftable-basics.h"
 #include "../reftable/reftable-error.h"
 #include "../reftable/reftable-fsck.h"
@@ -23,7 +23,7 @@
 #include "../setup.h"
 #include "../strmap.h"
 #include "../trace2.h"
-#include "../worktree.h"
+#include "refs/worktree.h"
 #include "../write-or-die.h"
 #include "refs-internal.h"
 

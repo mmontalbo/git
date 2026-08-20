@@ -15,7 +15,7 @@
 #include "parse-options.h"
 #include "path.h"
 #include "read-cache.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "replay.h"
 #include "reset.h"
 #include "revision.h"

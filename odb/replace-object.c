@@ -4,7 +4,7 @@
 #include "odb/oidmap.h"
 #include "odb/odb.h"
 #include "odb/replace-object.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "repository.h"
 #include "odb/commit.h"
 

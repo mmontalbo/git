@@ -22,7 +22,7 @@
 #include "odb/hash-lookup.h"
 #include "wt-status.h"
 #include "advice.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "commit-reach.h"
 #include "setup.h"
 #include "shallow.h"

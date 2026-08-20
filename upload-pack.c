@@ -6,7 +6,7 @@
 #include "environment.h"
 #include "gettext.h"
 #include "hex.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "pkt-line.h"
 #include "sideband.h"
 #include "repository.h"

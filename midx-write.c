@@ -12,7 +12,7 @@
 #include "run-command.h"
 #include "chunk-format.h"
 #include "pack-bitmap.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "revision.h"
 #include "list-objects.h"
 #include "path.h"

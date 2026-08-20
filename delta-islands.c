@@ -11,7 +11,7 @@
 #include "odb/tree-walk.h"
 #include "diff.h"
 #include "progress.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "khash.h"
 #include "pack-bitmap.h"
 #include "pack-objects.h"
