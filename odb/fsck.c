@@ -19,7 +19,7 @@
 #include "utf8.h"
 #include "odb/oidset.h"
 #include "pack/packfile.h"
-#include "submodule-config.h"
+#include "submodule/submodule-config.h"
 #include "setup/config.h"
 #include "help.h"
 

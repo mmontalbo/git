@@ -48,8 +48,8 @@
 #include "csum-file.h"
 #include "transport/promisor-remote.h"
 #include "setup/hook.h"
-#include "submodule.h"
-#include "submodule-config.h"
+#include "submodule/submodule.h"
+#include "submodule/submodule-config.h"
 #include "advice.h"
 
 /* Mask for the name length in ce_flags in the on-disk index */

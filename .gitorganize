@@ -412,10 +412,10 @@ strvec.c component=? role=lib
 strvec.h component=? role=public
 sub-process.c component=? role=lib
 sub-process.h component=? role=public
-submodule-config.c component=submodule role=lib
-submodule-config.h component=submodule role=header
-submodule.c component=submodule role=lib
-submodule.h component=submodule role=header
+submodule/submodule-config.c component=submodule role=lib
+submodule/submodule-config.h component=submodule role=header
+submodule/submodule.c component=submodule role=lib
+submodule/submodule.h component=submodule role=header
 tar.h component=? role=public
 tempfile.c component=? role=lib
 tempfile.h component=? role=public

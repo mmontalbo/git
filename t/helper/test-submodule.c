@@ -7,8 +7,8 @@
 #include "setup/repository.h"
 #include "setup/setup.h"
 #include "strbuf.h"
-#include "submodule-config.h"
-#include "submodule.h"
+#include "submodule/submodule-config.h"
+#include "submodule/submodule.h"
 
 #define TEST_TOOL_CHECK_NAME_USAGE \
 	"test-tool submodule check-name"

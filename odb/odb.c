@@ -24,7 +24,7 @@
 #include "setup/setup.h"
 #include "strbuf.h"
 #include "strvec.h"
-#include "submodule.h"
+#include "submodule/submodule.h"
 #include "odb/tmp-objdir.h"
 #include "trace2.h"
 #include "write-or-die.h"
