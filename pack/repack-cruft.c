@@ -1,7 +1,7 @@
 #include "git-compat-util.h"
 #include "pack/repack.h"
 #include "pack/packfile.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "run-command.h"
 
 static void combine_small_cruft_packs(FILE *in, off_t combine_cruft_below_size,

@@ -18,7 +18,7 @@
 #include "index/cache-tree.h"
 #include "index/unpack-trees.h"
 #include "refs/refs.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "submodule.h"
 #include "index/symlinks.h"
 #include "trace.h"

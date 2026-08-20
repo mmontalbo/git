@@ -1,6 +1,6 @@
 #include "builtin.h"
-#include "config.h"
-#include "environment.h"
+#include "setup/config.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "parse-options.h"
 #include "pack/server-info.h"

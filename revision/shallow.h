@@ -4,7 +4,7 @@
 #include "odb/commit.h"
 #include "lockfile.h"
 #include "odb/object.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "strbuf.h"
 
 struct oid_array;

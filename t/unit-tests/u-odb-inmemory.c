@@ -4,7 +4,7 @@
 #include "odb/source-inmemory.h"
 #include "odb/streaming.h"
 #include "odb/oidset.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "strbuf.h"
 
 #define RANDOM_OID "da39a3ee5e6b4b0d3255bfef95601890afd80709"

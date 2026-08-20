@@ -8,7 +8,7 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "builtin.h"
-#include "config.h"
+#include "setup/config.h"
 #include "diff/diff.h"
 #include "diff/diff-merges.h"
 #include "odb/commit.h"

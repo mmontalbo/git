@@ -1,11 +1,11 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "test-tool.h"
-#include "config.h"
-#include "environment.h"
+#include "setup/config.h"
+#include "setup/environment.h"
 #include "index/read-cache-ll.h"
-#include "repository.h"
-#include "setup.h"
+#include "setup/repository.h"
+#include "setup/setup.h"
 
 int cmd__read_cache(int argc, const char **argv)
 {

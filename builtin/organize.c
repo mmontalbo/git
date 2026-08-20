@@ -13,7 +13,7 @@
 #include "gettext.h"
 #include "organize/organize.h"
 #include "parse-options.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "strvec.h"
 
 static const char *const organize_usage[] = {

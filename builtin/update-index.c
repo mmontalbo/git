@@ -8,8 +8,8 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "builtin.h"
-#include "config.h"
-#include "environment.h"
+#include "setup/config.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "odb/hash.h"
 #include "hex.h"
@@ -26,7 +26,7 @@
 #include "index/pathspec.h"
 #include "index/dir.h"
 #include "index/read-cache.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "index/sparse-index.h"
 #include "index/split-index.h"
 #include "index/symlinks.h"

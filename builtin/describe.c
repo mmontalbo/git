@@ -2,8 +2,8 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "builtin.h"
-#include "config.h"
-#include "environment.h"
+#include "setup/config.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "hex.h"
 #include "lockfile.h"
@@ -16,7 +16,7 @@
 #include "revision/revision.h"
 #include "diff/diff.h"
 #include "hashmap.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "strvec.h"
 #include "run-command.h"
 #include "odb/odb.h"

@@ -7,9 +7,9 @@
 
 #include "builtin.h"
 #include "advice.h"
-#include "config.h"
+#include "setup/config.h"
 #include "gettext.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "hex.h"
 #include "refs/refs.h"
 #include "refs/refspec.h"

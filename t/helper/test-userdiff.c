@@ -1,9 +1,9 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "test-tool.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "diff/userdiff.h"
-#include "config.h"
+#include "setup/config.h"
 
 static int driver_cb(struct userdiff_driver *driver,
 		     enum userdiff_driver_type type, void *priv)

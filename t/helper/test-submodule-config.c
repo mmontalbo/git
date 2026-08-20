@@ -1,11 +1,11 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "test-tool.h"
-#include "config.h"
+#include "setup/config.h"
 #include "odb/hash.h"
 #include "odb/object-name.h"
-#include "repository.h"
-#include "setup.h"
+#include "setup/repository.h"
+#include "setup/setup.h"
 #include "submodule-config.h"
 #include "submodule.h"
 

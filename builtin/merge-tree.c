@@ -1,7 +1,7 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "builtin.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "odb/tree-walk.h"
 #include "diff/xdiff-interface.h"
 #include "help.h"
@@ -17,7 +17,7 @@
 #include "merge/merge-blobs.h"
 #include "quote.h"
 #include "odb/tree.h"
-#include "config.h"
+#include "setup/config.h"
 #include "strvec.h"
 #include "write-or-die.h"
 

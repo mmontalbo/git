@@ -2,13 +2,13 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "builtin.h"
-#include "config.h"
+#include "setup/config.h"
 #include "diff/diff.h"
 #include "diff/diff-merges.h"
 #include "odb/commit.h"
 #include "index/preload-index.h"
 #include "revision/revision.h"
-#include "setup.h"
+#include "setup/setup.h"
 
 static const char diff_cache_usage[] =
 "git diff-index [-m] [--cached] [--merge-base] "

@@ -1,13 +1,13 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "git-compat-util.h"
-#include "config.h"
-#include "environment.h"
+#include "setup/config.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "hex.h"
 #include "http.h"
 #include "walker.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "strvec.h"
 #include "url.h"
 #include "urlmatch.h"

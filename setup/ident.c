@@ -6,8 +6,8 @@
  * Copyright (C) 2005 Linus Torvalds
  */
 #include "git-compat-util.h"
-#include "ident.h"
-#include "config.h"
+#include "setup/ident.h"
+#include "setup/config.h"
 #include "date.h"
 #include "gettext.h"
 #include "mailmap.h"

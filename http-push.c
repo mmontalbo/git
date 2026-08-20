@@ -1,9 +1,9 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "git-compat-util.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "hex.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "odb/commit.h"
 #include "odb/tag.h"
 #include "odb/blob.h"
@@ -12,7 +12,7 @@
 #include "revision/revision.h"
 #include "remote.h"
 #include "revision/list-objects.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "sigchain.h"
 #include "strvec.h"
 #include "odb/tree.h"

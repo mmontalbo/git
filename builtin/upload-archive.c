@@ -5,7 +5,7 @@
 #include "builtin.h"
 #include "archive/archive.h"
 #include "pkt-line.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "sideband.h"
 #include "run-command.h"
 #include "strvec.h"

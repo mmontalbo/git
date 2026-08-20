@@ -3,8 +3,8 @@
 #include "test-tool.h"
 #include "lockfile.h"
 #include "index/read-cache-ll.h"
-#include "repository.h"
-#include "setup.h"
+#include "setup/repository.h"
+#include "setup/setup.h"
 
 int cmd__write_cache(int argc, const char **argv)
 {

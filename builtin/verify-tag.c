@@ -6,8 +6,8 @@
  * Based on git-verify-tag.sh
  */
 #include "builtin.h"
-#include "config.h"
-#include "environment.h"
+#include "setup/config.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "odb/tag.h"
 #include "odb/object-name.h"

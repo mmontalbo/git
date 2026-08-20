@@ -1,6 +1,6 @@
 #include "git-compat-util.h"
 #include "pack/repack.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "run-command.h"
 #include "string-list.h"
 
