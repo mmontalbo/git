@@ -12,13 +12,13 @@
 #include "git-compat-util.h"
 #include "environment.h"
 #include "gettext.h"
-#include "name-hash.h"
+#include "index/name-hash.h"
 #include "odb/object.h"
-#include "read-cache-ll.h"
+#include "index/read-cache-ll.h"
 #include "thread-utils.h"
 #include "trace.h"
 #include "trace2.h"
-#include "sparse-index.h"
+#include "index/sparse-index.h"
 
 struct dir_entry {
 	struct hashmap_entry ent;

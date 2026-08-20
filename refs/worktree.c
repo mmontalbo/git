@@ -10,8 +10,8 @@
 #include "setup.h"
 #include "strbuf.h"
 #include "refs/worktree.h"
-#include "dir.h"
-#include "wt-status.h"
+#include "index/dir.h"
+#include "index/wt-status.h"
 #include "config.h"
 
 void free_worktree(struct worktree *worktree)

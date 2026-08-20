@@ -1,11 +1,11 @@
 #define USE_THE_REPOSITORY_VARIABLE
 #include "builtin.h"
 #include "config.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "environment.h"
 #include "gettext.h"
 #include "quote.h"
-#include "pathspec.h"
+#include "index/pathspec.h"
 #include "parse-options.h"
 #include "submodule.h"
 #include "write-or-die.h"

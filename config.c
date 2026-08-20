@@ -12,7 +12,7 @@
 #include "date.h"
 #include "branch.h"
 #include "config.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "parse.h"
 #include "convert.h"
 #include "environment.h"

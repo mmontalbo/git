@@ -16,7 +16,7 @@
 #include "builtin.h"
 #include "abspath.h"
 #include "date.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "environment.h"
 #include "hex.h"
 #include "config.h"
