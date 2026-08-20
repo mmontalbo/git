@@ -3,9 +3,9 @@
 
 #include "builtin.h"
 #include "hex.h"
-#include "read-cache-ll.h"
+#include "index/read-cache-ll.h"
 #include "run-command.h"
-#include "sparse-index.h"
+#include "index/sparse-index.h"
 
 static const char *pgm;
 static int one_shot, quiet;

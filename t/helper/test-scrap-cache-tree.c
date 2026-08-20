@@ -2,11 +2,11 @@
 
 #include "test-tool.h"
 #include "lockfile.h"
-#include "read-cache-ll.h"
+#include "index/read-cache-ll.h"
 #include "repository.h"
 #include "setup.h"
 #include "odb/tree.h"
-#include "cache-tree.h"
+#include "index/cache-tree.h"
 
 int cmd__scrap_cache_tree(int ac UNUSED, const char **av UNUSED)
 {

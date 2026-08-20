@@ -3,7 +3,7 @@
 #include "git-compat-util.h"
 #include "gettext.h"
 #include "simple-ipc.h"
-#include "fsmonitor-ipc.h"
+#include "index/fsmonitor-ipc.h"
 #include "repository.h"
 #include "run-command.h"
 #include "strbuf.h"
