@@ -22,7 +22,7 @@
 #include "strvec.h"
 #include "thread-utils.h"
 #include "path.h"
-#include "remote.h"
+#include "transport/remote.h"
 #include "refs/worktree.h"
 #include "parse-options.h"
 #include "odb/object-file.h"

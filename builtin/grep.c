@@ -32,7 +32,7 @@
 #include "odb/oidset.h"
 #include "pager.h"
 #include "path.h"
-#include "promisor-remote.h"
+#include "transport/promisor-remote.h"
 #include "index/read-cache-ll.h"
 #include "write-or-die.h"
 
