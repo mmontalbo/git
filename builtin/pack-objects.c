@@ -6,7 +6,7 @@
 #include "gettext.h"
 #include "hex.h"
 #include "setup/config.h"
-#include "attr.h"
+#include "convert/attr.h"
 #include "odb/object.h"
 #include "odb/commit.h"
 #include "odb/tag.h"

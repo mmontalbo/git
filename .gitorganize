@@ -36,8 +36,6 @@ archive/archive-tar.c component=archive role=lib
 archive/archive-zip.c component=archive role=lib
 archive/archive.c component=archive role=lib
 archive/archive.h component=archive role=header
-attr.c component=convert role=lib
-attr.h component=convert role=header
 banned.h component=? role=public
 base85.c component=? role=lib
 base85.h component=? role=public
@@ -56,8 +54,12 @@ common-exit.c component=? role=lib
 common-init.c component=? role=lib
 common-init.h component=? role=public
 common-main.c component=? role=lib
-convert.c component=convert role=lib
-convert.h component=convert role=header
+convert/attr.c component=convert role=lib
+convert/attr.h component=convert role=header
+convert/convert.c component=convert role=lib
+convert/convert.h component=convert role=header
+convert/ws.c component=convert role=lib
+convert/ws.h component=convert role=header
 copy.c component=? role=lib
 copy.h component=? role=public
 credential.c component=? role=lib
@@ -490,5 +492,3 @@ wrapper.c component=? role=lib
 wrapper.h component=? role=public
 write-or-die.c component=? role=lib
 write-or-die.h component=? role=public
-ws.c component=convert role=lib
-ws.h component=convert role=header
