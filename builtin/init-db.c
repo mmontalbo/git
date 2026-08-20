@@ -6,12 +6,12 @@
 #define USE_THE_REPOSITORY_VARIABLE
 #include "builtin.h"
 #include "abspath.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "parse-options.h"
 #include "path.h"
 #include "refs/refs.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "strbuf.h"
 
 static int guess_repository_type(const char *git_dir)

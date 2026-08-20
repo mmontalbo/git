@@ -2,7 +2,7 @@
 #define BUILTIN_H
 
 #include "git-compat-util.h"
-#include "repository.h"
+#include "setup/repository.h"
 
 /*
  * builtin API

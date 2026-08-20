@@ -3,9 +3,9 @@
 #include "test-tool.h"
 #include "gettext.h"
 #include "parse-options.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "serve.h"
-#include "setup.h"
+#include "setup/setup.h"
 
 static char const * const serve_usage[] = {
 	N_("test-tool serve-v2 [<options>]"),

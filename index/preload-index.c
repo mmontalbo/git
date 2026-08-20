@@ -7,7 +7,7 @@
 #include "git-compat-util.h"
 #include "index/pathspec.h"
 #include "index/dir.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "index/fsmonitor.h"
 #include "gettext.h"
 #include "parse.h"
@@ -15,10 +15,10 @@
 #include "progress.h"
 #include "index/read-cache.h"
 #include "thread-utils.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "index/symlinks.h"
 #include "trace2.h"
-#include "config.h"
+#include "setup/config.h"
 
 /*
  * Mostly randomly chosen maximum thread counts: we

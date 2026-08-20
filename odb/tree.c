@@ -6,8 +6,8 @@
 #include "odb/commit.h"
 #include "alloc.h"
 #include "odb/tree-walk.h"
-#include "repository.h"
-#include "environment.h"
+#include "setup/repository.h"
+#include "setup/environment.h"
 
 const char *tree_type = "tree";
 

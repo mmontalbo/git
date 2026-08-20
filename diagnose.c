@@ -10,7 +10,7 @@
 #include "odb/odb.h"
 #include "pack/packfile.h"
 #include "parse-options.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "write-or-die.h"
 
 struct archive_dir {

@@ -10,7 +10,7 @@
 #include "odb/object-name.h"
 #include "odb/odb.h"
 #include "path.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "diff/diff.h"
 #include "diff/diffcore.h"
 #include "hex.h"

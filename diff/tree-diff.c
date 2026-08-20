@@ -10,7 +10,7 @@
 #include "odb/hash.h"
 #include "odb/tree.h"
 #include "odb/tree-walk.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "index/dir.h"
 
 /*

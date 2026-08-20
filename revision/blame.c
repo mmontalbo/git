@@ -15,7 +15,7 @@
 #include "path.h"
 #include "index/read-cache.h"
 #include "revision/revision.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "odb/tag.h"
 #include "trace2.h"
 #include "revision/blame.h"
