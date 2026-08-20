@@ -14,7 +14,7 @@
 #include "odb/replace-object.h"
 #include "setup.h"
 #include "attr.h"
-#include "shallow.h"
+#include "revision/shallow.h"
 #include "trace.h"
 #include "trace2.h"
 
