@@ -412,10 +412,10 @@ strvec.c component=? role=lib prefix=strvec
 strvec.h component=? role=public prefix=strvec cochange=submodule:3,revision:2,index:1,transport:1
 sub-process.c component=? role=lib prefix=sub-process includes=transport:1 cochange=diff:19,convert:12,revision:11,index:8,refs:8
 sub-process.h component=? role=public prefix=sub-process cochange=convert:8,transport:6,refs:5,diff:4,odb:4
-submodule-config.c component=submodule role=lib prefix=submodule-config includes=odb:3,setup:3,submodule:2,index:1 cochange=submodule:60,setup:41,diff:36,revision:27,odb:22
-submodule-config.h component=submodule role=header prefix=submodule-config includes=odb:1,setup:1,submodule:1 cochange=submodule:54,setup:9,odb:3,diff:2,index:2
-submodule.c component=submodule role=lib prefix=submodule includes=odb:5,setup:4,diff:2,index:2,refs:2 cochange=submodule:134,diff:83,setup:66,index:60,revision:49
-submodule.h component=submodule role=header prefix=submodule cochange=submodule:128,index:22,diff:21,transport:17,setup:6
+submodule/submodule-config.c component=submodule role=lib prefix=submodule-config includes=odb:3,setup:3,submodule:2,index:1 cochange=submodule:60,setup:41,diff:36,revision:27,odb:22
+submodule/submodule-config.h component=submodule role=header prefix=submodule-config includes=odb:1,setup:1,submodule:1 cochange=submodule:54,setup:9,odb:3,diff:2,index:2
+submodule/submodule.c component=submodule role=lib prefix=submodule includes=odb:5,setup:4,diff:2,index:2,refs:2 cochange=submodule:134,diff:83,setup:66,index:60,revision:49
+submodule/submodule.h component=submodule role=header prefix=submodule cochange=submodule:128,index:22,diff:21,transport:17,setup:6
 tar.h component=? role=public prefix=tar-tree
 tempfile.c component=? role=lib prefix=tempfile cochange=pack:5,setup:4,index:3,odb:3,revision:3
 tempfile.h component=? role=public prefix=tempfile includes=revision:1 cochange=revision:3,diff:2,index:2,setup:2

@@ -13,7 +13,7 @@
 #include "transport/remote.h"
 #include "setup/setup.h"
 #include "odb/loose.h"
-#include "submodule-config.h"
+#include "submodule/submodule-config.h"
 #include "index/sparse-index.h"
 #include "trace2.h"
 #include "transport/promisor-remote.h"

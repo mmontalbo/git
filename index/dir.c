@@ -31,7 +31,7 @@
 #include "setup/setup.h"
 #include "index/sparse-index.h"
 #include "strbuf.h"
-#include "submodule-config.h"
+#include "submodule/submodule-config.h"
 #include "index/symlinks.h"
 #include "trace2.h"
 #include "odb/tree.h"

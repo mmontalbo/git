@@ -23,7 +23,7 @@
 #include "run-command.h"
 #include "setup/hook.h"
 #include "sigchain.h"
-#include "submodule.h"
+#include "submodule/submodule.h"
 #include "utf8.h"
 #include "refs/worktree.h"
 #include "quote.h"
