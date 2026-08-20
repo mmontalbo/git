@@ -8,7 +8,7 @@
 #include "odb/hash.h"
 #include "hex.h"
 #include "pretty.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "color.h"
 #include "strvec.h"
 #include "odb/object-name.h"

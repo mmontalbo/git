@@ -2,12 +2,12 @@
 
 #include "git-compat-util.h"
 #include "odb/commit.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "diff.h"
 #include "repository.h"
 #include "revision.h"
 #include "string-list.h"
-#include "reflog-walk.h"
+#include "refs/reflog-walk.h"
 
 struct complete_reflogs {
 	char *ref;

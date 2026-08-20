@@ -4,7 +4,7 @@
 #include "git-compat-util.h"
 #include "config.h"
 #include "environment.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "odb/object-name.h"
 #include "odb/odb.h"
 #include "diff.h"

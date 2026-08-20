@@ -14,7 +14,7 @@
 #include "odb/commit.h"
 #include "odb/tag.h"
 #include "odb/fsck.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "url.h"
 #include "utf8.h"
 #include "odb/oidset.h"

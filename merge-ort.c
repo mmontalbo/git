@@ -44,7 +44,7 @@
 #include "path.h"
 #include "promisor-remote.h"
 #include "read-cache-ll.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "revision.h"
 #include "sparse-index.h"
 #include "strmap.h"

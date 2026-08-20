@@ -13,7 +13,7 @@
 #include "path.h"
 #include "pretty.h"
 #include "setup.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "odb/odb.h"
 #include "odb/commit.h"
 #include "odb/tree.h"

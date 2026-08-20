@@ -1,6 +1,6 @@
 #include "builtin.h"
 #include "gettext.h"
-#include "pack-refs.h"
+#include "refs/pack-refs.h"
 
 int cmd_pack_refs(int argc,
 		  const char **argv,
