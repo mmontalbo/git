@@ -14,7 +14,7 @@
 #include "config.h"
 #include "dir.h"
 #include "setup.h"
-#include "shallow.h"
+#include "revision/shallow.h"
 #include "string-list.h"
 #include "strvec.h"
 #include "chdir-notify.h"

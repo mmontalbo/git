@@ -11,7 +11,7 @@
 #include "hex.h"
 #include "odb/object-name.h"
 #include "path.h"
-#include "pretty.h"
+#include "revision/pretty.h"
 #include "setup.h"
 #include "refs/refs.h"
 #include "odb/odb.h"

@@ -10,7 +10,7 @@
 #include "preload-index.h"
 #include "read-cache-ll.h"
 #include "repository.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "refs/refs.h"
 #include "string-list.h"
 #include "lockfile.h"

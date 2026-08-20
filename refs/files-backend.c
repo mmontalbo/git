@@ -25,7 +25,7 @@
 #include "refs/worktree.h"
 #include "../wrapper.h"
 #include "../write-or-die.h"
-#include "../revision.h"
+#include "revision/revision.h"
 #include <wildmatch.h>
 
 /* So that we can drop `USE_THE_REPOSITORY_VARIABLE`. */

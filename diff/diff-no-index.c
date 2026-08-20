@@ -13,7 +13,7 @@
 #include "diff/diff.h"
 #include "diff/diffcore.h"
 #include "gettext.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "parse-options.h"
 #include "pathspec.h"
 #include "string-list.h"

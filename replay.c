@@ -7,7 +7,7 @@
 #include "odb/object-name.h"
 #include "refs/refs.h"
 #include "replay.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "sequencer.h"
 #include "strmap.h"
 #include "odb/tree.h"

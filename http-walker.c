@@ -6,7 +6,7 @@
 #include "hex.h"
 #include "walker.h"
 #include "http.h"
-#include "list.h"
+#include "revision/list.h"
 #include "transport.h"
 #include "pack/packfile.h"
 #include "odb/object-file.h"

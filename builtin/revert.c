@@ -6,7 +6,7 @@
 #include "diff/diff.h"
 #include "environment.h"
 #include "gettext.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "merge/rerere.h"
 #include "sequencer.h"
 #include "branch.h"

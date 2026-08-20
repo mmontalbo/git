@@ -1,7 +1,7 @@
 #ifndef TRAILER_H
 #define TRAILER_H
 
-#include "list.h"
+#include "revision/list.h"
 #include "strbuf.h"
 
 struct trailer_block;

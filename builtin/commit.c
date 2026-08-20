@@ -21,7 +21,7 @@
 #include "odb/commit.h"
 #include "add-interactive.h"
 #include "gettext.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "wt-status.h"
 #include "run-command.h"
 #include "strbuf.h"
@@ -39,9 +39,9 @@
 #include "sparse-index.h"
 #include "mailmap.h"
 #include "help.h"
-#include "commit-reach.h"
+#include "revision/commit-reach.h"
 #include "pack/commit-graph.h"
-#include "pretty.h"
+#include "revision/pretty.h"
 #include "trailer.h"
 
 static const char * const builtin_commit_usage[] = {
