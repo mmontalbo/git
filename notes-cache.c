@@ -4,7 +4,7 @@
 #include "notes-cache.h"
 #include "odb/object-file.h"
 #include "odb/odb.h"
-#include "pretty.h"
+#include "revision/pretty.h"
 #include "repository.h"
 #include "odb/commit.h"
 #include "refs/refs.h"

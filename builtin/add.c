@@ -22,7 +22,7 @@
 #include "preload-index.h"
 #include "diff/diff.h"
 #include "read-cache.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "strvec.h"
 #include "submodule.h"
 #include "add-interactive.h"

@@ -5,7 +5,7 @@
 #include "refs/refs.h"
 #include "diff/diff.h"
 #include "repository.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "string-list.h"
 #include "refs/reflog-walk.h"
 

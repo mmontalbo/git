@@ -4,7 +4,7 @@
 #include "refs/pack-refs.h"
 #include "parse-options.h"
 #include "refs/refs.h"
-#include "revision.h"
+#include "revision/revision.h"
 
 int pack_refs_core(int argc,
 		   const char **argv,

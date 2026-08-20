@@ -22,7 +22,7 @@
 #include "progress.h"
 #include "pack/bloom.h"
 #include "odb/commit-slab.h"
-#include "shallow.h"
+#include "revision/shallow.h"
 #include "json-writer.h"
 #include "trace2.h"
 #include "odb/tree.h"

@@ -9,7 +9,7 @@
 #include "odb/commit.h"
 #include "strvec.h"
 #include "trailer.h"
-#include "list.h"
+#include "revision/list.h"
 #include "tempfile.h"
 
 /*
