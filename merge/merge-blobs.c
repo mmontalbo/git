@@ -1,9 +1,9 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "git-compat-util.h"
-#include "merge-ll.h"
+#include "merge/merge-ll.h"
 #include "odb/blob.h"
-#include "merge-blobs.h"
+#include "merge/merge-blobs.h"
 #include "odb/odb.h"
 
 static int fill_mmfile_blob(mmfile_t *f, struct blob *obj)

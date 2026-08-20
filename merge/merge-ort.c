@@ -18,7 +18,7 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "merge-ort.h"
+#include "merge/merge-ort.h"
 
 #include "alloc.h"
 #include "advice.h"
@@ -34,7 +34,7 @@
 #include "gettext.h"
 #include "hex.h"
 #include "entry.h"
-#include "merge-ll.h"
+#include "merge/merge-ll.h"
 #include "odb/match-trees.h"
 #include "mem-pool.h"
 #include "odb/object-file.h"

@@ -29,7 +29,7 @@
 #include "wt-status.h"
 #include "revision.h"
 #include "commit-reach.h"
-#include "rerere.h"
+#include "merge/rerere.h"
 #include "branch.h"
 #include "sequencer.h"
 #include "rebase-interactive.h"

@@ -35,7 +35,7 @@
 #include "path.h"
 #include "refs/reflog.h"
 #include "pack/repack.h"
-#include "rerere.h"
+#include "merge/rerere.h"
 #include "revision.h"
 #include "odb/blob.h"
 #include "odb/tree.h"
