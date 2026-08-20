@@ -2,9 +2,9 @@
 #include "config.h"
 #include "gettext.h"
 #include "repository.h"
-#include "fsmonitor-ipc.h"
-#include "fsmonitor-settings.h"
-#include "fsmonitor-path-utils.h"
+#include "index/fsmonitor-ipc.h"
+#include "index/fsmonitor-settings.h"
+#include "index/fsmonitor-path-utils.h"
 
 /*
  * We keep this structure definition private and have getters

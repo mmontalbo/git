@@ -6,7 +6,7 @@
 #define USE_THE_REPOSITORY_VARIABLE
 #include "builtin.h"
 #include "config.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "environment.h"
 #include "gettext.h"
 #include "path.h"

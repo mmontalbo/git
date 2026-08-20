@@ -11,7 +11,7 @@
 #include "strbuf.h"
 #include "odb/commit-slab.h"
 #include "config.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "odb/object-name.h"
 
 static const char edit_todo_list_advice[] =

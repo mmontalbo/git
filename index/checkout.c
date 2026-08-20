@@ -5,7 +5,7 @@
 #include "remote.h"
 #include "refs/refspec.h"
 #include "repository.h"
-#include "checkout.h"
+#include "index/checkout.h"
 #include "config.h"
 #include "strbuf.h"
 

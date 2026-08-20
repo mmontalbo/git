@@ -4,9 +4,9 @@
 #include "gettext.h"
 #include "odb/hash.h"
 #include "mem-pool.h"
-#include "read-cache-ll.h"
+#include "index/read-cache-ll.h"
 #include "repository.h"
-#include "split-index.h"
+#include "index/split-index.h"
 #include "strbuf.h"
 #include "ewah/ewok.h"
 

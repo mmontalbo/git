@@ -1,7 +1,7 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "hex.h"
 #include "repository.h"
 #include "refs/refs.h"

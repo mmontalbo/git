@@ -2,7 +2,7 @@
 #include "odb/tmp-objdir.h"
 #include "abspath.h"
 #include "chdir-notify.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "environment.h"
 #include "odb/object-file.h"
 #include "path.h"
