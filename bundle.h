@@ -3,7 +3,7 @@
 
 #include "strvec.h"
 #include "string-list.h"
-#include "list-objects-filter-options.h"
+#include "revision/list-objects-filter-options.h"
 
 struct bundle_header {
 	unsigned version;

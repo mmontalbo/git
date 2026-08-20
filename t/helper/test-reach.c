@@ -2,7 +2,7 @@
 
 #include "test-tool.h"
 #include "odb/commit.h"
-#include "commit-reach.h"
+#include "revision/commit-reach.h"
 #include "gettext.h"
 #include "hex.h"
 #include "odb/object-name.h"

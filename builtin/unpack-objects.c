@@ -18,7 +18,7 @@
 #include "odb/replace-object.h"
 #include "strbuf.h"
 #include "progress.h"
-#include "decorate.h"
+#include "revision/decorate.h"
 #include "odb/fsck.h"
 #include "pack/packfile.h"
 

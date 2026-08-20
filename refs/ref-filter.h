@@ -6,7 +6,7 @@
 #include "odb/commit.h"
 #include "string-list.h"
 #include "strvec.h"
-#include "commit-reach.h"
+#include "revision/commit-reach.h"
 
 /* Quoting styles */
 #define QUOTE_NONE 0

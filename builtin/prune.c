@@ -7,7 +7,7 @@
 #include "environment.h"
 #include "gettext.h"
 #include "hex.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "pack/reachable.h"
 #include "parse-options.h"
 #include "path.h"
@@ -17,7 +17,7 @@
 #include "odb/object-file.h"
 #include "odb/object-name.h"
 #include "odb/odb.h"
-#include "shallow.h"
+#include "revision/shallow.h"
 
 static const char * const prune_usage[] = {
 	N_("git prune [-n] [-v] [--progress] [--expire <time>] [--] [<head>...]"),

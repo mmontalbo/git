@@ -2,7 +2,7 @@
 
 #include "unit-test.h"
 #include "odb/object.h"
-#include "decorate.h"
+#include "revision/decorate.h"
 #include "repository.h"
 
 struct test_vars {
