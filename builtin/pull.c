@@ -14,7 +14,7 @@
 #include "setup/environment.h"
 #include "gettext.h"
 #include "hex.h"
-#include "merge.h"
+#include "merge/merge.h"
 #include "odb/object-name.h"
 #include "parse-options.h"
 #include "run-command.h"
