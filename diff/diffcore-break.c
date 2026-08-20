@@ -8,7 +8,7 @@
 #include "diff/diffcore.h"
 #include "odb/hash.h"
 #include "odb/object.h"
-#include "promisor-remote.h"
+#include "transport/promisor-remote.h"
 
 static int should_break(struct repository *r,
 			struct diff_filespec *src,

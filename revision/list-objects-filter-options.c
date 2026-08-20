@@ -4,7 +4,7 @@
 #include "setup/config.h"
 #include "gettext.h"
 #include "revision/list-objects-filter-options.h"
-#include "promisor-remote.h"
+#include "transport/promisor-remote.h"
 #include "trace.h"
 #include "url.h"
 #include "parse-options.h"

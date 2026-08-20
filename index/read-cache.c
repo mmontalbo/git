@@ -46,7 +46,7 @@
 #include "progress.h"
 #include "index/sparse-index.h"
 #include "csum-file.h"
-#include "promisor-remote.h"
+#include "transport/promisor-remote.h"
 #include "setup/hook.h"
 #include "submodule.h"
 #include "submodule-config.h"

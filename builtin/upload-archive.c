@@ -4,9 +4,9 @@
 #define USE_THE_REPOSITORY_VARIABLE
 #include "builtin.h"
 #include "archive/archive.h"
-#include "pkt-line.h"
+#include "transport/pkt-line.h"
 #include "setup/setup.h"
-#include "sideband.h"
+#include "transport/sideband.h"
 #include "run-command.h"
 #include "strvec.h"
 

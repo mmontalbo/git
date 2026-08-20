@@ -8,7 +8,7 @@
 #include "gettext.h"
 #include "index/parallel-checkout.h"
 #include "parse-options.h"
-#include "pkt-line.h"
+#include "transport/pkt-line.h"
 #include "index/read-cache-ll.h"
 
 static void packet_to_pc_item(const char *buffer, int len,

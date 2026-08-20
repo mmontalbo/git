@@ -3,7 +3,7 @@
 #include "test-tool.h"
 #include "test-tool-utils.h"
 #include "parse-options.h"
-#include "remote.h"
+#include "transport/remote.h"
 #include "setup/repository.h"
 #include "setup/setup.h"
 #include "strbuf.h"

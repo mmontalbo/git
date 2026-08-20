@@ -11,7 +11,7 @@
 #include "path.h"
 #include "refs/refs.h"
 #include "refs/refspec.h"
-#include "remote.h"
+#include "transport/remote.h"
 #include "setup/repository.h"
 #include "sequencer.h"
 #include "odb/commit.h"

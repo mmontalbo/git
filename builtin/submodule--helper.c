@@ -20,7 +20,7 @@
 #include "submodule-config.h"
 #include "string-list.h"
 #include "run-command.h"
-#include "remote.h"
+#include "transport/remote.h"
 #include "refs/refs.h"
 #include "refs/refspec.h"
 #include "revision/revision.h"

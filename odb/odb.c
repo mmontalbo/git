@@ -17,7 +17,7 @@
 #include "odb/source-inmemory.h"
 #include "pack/packfile.h"
 #include "path.h"
-#include "promisor-remote.h"
+#include "transport/promisor-remote.h"
 #include "quote.h"
 #include "odb/replace-object.h"
 #include "run-command.h"
