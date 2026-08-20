@@ -5,7 +5,7 @@
 #include "hex.h"
 #include "merge-ort.h"
 #include "odb/object-name.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "replay.h"
 #include "revision.h"
 #include "sequencer.h"

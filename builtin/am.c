@@ -22,7 +22,7 @@
 #include "tempfile.h"
 #include "lockfile.h"
 #include "cache-tree.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "odb/commit.h"
 #include "diff.h"
 #include "unpack-trees.h"

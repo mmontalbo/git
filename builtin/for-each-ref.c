@@ -6,7 +6,7 @@
 #include "gettext.h"
 #include "odb/object.h"
 #include "parse-options.h"
-#include "ref-filter.h"
+#include "refs/ref-filter.h"
 #include "strbuf.h"
 #include "strvec.h"
 

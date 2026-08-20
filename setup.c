@@ -9,7 +9,7 @@
 #include "hex.h"
 #include "odb/object-file.h"
 #include "odb/object-name.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "repository.h"
 #include "config.h"
 #include "dir.h"
@@ -22,7 +22,7 @@
 #include "quote.h"
 #include "trace.h"
 #include "trace2.h"
-#include "worktree.h"
+#include "refs/worktree.h"
 
 enum allowed_bare_repo {
 	ALLOWED_BARE_REPO_EXPLICIT = 0,

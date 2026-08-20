@@ -23,7 +23,7 @@
 #include "odb/oid-array.h"
 #include "config.h"
 #include "odb/alloc.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "strmap.h"
 #include "midx.h"
 #include "pack-revindex.h"

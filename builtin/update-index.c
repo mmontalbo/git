@@ -20,7 +20,7 @@
 #include "odb/object-file.h"
 #include "odb/odb.h"
 #include "odb/transaction.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "resolve-undo.h"
 #include "parse-options.h"
 #include "pathspec.h"

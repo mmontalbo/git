@@ -1,7 +1,7 @@
 #ifndef REFS_REFS_INTERNAL_H
 #define REFS_REFS_INTERNAL_H
 
-#include "refs.h"
+#include "refs/refs.h"
 #include "iterator.h"
 #include "string-list.h"
 

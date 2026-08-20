@@ -8,7 +8,7 @@
 #include "odb/oidset.h"
 #include "pack-bitmap.h"
 #include "path.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "run-command.h"
 #include "tempfile.h"
 #include "trace2.h"

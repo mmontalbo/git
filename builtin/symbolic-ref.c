@@ -3,7 +3,7 @@
 #include "config.h"
 #include "environment.h"
 #include "gettext.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "parse-options.h"
 #include "strbuf.h"
 
