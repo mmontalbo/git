@@ -4,7 +4,7 @@
 #include "odb/source-inmemory.h"
 #include "odb/streaming.h"
 #include "odb/oidtree.h"
-#include "repository.h"
+#include "setup/repository.h"
 
 struct inmemory_object {
 	enum object_type type;

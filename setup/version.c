@@ -1,5 +1,5 @@
 #include "git-compat-util.h"
-#include "version.h"
+#include "setup/version.h"
 #include "strbuf.h"
 #include "gettext.h"
 

@@ -4,8 +4,8 @@
 #include "hex.h"
 #include "odb/match-trees.h"
 #include "odb/object-name.h"
-#include "repository.h"
-#include "setup.h"
+#include "setup/repository.h"
+#include "setup/setup.h"
 #include "odb/tree.h"
 
 int cmd__match_trees(int ac UNUSED, const char **av)

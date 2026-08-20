@@ -2,7 +2,7 @@
 
 #include "../../git-compat-util.h"
 #include "../../json-writer.h"
-#include "../../repository.h"
+#include "setup/repository.h"
 #include "../../strvec.h"
 #include "../../trace2.h"
 #include "lazyload.h"

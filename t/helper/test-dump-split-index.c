@@ -3,8 +3,8 @@
 #include "test-tool.h"
 #include "hex.h"
 #include "index/read-cache-ll.h"
-#include "repository.h"
-#include "setup.h"
+#include "setup/repository.h"
+#include "setup/setup.h"
 #include "index/split-index.h"
 #include "ewah/ewok.h"
 

@@ -1,7 +1,7 @@
 #ifndef PROMISOR_REMOTE_H
 #define PROMISOR_REMOTE_H
 
-#include "repository.h"
+#include "setup/repository.h"
 
 struct object_id;
 

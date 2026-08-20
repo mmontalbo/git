@@ -6,7 +6,7 @@
 #include "odb/odb.h"
 #include "pack/packfile.h"
 #include "pack/pack-mtimes.h"
-#include "setup.h"
+#include "setup/setup.h"
 
 static void dump_mtimes(struct packed_git *p)
 {

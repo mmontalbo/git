@@ -2,7 +2,7 @@
 
 #include "git-compat-util.h"
 #include "pack/repack.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "hex.h"
 #include "pack/midx.h"
 #include "pack/packfile.h"

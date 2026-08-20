@@ -2,7 +2,7 @@
 
 #include "git-compat-util.h"
 #include "run-command.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "exec-cmd.h"
 #include "gettext.h"
 #include "sigchain.h"
@@ -14,7 +14,7 @@
 #include "trace.h"
 #include "trace2.h"
 #include "quote.h"
-#include "config.h"
+#include "setup/config.h"
 #include "pack/packfile.h"
 #include "compat/nonblock.h"
 

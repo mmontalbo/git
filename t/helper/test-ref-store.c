@@ -3,11 +3,11 @@
 #include "test-tool.h"
 #include "hex.h"
 #include "refs/refs.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "refs/worktree.h"
 #include "odb/odb.h"
 #include "path.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "strbuf.h"
 #include "revision/revision.h"
 
