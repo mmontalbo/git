@@ -7,7 +7,7 @@
 #include "diff/diff-merges.h"
 #include "odb/commit.h"
 #include "preload-index.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "setup.h"
 
 static const char diff_cache_usage[] =

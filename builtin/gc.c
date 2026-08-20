@@ -34,7 +34,7 @@
 #include "path.h"
 #include "refs/reflog.h"
 #include "rerere.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "refs/refs.h"
 #include "remote.h"
 #include "exec-cmd.h"

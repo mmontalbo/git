@@ -13,8 +13,8 @@
 #include "pack/chunk-format.h"
 #include "pack/pack-bitmap.h"
 #include "refs/refs.h"
-#include "revision.h"
-#include "list-objects.h"
+#include "revision/revision.h"
+#include "revision/list-objects.h"
 #include "path.h"
 #include "pack/pack-revindex.h"
 

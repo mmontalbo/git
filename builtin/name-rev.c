@@ -17,8 +17,8 @@
 #include "pack/commit-graph.h"
 #include "wildmatch.h"
 #include "mem-pool.h"
-#include "pretty.h"
-#include "revision.h"
+#include "revision/pretty.h"
+#include "revision/revision.h"
 #include "notes.h"
 #include "write-or-die.h"
 
