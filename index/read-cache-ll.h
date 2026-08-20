@@ -3,7 +3,7 @@
 
 #include "odb/hash.h"
 #include "hashmap.h"
-#include "statinfo.h"
+#include "index/statinfo.h"
 
 /*
  * Basic data structures for the directory cache

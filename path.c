@@ -8,7 +8,7 @@
 #include "repository.h"
 #include "strbuf.h"
 #include "string-list.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "refs/worktree.h"
 #include "setup.h"
 #include "submodule-config.h"

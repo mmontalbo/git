@@ -3,8 +3,8 @@
 
 #include "odb/hash.h"
 #include "hashmap.h"
-#include "pathspec.h"
-#include "statinfo.h"
+#include "index/pathspec.h"
+#include "index/statinfo.h"
 #include "strbuf.h"
 
 struct repository;
