@@ -12,7 +12,7 @@
 #include "path.h"
 #include "parse-options.h"
 #include "quote.h"
-#include "packfile.h"
+#include "pack/packfile.h"
 #include "odb/object-file.h"
 
 static unsigned long garbage;

@@ -8,7 +8,7 @@
 #include "odb/source.h"
 #include "odb/source-files.h"
 #include "odb/source-loose.h"
-#include "packfile.h"
+#include "pack/packfile.h"
 #include "strbuf.h"
 #include "write-or-die.h"
 

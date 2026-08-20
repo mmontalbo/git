@@ -6,13 +6,13 @@
 #include "parse-options.h"
 #include "path.h"
 #include "run-command.h"
-#include "server-info.h"
+#include "pack/server-info.h"
 #include "string-list.h"
-#include "midx.h"
-#include "packfile.h"
-#include "prune-packed.h"
+#include "pack/midx.h"
+#include "pack/packfile.h"
+#include "pack/prune-packed.h"
 #include "promisor-remote.h"
-#include "repack.h"
+#include "pack/repack.h"
 #include "shallow.h"
 
 #define ALL_INTO_ONE 1

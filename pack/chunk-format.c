@@ -2,7 +2,7 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "chunk-format.h"
+#include "pack/chunk-format.h"
 #include "csum-file.h"
 #include "gettext.h"
 #include "odb/hash.h"
