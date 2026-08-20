@@ -1108,7 +1108,7 @@ LIB_OBJS += apply.o
 LIB_OBJS += archive/archive-tar.o
 LIB_OBJS += archive/archive-zip.o
 LIB_OBJS += archive/archive.o
-LIB_OBJS += attr.o
+LIB_OBJS += convert/attr.o
 LIB_OBJS += base85.o
 LIB_OBJS += revision/bisect.o
 LIB_OBJS += revision/blame.o
@@ -1138,7 +1138,7 @@ LIB_OBJS += compiler-tricks/not-constant.o
 LIB_OBJS += setup/config.o
 LIB_OBJS += connect.o
 LIB_OBJS += connected.o
-LIB_OBJS += convert.o
+LIB_OBJS += convert/convert.o
 LIB_OBJS += copy.o
 LIB_OBJS += credential.o
 LIB_OBJS += csum-file.o
@@ -1380,7 +1380,7 @@ LIB_OBJS += wildmatch.o
 LIB_OBJS += refs/worktree.o
 LIB_OBJS += wrapper.o
 LIB_OBJS += write-or-die.o
-LIB_OBJS += ws.o
+LIB_OBJS += convert/ws.o
 LIB_OBJS += index/wt-status.o
 LIB_OBJS += diff/xdiff-interface.o
 LIB_OBJS += xdiff/xdiffi.o
@@ -2977,8 +2977,8 @@ setup/config.sp setup/config.s setup/config.o: GIT-PREFIX
 setup/config.sp setup/config.s setup/config.o: EXTRA_CPPFLAGS = \
 	-DETC_GITCONFIG='"$(ETC_GITCONFIG_SQ)"'
 
-attr.sp attr.s attr.o: GIT-PREFIX
-attr.sp attr.s attr.o: EXTRA_CPPFLAGS = \
+convert/attr.sp convert/attr.s convert/attr.o: GIT-PREFIX
+convert/attr.sp convert/attr.s convert/attr.o: EXTRA_CPPFLAGS = \
 	-DETC_GITATTRIBUTES='"$(ETC_GITATTRIBUTES_SQ)"'
 
 gettext.sp gettext.s gettext.o: GIT-PREFIX

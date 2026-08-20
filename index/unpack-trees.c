@@ -17,7 +17,7 @@
 #include "index/unpack-trees.h"
 #include "progress.h"
 #include "refs/refs.h"
-#include "attr.h"
+#include "convert/attr.h"
 #include "index/read-cache.h"
 #include "index/split-index.h"
 #include "index/sparse-index.h"
