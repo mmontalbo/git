@@ -4,7 +4,7 @@
 #include "git-compat-util.h"
 #include "sub-process.h"
 #include "sigchain.h"
-#include "pkt-line.h"
+#include "transport/pkt-line.h"
 
 int cmd2process_cmp(const void *cmp_data UNUSED,
 		    const struct hashmap_entry *eptr,

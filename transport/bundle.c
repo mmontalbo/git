@@ -3,7 +3,7 @@
 
 #include "git-compat-util.h"
 #include "lockfile.h"
-#include "bundle.h"
+#include "transport/bundle.h"
 #include "setup/environment.h"
 #include "gettext.h"
 #include "hex.h"
@@ -18,7 +18,7 @@
 #include "refs/refs.h"
 #include "strvec.h"
 #include "revision/list-objects-filter-options.h"
-#include "connected.h"
+#include "transport/connected.h"
 #include "write-or-die.h"
 
 static const char v2_bundle_signature[] = "# v2 git bundle\n";

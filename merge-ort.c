@@ -42,7 +42,7 @@
 #include "odb/odb.h"
 #include "odb/oid-array.h"
 #include "path.h"
-#include "promisor-remote.h"
+#include "transport/promisor-remote.h"
 #include "index/read-cache-ll.h"
 #include "refs/refs.h"
 #include "revision/revision.h"

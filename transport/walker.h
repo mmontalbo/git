@@ -1,7 +1,7 @@
 #ifndef WALKER_H
 #define WALKER_H
 
-#include "remote.h"
+#include "transport/remote.h"
 
 struct walker {
 	void *data;

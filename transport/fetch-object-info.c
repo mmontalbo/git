@@ -1,11 +1,11 @@
 #include "git-compat-util.h"
 #include "gettext.h"
 #include "hex.h"
-#include "pkt-line.h"
-#include "connect.h"
+#include "transport/pkt-line.h"
+#include "transport/connect.h"
 #include "odb/oid-array.h"
 #include "odb/odb.h"
-#include "fetch-object-info.h"
+#include "transport/fetch-object-info.h"
 #include "string-list.h"
 
 /* Sends object-info command and its arguments into the request buffer. */

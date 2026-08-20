@@ -5,8 +5,8 @@
 #include "setup/setup.h"
 #include "strvec.h"
 #include "parse-options.h"
-#include "pkt-line.h"
-#include "bundle.h"
+#include "transport/pkt-line.h"
+#include "transport/bundle.h"
 
 /*
  * Basic handler for bundle files to connect repositories via sneakernet.

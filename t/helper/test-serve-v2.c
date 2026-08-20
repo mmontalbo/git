@@ -4,7 +4,7 @@
 #include "gettext.h"
 #include "parse-options.h"
 #include "setup/repository.h"
-#include "serve.h"
+#include "transport/serve.h"
 #include "setup/setup.h"
 
 static char const * const serve_usage[] = {

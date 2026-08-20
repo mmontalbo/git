@@ -27,7 +27,7 @@
 #include "path.h"
 #include "odb/replace-object.h"
 #include "odb/tree-walk.h"
-#include "promisor-remote.h"
+#include "transport/promisor-remote.h"
 #include "run-command.h"
 #include "setup/setup.h"
 #include "strvec.h"
