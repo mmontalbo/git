@@ -5,11 +5,11 @@
 #include "git-zlib.h"
 #include "list-objects-filter-options.h"
 #include "mergesort.h"
-#include "midx.h"
+#include "pack/midx.h"
 #include "odb/source-packed.h"
 #include "odb/streaming.h"
-#include "packfile.h"
-#include "pack-bitmap.h"
+#include "pack/packfile.h"
+#include "pack/pack-bitmap.h"
 
 static int find_pack_entry(struct odb_source_packed *store,
 			   const struct object_id *oid,

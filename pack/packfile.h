@@ -7,7 +7,7 @@
 #include "odb/source-files.h"
 #include "odb/source-packed.h"
 #include "odb/oidset.h"
-#include "packfile-list.h"
+#include "pack/packfile-list.h"
 #include "repository.h"
 
 /* in odb.h */

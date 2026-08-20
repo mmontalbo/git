@@ -3,7 +3,7 @@
 #include "git-compat-util.h"
 #include "odb/tag.h"
 #include "odb/commit.h"
-#include "commit-graph.h"
+#include "pack/commit-graph.h"
 #include "environment.h"
 #include "gettext.h"
 #include "hex.h"

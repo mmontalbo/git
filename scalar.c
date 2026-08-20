@@ -15,7 +15,7 @@
 #include "fsmonitor-settings.h"
 #include "refs/refs.h"
 #include "dir.h"
-#include "packfile.h"
+#include "pack/packfile.h"
 #include "help.h"
 #include "setup.h"
 #include "trace2.h"

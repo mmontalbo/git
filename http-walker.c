@@ -8,7 +8,7 @@
 #include "http.h"
 #include "list.h"
 #include "transport.h"
-#include "packfile.h"
+#include "pack/packfile.h"
 #include "odb/object-file.h"
 #include "odb/odb.h"
 
