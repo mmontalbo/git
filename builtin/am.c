@@ -24,7 +24,7 @@
 #include "cache-tree.h"
 #include "refs/refs.h"
 #include "odb/commit.h"
-#include "diff.h"
+#include "diff/diff.h"
 #include "unpack-trees.h"
 #include "branch.h"
 #include "odb/object-name.h"

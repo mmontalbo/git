@@ -12,7 +12,7 @@
 
 #include "test-tool.h"
 #include "odb/commit.h"
-#include "diff.h"
+#include "diff/diff.h"
 #include "line-log.h"
 #include "odb/object-name.h"
 #include "repository.h"
