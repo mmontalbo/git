@@ -12,7 +12,7 @@
 #include "refs/refs.h"
 #include "odb/oid-array.h"
 #include "path.h"
-#include "diff.h"
+#include "diff/diff.h"
 #include "revision.h"
 #include "odb/commit-slab.h"
 #include "list-objects.h"

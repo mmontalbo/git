@@ -5,7 +5,7 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "git-compat-util.h"
-#include "diffcore.h"
+#include "diff/diffcore.h"
 #include "odb/hash.h"
 #include "odb/object.h"
 #include "promisor-remote.h"
