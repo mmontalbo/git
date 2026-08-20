@@ -1,5 +1,5 @@
 #include "git-compat-util.h"
-#include "fetch-negotiator.h"
+#include "transport/fetch-negotiator.h"
 #include "negotiator/default.h"
 #include "negotiator/skipping.h"
 #include "negotiator/noop.h"

@@ -1,11 +1,11 @@
 #include "test-tool.h"
 #include "parse-options.h"
-#include "bundle-uri.h"
+#include "transport/bundle-uri.h"
 #include "gettext.h"
 #include "strbuf.h"
 #include "string-list.h"
-#include "transport.h"
-#include "remote.h"
+#include "transport/transport.h"
+#include "transport/remote.h"
 
 enum input_mode {
 	KEY_VALUE_PAIRS,

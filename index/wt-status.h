@@ -4,7 +4,7 @@
 #include "string-list.h"
 #include "color.h"
 #include "index/pathspec.h"
-#include "remote.h"
+#include "transport/remote.h"
 
 struct repository;
 struct worktree;
