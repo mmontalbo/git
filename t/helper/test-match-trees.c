@@ -2,11 +2,11 @@
 
 #include "test-tool.h"
 #include "hex.h"
-#include "match-trees.h"
-#include "object-name.h"
+#include "odb/match-trees.h"
+#include "odb/object-name.h"
 #include "repository.h"
 #include "setup.h"
-#include "tree.h"
+#include "odb/tree.h"
 
 int cmd__match_trees(int ac UNUSED, const char **av)
 {

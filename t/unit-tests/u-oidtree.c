@@ -1,7 +1,7 @@
 #include "unit-test.h"
 #include "lib-oid.h"
-#include "oidtree.h"
-#include "hash.h"
+#include "odb/oidtree.h"
+#include "odb/hash.h"
 #include "hex.h"
 #include "strvec.h"
 

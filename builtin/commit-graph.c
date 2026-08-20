@@ -1,17 +1,17 @@
 #define USE_THE_REPOSITORY_VARIABLE
 #include "builtin.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "config.h"
 #include "environment.h"
 #include "gettext.h"
 #include "hex.h"
 #include "parse-options.h"
 #include "commit-graph.h"
-#include "odb.h"
+#include "odb/odb.h"
 #include "progress.h"
-#include "replace-object.h"
+#include "odb/replace-object.h"
 #include "strbuf.h"
-#include "tag.h"
+#include "odb/tag.h"
 #include "trace2.h"
 
 #define BUILTIN_COMMIT_GRAPH_VERIFY_USAGE \

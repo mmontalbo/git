@@ -2,8 +2,8 @@
 #include "environment.h"
 #include "string-list.h"
 #include "mailmap.h"
-#include "object-name.h"
-#include "odb.h"
+#include "odb/object-name.h"
+#include "odb/odb.h"
 #include "setup.h"
 #include "config.h"
 

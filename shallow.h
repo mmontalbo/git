@@ -1,9 +1,9 @@
 #ifndef SHALLOW_H
 #define SHALLOW_H
 
-#include "commit.h"
+#include "odb/commit.h"
 #include "lockfile.h"
-#include "object.h"
+#include "odb/object.h"
 #include "repository.h"
 #include "strbuf.h"
 

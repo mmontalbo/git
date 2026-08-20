@@ -1,5 +1,5 @@
 #include "test-tool.h"
-#include "hash.h"
+#include "odb/hash.h"
 
 #define NUM_SECONDS 3
 

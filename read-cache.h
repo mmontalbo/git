@@ -2,7 +2,7 @@
 #define READ_CACHE_H
 
 #include "read-cache-ll.h"
-#include "object.h"
+#include "odb/object.h"
 #include "pathspec.h"
 #include "environment.h"
 

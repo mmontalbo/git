@@ -5,7 +5,7 @@
 #include "color.h"
 #include "diffcore.h"
 #include "gettext.h"
-#include "hash.h"
+#include "odb/hash.h"
 #include "hex.h"
 #include "preload-index.h"
 #include "read-cache-ll.h"
@@ -17,7 +17,7 @@
 #include "dir.h"
 #include "run-command.h"
 #include "prompt.h"
-#include "tree.h"
+#include "odb/tree.h"
 
 void init_add_i_state(struct add_i_state *s, struct repository *r,
 		      struct interactive_options *opts)

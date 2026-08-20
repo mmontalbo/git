@@ -1,11 +1,11 @@
 #define USE_THE_REPOSITORY_VARIABLE
 #include "builtin.h"
 #include "config.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "environment.h"
 #include "gettext.h"
 #include "hex.h"
-#include "object-name.h"
+#include "odb/object-name.h"
 #include "parse-options.h"
 #include "commit-reach.h"
 
