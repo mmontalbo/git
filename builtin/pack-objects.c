@@ -21,7 +21,7 @@
 #include "list-objects-filter-options.h"
 #include "pack-objects.h"
 #include "progress.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "thread-utils.h"
 #include "pack-bitmap.h"
 #include "delta-islands.h"

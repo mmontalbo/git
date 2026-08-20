@@ -20,7 +20,7 @@
 #include "utf8.h"
 #include "quote.h"
 #include "read-cache-ll.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "revision.h"
 #include "odb/odb.h"
 #include "setup.h"

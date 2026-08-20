@@ -19,7 +19,7 @@
 #include "name-hash.h"
 #include "odb/object-file.h"
 #include "path.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "repository.h"
 #include "wildmatch.h"
 #include "pathspec.h"

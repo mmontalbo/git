@@ -24,7 +24,7 @@
 #include "path.h"
 #include "preload-index.h"
 #include "read-cache.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "remote.h"
 #include "repo-settings.h"
 #include "resolve-undo.h"

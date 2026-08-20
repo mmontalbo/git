@@ -10,7 +10,7 @@
 #include "packfile.h"
 #include "odb/commit.h"
 #include "odb/object.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "odb/hash-lookup.h"
 #include "commit-graph.h"
 #include "odb/odb.h"

@@ -9,7 +9,7 @@
 #include "gettext.h"
 #include "hex.h"
 #include "revision.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "list-objects.h"
 #include "quote.h"
 #include "run-command.h"

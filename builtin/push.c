@@ -12,7 +12,7 @@
 #include "environment.h"
 #include "gettext.h"
 #include "hex.h"
-#include "refspec.h"
+#include "refs/refspec.h"
 #include "run-command.h"
 #include "remote.h"
 #include "transport.h"

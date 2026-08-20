@@ -4,7 +4,7 @@
 #include "hex.h"
 #include "transport.h"
 #include "pkt-line.h"
-#include "ref-filter.h"
+#include "refs/ref-filter.h"
 #include "remote.h"
 #include "parse-options.h"
 #include "wildmatch.h"

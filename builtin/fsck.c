@@ -6,7 +6,7 @@
 #include "odb/tree.h"
 #include "odb/blob.h"
 #include "odb/tag.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "pack.h"
 #include "cache-tree.h"
 #include "odb/fsck.h"
@@ -23,7 +23,7 @@
 #include "resolve-undo.h"
 #include "run-command.h"
 #include "sparse-index.h"
-#include "worktree.h"
+#include "refs/worktree.h"
 #include "pack-revindex.h"
 #include "pack-bitmap.h"
 
