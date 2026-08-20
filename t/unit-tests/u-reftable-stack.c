@@ -9,7 +9,7 @@ https://developers.google.com/open-source/licenses/bsd
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "unit-test.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "lib-reftable.h"
 #include "reftable/merged.h"
 #include "reftable/reftable-error.h"

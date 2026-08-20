@@ -3,9 +3,9 @@
 
 #include "git-compat-util.h"
 #include "advice.h"
-#include "wt-status.h"
+#include "index/wt-status.h"
 #include "odb/object.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "odb/commit.h"
 #include "diff/diff.h"
 #include "environment.h"
@@ -24,7 +24,7 @@
 #include "refs/refs.h"
 #include "submodule.h"
 #include "column.h"
-#include "read-cache.h"
+#include "index/read-cache.h"
 #include "setup.h"
 #include "strbuf.h"
 #include "trace.h"
@@ -34,7 +34,7 @@
 #include "refs/worktree.h"
 #include "lockfile.h"
 #include "sequencer.h"
-#include "fsmonitor-settings.h"
+#include "index/fsmonitor-settings.h"
 
 #define AB_DELAY_WARNING_IN_MS (2 * 1000)
 #define UF_DELAY_WARNING_IN_MS (2 * 1000)

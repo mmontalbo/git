@@ -2,7 +2,7 @@
 
 #include "git-compat-util.h"
 #include "environment.h"
-#include "statinfo.h"
+#include "index/statinfo.h"
 #include "repository.h"
 
 /*

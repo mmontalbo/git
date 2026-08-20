@@ -12,7 +12,7 @@
 #include "refs/refs.h"
 #include "odb/object-name.h"
 #include "parse-options.h"
-#include "read-cache-ll.h"
+#include "index/read-cache-ll.h"
 #include "revision/revision.h"
 #include "diff/diff.h"
 #include "hashmap.h"

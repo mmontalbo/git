@@ -2,7 +2,7 @@
 
 #include "git-compat-util.h"
 #include "config.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "tr2_sysenv.h"
 
 /*

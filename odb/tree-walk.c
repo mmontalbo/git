@@ -2,17 +2,17 @@
 
 #include "git-compat-util.h"
 #include "odb/tree-walk.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "gettext.h"
 #include "hex.h"
 #include "odb/object-file.h"
 #include "odb/odb.h"
 #include "trace2.h"
 #include "odb/tree.h"
-#include "pathspec.h"
+#include "index/pathspec.h"
 #include "json-writer.h"
 #include "environment.h"
-#include "read-cache-ll.h"
+#include "index/read-cache-ll.h"
 
 static int decode_tree_entry(struct tree_desc *desc, const char *buf, unsigned long size, struct strbuf *err)
 {

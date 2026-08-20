@@ -7,7 +7,7 @@
 #include "gettext.h"
 #include "run-command.h"
 #include "strbuf.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "ident.h"
 #include "gpg-interface.h"
 #include "path.h"

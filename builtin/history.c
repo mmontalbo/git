@@ -1,7 +1,7 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "builtin.h"
-#include "cache-tree.h"
+#include "index/cache-tree.h"
 #include "odb/commit.h"
 #include "revision/commit-reach.h"
 #include "config.h"
@@ -14,7 +14,7 @@
 #include "odb/oidmap.h"
 #include "parse-options.h"
 #include "path.h"
-#include "read-cache.h"
+#include "index/read-cache.h"
 #include "refs/refs.h"
 #include "replay.h"
 #include "reset.h"
@@ -23,8 +23,8 @@
 #include "strvec.h"
 #include "odb/tree.h"
 #include "odb/tree-walk.h"
-#include "unpack-trees.h"
-#include "wt-status.h"
+#include "index/unpack-trees.h"
+#include "index/wt-status.h"
 
 #define GIT_HISTORY_DROP_USAGE \
 	N_("git history drop <commit> [--dry-run] [--update-refs=(branches|head)] [--empty=(drop|keep|abort)]")

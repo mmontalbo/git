@@ -1,6 +1,6 @@
 #include "git-compat-util.h"
-#include "fsmonitor-ll.h"
-#include "fsmonitor-path-utils.h"
+#include "index/fsmonitor-ll.h"
+#include "index/fsmonitor-path-utils.h"
 #include "gettext.h"
 #include "trace.h"
 

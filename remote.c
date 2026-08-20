@@ -18,7 +18,7 @@
 #include "odb/commit.h"
 #include "diff/diff.h"
 #include "revision/revision.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "setup.h"
 #include "string-list.h"
 #include "strvec.h"

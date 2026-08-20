@@ -1,9 +1,9 @@
 #include "git-compat-util.h"
 #include "config.h"
 #include "repository.h"
-#include "fsmonitor-ll.h"
-#include "fsmonitor-settings.h"
-#include "fsmonitor-path-utils.h"
+#include "index/fsmonitor-ll.h"
+#include "index/fsmonitor-settings.h"
+#include "index/fsmonitor-path-utils.h"
 
 /*
  * VFS for Git is incompatible with FSMonitor.
