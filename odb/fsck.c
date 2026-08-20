@@ -7,7 +7,7 @@
 #include "path.h"
 #include "setup/repository.h"
 #include "odb/object.h"
-#include "attr.h"
+#include "convert/attr.h"
 #include "odb/blob.h"
 #include "odb/tree.h"
 #include "odb/tree-walk.h"

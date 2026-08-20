@@ -13,7 +13,7 @@
 #include "setup/config.h"
 #include "setup/environment.h"
 #include "exec-cmd.h"
-#include "attr.h"
+#include "convert/attr.h"
 #include "index/dir.h"
 #include "gettext.h"
 #include "path.h"

@@ -7,9 +7,9 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "attr.h"
+#include "convert/attr.h"
 #include "strbuf.h"
-#include "ws.h"
+#include "convert/ws.h"
 
 unsigned whitespace_rule_cfg = WS_DEFAULT_RULE;
 
