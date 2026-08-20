@@ -1,7 +1,7 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "git-compat-util.h"
-#include "notes-cache.h"
+#include "notes/notes-cache.h"
 #include "odb/object-file.h"
 #include "odb/odb.h"
 #include "revision/pretty.h"
