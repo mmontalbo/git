@@ -2,7 +2,7 @@
 #include "odb/object-file.h"
 #include "odb/source-files.h"
 #include "odb/source.h"
-#include "packfile.h"
+#include "pack/packfile.h"
 
 struct odb_source *odb_source_new(struct object_database *odb,
 				  const char *path,
