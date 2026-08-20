@@ -24,7 +24,7 @@
 #include "index/read-cache.h"
 #include "revision/revision.h"
 #include "strvec.h"
-#include "submodule.h"
+#include "submodule/submodule.h"
 #include "add-interactive.h"
 #include "merge/merge-ll.h"
 

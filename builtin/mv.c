@@ -26,7 +26,7 @@
 
 #include "setup/setup.h"
 #include "strvec.h"
-#include "submodule.h"
+#include "submodule/submodule.h"
 #include "index/entry.h"
 
 static const char * const builtin_mv_usage[] = {
