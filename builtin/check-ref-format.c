@@ -5,7 +5,7 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "builtin.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "setup.h"
 #include "strbuf.h"
 

@@ -1,6 +1,6 @@
 #include "../git-compat-util.h"
 #include "odb/hash.h"
-#include "../refs.h"
+#include "refs/refs.h"
 #include "../repository.h"
 #include "refs-internal.h"
 #include "ref-cache.h"

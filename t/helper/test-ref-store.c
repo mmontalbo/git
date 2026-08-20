@@ -2,9 +2,9 @@
 
 #include "test-tool.h"
 #include "hex.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "setup.h"
-#include "worktree.h"
+#include "refs/worktree.h"
 #include "odb/odb.h"
 #include "path.h"
 #include "repository.h"

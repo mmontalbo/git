@@ -15,7 +15,7 @@
 #include "revision.h"
 #include "list-objects.h"
 #include "run-command.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "strvec.h"
 #include "list-objects-filter-options.h"
 #include "connected.h"

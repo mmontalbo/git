@@ -15,7 +15,7 @@
 #include "string-list.h"
 #include "column.h"
 #include "version.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "parse-options.h"
 #include "prompt.h"
 #include "fsmonitor-ipc.h"

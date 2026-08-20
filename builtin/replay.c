@@ -9,7 +9,7 @@
 #include "hex.h"
 #include "odb/object-name.h"
 #include "parse-options.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "replay.h"
 #include "revision.h"
 

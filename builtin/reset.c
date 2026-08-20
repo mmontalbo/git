@@ -20,7 +20,7 @@
 #include "lockfile.h"
 #include "odb/object.h"
 #include "pretty.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "diff.h"
 #include "diffcore.h"
 #include "odb/tree.h"

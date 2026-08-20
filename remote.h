@@ -3,7 +3,7 @@
 
 #include "odb/hash.h"
 #include "hashmap.h"
-#include "refspec.h"
+#include "refs/refspec.h"
 #include "string-list.h"
 #include "strvec.h"
 

@@ -9,7 +9,7 @@
 #include "odb/object-name.h"
 #include "parse-options.h"
 #include "bisect.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "strvec.h"
 #include "run-command.h"
 #include "odb/oid-array.h"

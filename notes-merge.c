@@ -5,7 +5,7 @@
 #include "advice.h"
 #include "odb/commit.h"
 #include "gettext.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "odb/object-file.h"
 #include "odb/object-name.h"
 #include "odb/odb.h"

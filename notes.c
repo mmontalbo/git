@@ -13,7 +13,7 @@
 #include "strbuf.h"
 #include "odb/tree-walk.h"
 #include "string-list.h"
-#include "refs.h"
+#include "refs/refs.h"
 
 /*
  * Use a non-balancing simple 16-tree structure with struct int_node as

@@ -12,7 +12,7 @@
 #include "odb/tree-walk.h"
 #include "odb/tag.h"
 #include "odb/blob.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "progress.h"
 #include "prio-queue.h"
 
