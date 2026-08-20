@@ -1,5 +1,5 @@
 #include "git-compat-util.h"
-#include "line-range.h"
+#include "revision/line-range.h"
 #include "diff/xdiff-interface.h"
 #include "diff/userdiff.h"
 

@@ -9,7 +9,7 @@
 #include "odb/odb.h"
 #include "refs/reflog.h"
 #include "refs/refs.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "odb/tree.h"
 #include "odb/tree-walk.h"
 #include "wildmatch.h"

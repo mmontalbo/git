@@ -19,7 +19,7 @@
 #include "odb/odb.h"
 #include "path.h"
 
-#include "pretty.h"
+#include "revision/pretty.h"
 #include "refs/refs.h"
 #include "exec-cmd.h"
 #include "run-command.h"

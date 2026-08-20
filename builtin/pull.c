@@ -29,7 +29,7 @@
 #include "submodule.h"
 #include "submodule-config.h"
 #include "wt-status.h"
-#include "commit-reach.h"
+#include "revision/commit-reach.h"
 #include "sequencer.h"
 
 /**

@@ -1,7 +1,7 @@
 #ifndef TEMPFILE_H
 #define TEMPFILE_H
 
-#include "list.h"
+#include "revision/list.h"
 #include "strbuf.h"
 
 struct repository;

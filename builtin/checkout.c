@@ -28,7 +28,7 @@
 #include "remote.h"
 #include "repo-settings.h"
 #include "resolve-undo.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "sequencer.h"
 #include "setup.h"
 #include "sparse-index.h"

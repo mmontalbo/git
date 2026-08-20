@@ -10,7 +10,7 @@
 #include "builtin.h"
 
 #include "abspath.h"
-#include "bisect.h"
+#include "revision/bisect.h"
 #include "config.h"
 #include "odb/commit.h"
 #include "environment.h"
@@ -26,12 +26,12 @@
 #include "read-cache-ll.h"
 #include "repo-settings.h"
 #include "repository.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "setup.h"
 #include "split-index.h"
 #include "submodule.h"
-#include "commit-reach.h"
-#include "shallow.h"
+#include "revision/commit-reach.h"
+#include "revision/shallow.h"
 #include "odb/object-file-convert.h"
 
 #define DO_REVS		1

@@ -7,7 +7,7 @@
 #include "environment.h"
 #include "gettext.h"
 #include "string-list.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "utf8.h"
 #include "mailmap.h"
 #include "setup.h"

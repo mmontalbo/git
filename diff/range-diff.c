@@ -15,11 +15,11 @@
 #include "diff/diffcore.h"
 #include "odb/commit.h"
 #include "pager.h"
-#include "pretty.h"
+#include "revision/pretty.h"
 #include "repository.h"
 #include "diff/userdiff.h"
 #include "apply.h"
-#include "revision.h"
+#include "revision/revision.h"
 
 struct patch_util {
 	/* For the search for an exact match */

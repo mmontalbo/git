@@ -3,7 +3,7 @@
 
 #include "run-command.h"
 #include "remote.h"
-#include "list-objects-filter-options.h"
+#include "revision/list-objects-filter-options.h"
 #include "string-list.h"
 #include "connect.h"
 

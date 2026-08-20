@@ -6,9 +6,9 @@
 #include "odb/commit.h"
 #include "gettext.h"
 #include "hex.h"
-#include "log-tree.h"
+#include "revision/log-tree.h"
 #include "read-cache-ll.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "odb/tmp-objdir.h"
 #include "odb/tree.h"
 
