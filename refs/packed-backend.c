@@ -2,7 +2,7 @@
 
 #include "../git-compat-util.h"
 #include "../config.h"
-#include "../dir.h"
+#include "index/dir.h"
 #include "odb/fsck.h"
 #include "../gettext.h"
 #include "odb/hash.h"
@@ -13,7 +13,7 @@
 #include "../iterator.h"
 #include "../lockfile.h"
 #include "../chdir-notify.h"
-#include "../statinfo.h"
+#include "index/statinfo.h"
 #include "refs/worktree.h"
 #include "../wrapper.h"
 #include "../write-or-die.h"

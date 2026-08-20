@@ -5,7 +5,7 @@
 
 #include "hashmap.h"
 #include "thread-utils.h"
-#include "fsmonitor-path-utils.h"
+#include "index/fsmonitor-path-utils.h"
 
 struct fsmonitor_batch;
 struct fsmonitor_token_data;

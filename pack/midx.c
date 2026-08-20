@@ -2,7 +2,7 @@
 
 #include "git-compat-util.h"
 #include "config.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "hex.h"
 #include "pack/packfile.h"
 #include "odb/hash-lookup.h"

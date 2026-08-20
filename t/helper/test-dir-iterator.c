@@ -2,7 +2,7 @@
 #include "git-compat-util.h"
 #include "strbuf.h"
 #include "iterator.h"
-#include "dir-iterator.h"
+#include "index/dir-iterator.h"
 
 static const char *error_name(int error_number)
 {

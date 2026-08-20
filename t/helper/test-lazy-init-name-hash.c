@@ -2,9 +2,9 @@
 
 #include "test-tool.h"
 #include "environment.h"
-#include "name-hash.h"
+#include "index/name-hash.h"
 #include "parse-options.h"
-#include "read-cache-ll.h"
+#include "index/read-cache-ll.h"
 #include "repository.h"
 #include "setup.h"
 #include "trace.h"

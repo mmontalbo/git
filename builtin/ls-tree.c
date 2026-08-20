@@ -16,7 +16,7 @@
 #include "path.h"
 #include "quote.h"
 #include "parse-options.h"
-#include "pathspec.h"
+#include "index/pathspec.h"
 
 static const char * const ls_tree_usage[] = {
 	N_("git ls-tree [<options>] <tree-ish> [<path>...]"),

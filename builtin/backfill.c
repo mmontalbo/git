@@ -7,7 +7,7 @@
 #include "parse-options.h"
 #include "repository.h"
 #include "odb/commit.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "environment.h"
 #include "hex.h"
 #include "odb/tree.h"
