@@ -7,7 +7,7 @@
 #include "setup/environment.h"
 #include "gettext.h"
 #include "revision/revision.h"
-#include "rerere.h"
+#include "merge/rerere.h"
 #include "sequencer.h"
 #include "branch.h"
 
