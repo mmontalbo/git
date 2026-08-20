@@ -15,7 +15,7 @@
 #include "diff/diffcore.h"
 #include "hex.h"
 #include "diff/xdiff-interface.h"
-#include "merge-ll.h"
+#include "merge/merge-ll.h"
 #include "index/dir.h"
 #include "notes.h"
 #include "notes-merge.h"

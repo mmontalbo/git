@@ -13,7 +13,7 @@
 #include "attr.h"
 #include "diff/xdiff-interface.h"
 #include "run-command.h"
-#include "merge-ll.h"
+#include "merge/merge-ll.h"
 #include "quote.h"
 #include "strbuf.h"
 #include "gettext.h"

@@ -17,7 +17,7 @@
 #include "odb/tag.h"
 #include "revision/graph.h"
 #include "revision/log-tree.h"
-#include "merge-ort.h"
+#include "merge/merge-ort.h"
 #include "refs/reflog-walk.h"
 #include "refs/refs.h"
 #include "odb/replace-object.h"
