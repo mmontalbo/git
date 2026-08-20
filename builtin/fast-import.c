@@ -16,7 +16,7 @@
 #include "pack.h"
 #include "path.h"
 #include "read-cache-ll.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "csum-file.h"
 #include "quote.h"
 #include "dir.h"

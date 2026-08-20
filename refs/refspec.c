@@ -6,8 +6,8 @@
 #include "hex.h"
 #include "string-list.h"
 #include "strvec.h"
-#include "refs.h"
-#include "refspec.h"
+#include "refs/refs.h"
+#include "refs/refspec.h"
 #include "remote.h"
 #include "strbuf.h"
 

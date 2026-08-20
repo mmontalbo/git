@@ -14,7 +14,7 @@
 #include "xdiff-interface.h"
 #include "xdiff/xmacros.h"
 #include "log-tree.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "odb/tree.h"
 #include "userdiff.h"
 #include "odb/oid-array.h"
