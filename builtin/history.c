@@ -10,7 +10,7 @@
 #include "gettext.h"
 #include "hex.h"
 #include "lockfile.h"
-#include "merge-ort.h"
+#include "merge/merge-ort.h"
 #include "odb/oidmap.h"
 #include "parse-options.h"
 #include "path.h"

@@ -4,7 +4,7 @@
 #include "config.h"
 #include "gettext.h"
 #include "parse-options.h"
-#include "rerere.h"
+#include "merge/rerere.h"
 #include "strbuf.h"
 #include "string-list.h"
 #include "xdiff/xdiff.h"
