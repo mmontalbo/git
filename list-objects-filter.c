@@ -5,7 +5,7 @@
 #include "gettext.h"
 #include "hex.h"
 #include "odb/commit.h"
-#include "diff.h"
+#include "diff/diff.h"
 #include "revision.h"
 #include "list-objects-filter.h"
 #include "list-objects-filter-options.h"

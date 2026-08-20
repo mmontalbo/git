@@ -12,7 +12,7 @@
 #include "string-list.h"
 #include "read-cache-ll.h"
 #include "rerere.h"
-#include "xdiff-interface.h"
+#include "diff/xdiff-interface.h"
 #include "dir.h"
 #include "resolve-undo.h"
 #include "merge-ll.h"

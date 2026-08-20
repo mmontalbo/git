@@ -1,7 +1,7 @@
 #ifndef PATCH_IDS_H
 #define PATCH_IDS_H
 
-#include "diff.h"
+#include "diff/diff.h"
 #include "hashmap.h"
 
 struct commit;

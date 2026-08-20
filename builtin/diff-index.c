@@ -3,8 +3,8 @@
 
 #include "builtin.h"
 #include "config.h"
-#include "diff.h"
-#include "diff-merges.h"
+#include "diff/diff.h"
+#include "diff/diff-merges.h"
 #include "odb/commit.h"
 #include "preload-index.h"
 #include "revision.h"

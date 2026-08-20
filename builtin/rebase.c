@@ -25,7 +25,7 @@
 #include "parse-options.h"
 #include "path.h"
 #include "odb/commit.h"
-#include "diff.h"
+#include "diff/diff.h"
 #include "wt-status.h"
 #include "revision.h"
 #include "commit-reach.h"
