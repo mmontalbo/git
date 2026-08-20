@@ -7,7 +7,7 @@
 #include "hex.h"
 #include "odb/odb.h"
 #include "strbuf.h"
-#include "xdiff-interface.h"
+#include "diff/xdiff-interface.h"
 #include "xdiff/xtypes.h"
 #include "xdiff/xdiffi.h"
 #include "xdiff/xutils.h"

@@ -7,7 +7,7 @@
 #include "odb/object-name.h"
 #include "odb/oidset.h"
 #include "pretty.h"
-#include "diff.h"
+#include "diff/diff.h"
 #include "odb/commit-slab-decl.h"
 #include "decorate.h"
 #include "ident.h"

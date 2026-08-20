@@ -6,7 +6,7 @@
 #include "hex.h"
 #include "strbuf.h"
 #include "odb/tag.h"
-#include "diff.h"
+#include "diff/diff.h"
 #include "revision.h"
 #include "progress.h"
 #include "list-objects.h"
