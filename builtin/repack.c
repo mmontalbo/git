@@ -13,7 +13,7 @@
 #include "pack/prune-packed.h"
 #include "promisor-remote.h"
 #include "pack/repack.h"
-#include "shallow.h"
+#include "revision/shallow.h"
 
 #define ALL_INTO_ONE 1
 #define LOOSEN_UNREACHABLE 2

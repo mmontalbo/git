@@ -26,7 +26,7 @@
 #include "odb/object-name.h"
 #include "odb/odb.h"
 #include "mem-pool.h"
-#include "commit-reach.h"
+#include "revision/commit-reach.h"
 #include "khash.h"
 #include "date.h"
 #include "gpg-interface.h"

@@ -1,7 +1,7 @@
 #ifndef REPACK_H
 #define REPACK_H
 
-#include "list-objects-filter-options.h"
+#include "revision/list-objects-filter-options.h"
 #include "string-list.h"
 
 struct pack_objects_args {

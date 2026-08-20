@@ -3,13 +3,13 @@
 #include "git-compat-util.h"
 #include "odb/commit.h"
 #include "pack/commit-graph.h"
-#include "decorate.h"
+#include "revision/decorate.h"
 #include "hex.h"
 #include "prio-queue.h"
 #include "refs/ref-filter.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "odb/tag.h"
-#include "commit-reach.h"
+#include "revision/commit-reach.h"
 #include "ewah/ewok.h"
 
 /* Remember to update object flag allocation in object.h */

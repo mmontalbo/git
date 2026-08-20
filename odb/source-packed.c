@@ -3,7 +3,7 @@
 #include "chdir-notify.h"
 #include "dir.h"
 #include "git-zlib.h"
-#include "list-objects-filter-options.h"
+#include "revision/list-objects-filter-options.h"
 #include "mergesort.h"
 #include "pack/midx.h"
 #include "odb/source-packed.h"

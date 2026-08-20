@@ -41,10 +41,6 @@ attr.h component=convert role=header prefix=attr cochange=convert:50,index:13,di
 banned.h component=? role=public prefix=banned
 base85.c component=? role=lib prefix=base85 cochange=diff:4,pack:2,convert:1,transport:1
 base85.h component=? role=public prefix=base85 cochange=diff:1
-bisect.c component=revision role=lib prefix=bisect includes=odb:5,revision:5,setup:2,diff:1,index:1 cochange=revision:61,odb:32,transport:31,refs:13,diff:9
-bisect.h component=revision role=header prefix=bisect cochange=revision:29,odb:2
-blame.c component=revision role=lib prefix=blame includes=odb:5,diff:2,index:2,pack:2,revision:2 cochange=diff:68,revision:66,odb:56,index:29,pack:22
-blame.h component=revision role=header prefix=blame includes=diff:1,odb:1 cochange=revision:19,odb:7,diff:4,archive:1,index:1
 branch.c component=? role=lib prefix=branch includes=refs:3,setup:3,odb:2,submodule:1,transport:1 cochange=refs:62,transport:41,setup:28,index:19,revision:12
 branch.h component=? role=public prefix=branch cochange=setup:8,refs:4,submodule:4
 builtin.h component=? role=public prefix=builtin includes=setup:1 cochange=diff:15,index:15,transport:12,odb:6,notes:5
@@ -62,8 +58,6 @@ color.c component=? role=lib prefix=color includes=setup:1 cochange=diff:21,inde
 color.h component=? role=public prefix=color cochange=diff:18,index:12,revision:12,transport:2,odb:1
 column.c component=? role=lib prefix=column includes=setup:1 cochange=transport:6,setup:5,diff:4,revision:3,index:2
 column.h component=? role=public prefix=column
-commit-reach.c component=revision role=lib prefix=commit-reach includes=revision:3,odb:2,pack:1,refs:1 cochange=revision:38,odb:17,pack:15,transport:9,index:5
-commit-reach.h component=revision role=header prefix=commit-reach includes=odb:2 cochange=revision:32,odb:9,transport:8,pack:3,refs:3
 common-exit.c component=? role=lib prefix=common-main
 common-init.c component=? role=lib prefix=common-main includes=odb:2,setup:2,convert:1 cochange=setup:1
 common-init.h component=? role=public prefix=common-main
@@ -86,8 +80,6 @@ ctype.c component=? role=lib prefix=ctype cochange=setup:3,index:2,odb:1,pack:1,
 daemon.c component=? role=program prefix=daemon includes=setup:3,transport:2 cochange=transport:77,index:14,setup:13,diff:7,refs:5
 date.c component=? role=lib prefix=date cochange=revision:17,odb:16,refs:14,setup:9,diff:7
 date.h component=? role=public prefix=date cochange=refs:7,revision:4,setup:2,archive:1,odb:1
-decorate.c component=revision role=lib prefix=decorate includes=odb:1,revision:1 cochange=diff:6,odb:5,revision:5,pack:2,transport:2
-decorate.h component=revision role=header prefix=decorate cochange=revision:4,odb:1
 diagnose.c component=? role=lib prefix=diagnose includes=archive:1,index:1,odb:1,pack:1,setup:1 cochange=index:4,revision:4,odb:3,pack:3,transport:3
 diagnose.h component=? role=public prefix=diagnose cochange=revision:2,refs:1,transport:1
 diff/combine-diff.c component=diff role=lib prefix=combine-diff includes=odb:5,diff:4,revision:2,convert:1,refs:1 cochange=diff:198,revision:67,index:35,odb:16,transport:16
@@ -152,8 +144,6 @@ git-zlib.h component=? role=public prefix=git-zlib cochange=archive:3,setup:2,od
 git.c component=? role=lib prefix=git includes=setup:4,odb:2,convert:1,index:1,revision:1 cochange=setup:70,revision:54,transport:47,index:28,diff:25
 gpg-interface.c component=? role=lib prefix=gpg-interface includes=setup:3,index:1,odb:1 cochange=revision:25,odb:22,setup:13,transport:11,diff:8
 gpg-interface.h component=? role=public prefix=gpg-interface cochange=odb:22,revision:15,merge:4,transport:3,refs:1
-graph.c component=revision role=lib prefix=graph includes=revision:2,odb:1,setup:1 cochange=revision:38,diff:23,index:4,odb:3,transport:3
-graph.h component=revision role=header prefix=graph includes=diff:1 cochange=revision:19,diff:2,odb:1
 grep.c component=? role=lib prefix=grep includes=diff:4,odb:1,revision:1,setup:1 cochange=diff:40,revision:28,transport:10,index:7,refs:7
 grep.h component=? role=public prefix=grep includes=diff:1 cochange=revision:23,diff:10,transport:4,index:2,refs:2
 hashmap.c component=? role=lib prefix=hashmap cochange=diff:33,revision:19,index:17,refs:13,submodule:13
@@ -183,23 +173,10 @@ kwset.c component=? role=lib prefix=kwset cochange=convert:2,diff:1,pack:1,revis
 kwset.h component=? role=public prefix=kwset
 levenshtein.c component=? role=lib prefix=? cochange=diff:2,revision:2,odb:1
 levenshtein.h component=? role=public prefix=? cochange=transport:2,diff:1,refs:1,setup:1
-line-log.c component=revision role=lib prefix=line-log includes=odb:4,revision:4,diff:3,setup:2,pack:1 cochange=revision:52,diff:48,odb:23,pack:15,notes:8
-line-log.h component=revision role=header prefix=line-log includes=diff:1 cochange=revision:20,odb:3,diff:2,setup:1,submodule:1
-line-range.c component=revision role=lib prefix=line-range includes=diff:2,revision:1 cochange=revision:14,diff:8,archive:1,odb:1,pack:1
-line-range.h component=revision role=header prefix=line-range cochange=revision:13
 linear-assignment.c component=? role=lib prefix=linear-assignment cochange=diff:1,revision:1
 linear-assignment.h component=? role=public prefix=linear-assignment
-list-objects-filter-options.c component=revision role=lib prefix=list-objects-filter-options includes=revision:1,setup:1,transport:1 cochange=revision:39,transport:21,setup:9,diff:6,index:4
-list-objects-filter-options.h component=revision role=header prefix=list-objects-filter includes=odb:1 cochange=revision:40,transport:17,odb:4,diff:3,refs:2
-list-objects-filter.c component=revision role=lib prefix=list-objects-filter includes=odb:5,revision:3,diff:1,index:1 cochange=revision:32,odb:13,index:10,diff:6,pack:3
-list-objects-filter.h component=revision role=header prefix=list-objects cochange=revision:16,odb:1
-list-objects.c component=revision role=lib prefix=list-objects includes=odb:6,revision:4,diff:1,pack:1,setup:1 cochange=revision:91,odb:68,pack:40,transport:28,index:15
-list-objects.h component=revision role=header prefix=list-objects cochange=revision:32,pack:13,transport:4,odb:1
-list.h component=revision role=header prefix=list cochange=submodule:2,transport:2,index:1,revision:1
 lockfile.c component=? role=lib prefix=lockfile includes=setup:1 cochange=refs:18,index:13,setup:9,diff:8,merge:3
 lockfile.h component=? role=public prefix=lockfile cochange=index:5,revision:4,diff:3,refs:3,odb:2
-log-tree.c component=revision role=lib prefix=format-patch includes=odb:8,revision:5,diff:3,setup:3,refs:2 cochange=revision:222,diff:112,odb:112,refs:31,transport:16
-log-tree.h component=revision role=header prefix=format-patch cochange=revision:64,diff:11,refs:3,odb:2,transport:2
 mailinfo.c component=? role=lib prefix=mailinfo includes=setup:2 cochange=transport:5,index:3,notes:3,odb:3,revision:3
 mailinfo.h component=? role=public prefix=mailinfo
 mailmap.c component=? role=lib prefix=mailmap includes=setup:3,odb:2 cochange=setup:13,transport:11,refs:10,index:8,revision:5
@@ -340,8 +317,6 @@ pkt-line.c component=transport role=lib prefix=pkt-line includes=transport:2 coc
 pkt-line.h component=transport role=header prefix=pkt-line cochange=transport:94,pack:5,convert:4,odb:2,diff:1
 preload-index.c component=index role=lib prefix=preload-index includes=index:6,setup:3 cochange=index:52,setup:15,diff:12,revision:5,merge:3
 preload-index.h component=index role=header prefix=preload-index cochange=index:2,setup:1
-pretty.c component=revision role=lib prefix=pretty includes=odb:3,revision:2,setup:2,diff:1,notes:1 cochange=revision:115,odb:72,refs:29,notes:23,transport:19
-pretty.h component=revision role=header prefix=pretty cochange=revision:26,refs:7,diff:5,odb:5,archive:4
 prio-queue.c component=? role=lib prefix=prio-queue cochange=odb:5,revision:5,diff:2,pack:2,transport:2
 prio-queue.h component=? role=public prefix=prio-queue cochange=odb:3,revision:2,transport:2,pack:1
 progress.c component=? role=lib prefix=progress includes=setup:1 cochange=index:11,diff:6,setup:6,pack:4,revision:2
@@ -394,8 +369,35 @@ reset.c component=? role=lib prefix=reset includes=odb:3,index:2,refs:1,setup:1 
 reset.h component=? role=public prefix=reset includes=odb:1,setup:1
 resolve-undo.c component=index role=lib prefix=resolve-undo includes=index:4,odb:1 cochange=index:33,merge:5,revision:4,diff:3,notes:2
 resolve-undo.h component=index role=header prefix=resolve-undo includes=odb:1 cochange=index:12,merge:3,archive:1,revision:1
-revision.c component=revision role=lib prefix=revision includes=odb:9,revision:8,index:4,setup:4,diff:3 cochange=revision:379,diff:194,odb:181,refs:109,pack:101
-revision.h component=revision role=header prefix=revision includes=odb:4,revision:3,diff:1,notes:1,setup:1 cochange=revision:304,odb:48,diff:24,pack:19,refs:15
+revision/bisect.c component=revision role=lib prefix=bisect includes=odb:5,revision:5,setup:2,diff:1,index:1 cochange=revision:61,odb:32,transport:31,refs:13,diff:9
+revision/bisect.h component=revision role=header prefix=bisect cochange=revision:29,odb:2
+revision/blame.c component=revision role=lib prefix=blame includes=odb:5,diff:2,index:2,pack:2,revision:2 cochange=diff:68,revision:66,odb:56,index:29,pack:22
+revision/blame.h component=revision role=header prefix=blame includes=diff:1,odb:1 cochange=revision:19,odb:7,diff:4,archive:1,index:1
+revision/commit-reach.c component=revision role=lib prefix=commit-reach includes=revision:3,odb:2,pack:1,refs:1 cochange=revision:38,odb:17,pack:15,transport:9,index:5
+revision/commit-reach.h component=revision role=header prefix=commit-reach includes=odb:2 cochange=revision:32,odb:9,transport:8,pack:3,refs:3
+revision/decorate.c component=revision role=lib prefix=decorate includes=odb:1,revision:1 cochange=diff:6,odb:5,revision:5,pack:2,transport:2
+revision/decorate.h component=revision role=header prefix=decorate cochange=revision:4,odb:1
+revision/graph.c component=revision role=lib prefix=graph includes=revision:2,odb:1,setup:1 cochange=revision:38,diff:23,index:4,odb:3,transport:3
+revision/graph.h component=revision role=header prefix=graph includes=diff:1 cochange=revision:19,diff:2,odb:1
+revision/line-log.c component=revision role=lib prefix=line-log includes=odb:4,revision:4,diff:3,setup:2,pack:1 cochange=revision:52,diff:48,odb:23,pack:15,notes:8
+revision/line-log.h component=revision role=header prefix=line-log includes=diff:1 cochange=revision:20,odb:3,diff:2,setup:1,submodule:1
+revision/line-range.c component=revision role=lib prefix=line-range includes=diff:2,revision:1 cochange=revision:14,diff:8,archive:1,odb:1,pack:1
+revision/line-range.h component=revision role=header prefix=line-range cochange=revision:13
+revision/list-objects-filter-options.c component=revision role=lib prefix=list-objects-filter-options includes=revision:1,setup:1,transport:1 cochange=revision:39,transport:21,setup:9,diff:6,index:4
+revision/list-objects-filter-options.h component=revision role=header prefix=list-objects-filter includes=odb:1 cochange=revision:40,transport:17,odb:4,diff:3,refs:2
+revision/list-objects-filter.c component=revision role=lib prefix=list-objects-filter includes=odb:5,revision:3,diff:1,index:1 cochange=revision:32,odb:13,index:10,diff:6,pack:3
+revision/list-objects-filter.h component=revision role=header prefix=list-objects cochange=revision:16,odb:1
+revision/list-objects.c component=revision role=lib prefix=list-objects includes=odb:6,revision:4,diff:1,pack:1,setup:1 cochange=revision:91,odb:68,pack:40,transport:28,index:15
+revision/list-objects.h component=revision role=header prefix=list-objects cochange=revision:32,pack:13,transport:4,odb:1
+revision/list.h component=revision role=header prefix=list cochange=submodule:2,transport:2,index:1,revision:1
+revision/log-tree.c component=revision role=lib prefix=format-patch includes=odb:8,revision:5,diff:3,setup:3,refs:2 cochange=revision:222,diff:112,odb:112,refs:31,transport:16
+revision/log-tree.h component=revision role=header prefix=format-patch cochange=revision:64,diff:11,refs:3,odb:2,transport:2
+revision/pretty.c component=revision role=lib prefix=pretty includes=odb:3,revision:2,setup:2,diff:1,notes:1 cochange=revision:115,odb:72,refs:29,notes:23,transport:19
+revision/pretty.h component=revision role=header prefix=pretty cochange=revision:26,refs:7,diff:5,odb:5,archive:4
+revision/revision.c component=revision role=lib prefix=revision includes=odb:9,revision:8,index:4,setup:4,diff:3 cochange=revision:379,diff:194,odb:181,refs:109,pack:101
+revision/revision.h component=revision role=header prefix=revision includes=odb:4,revision:3,diff:1,notes:1,setup:1 cochange=revision:304,odb:48,diff:24,pack:19,refs:15
+revision/shallow.c component=revision role=lib prefix=shallow includes=odb:5,revision:4,diff:1,index:1,refs:1 cochange=odb:83,transport:73,revision:31,index:20,refs:14
+revision/shallow.h component=revision role=header prefix=shallow includes=odb:2,setup:1 cochange=revision:10,transport:7,odb:5,diff:3,index:2
 run-command.c component=? role=lib prefix=run-command includes=setup:2,index:1,pack:1 cochange=transport:27,index:21,setup:14,odb:8,submodule:6
 run-command.h component=? role=public prefix=run-command cochange=transport:21,setup:8,odb:6,submodule:5,refs:4
 sane-ctype.h component=? role=public prefix=sane-ctype
@@ -411,8 +413,6 @@ setup.h component=setup role=header prefix=setup includes=refs:1 cochange=setup:
 sh-i18n--envsubst.c component=? role=program prefix=sh-i18n--envsubst cochange=index:3,diff:1,transport:1
 sha1dc_git.c component=? role=lib prefix=sha1dc cochange=diff:3,odb:2,revision:2,setup:1
 sha1dc_git.h component=? role=public prefix=sha1dc cochange=odb:2
-shallow.c component=revision role=lib prefix=shallow includes=odb:5,revision:4,diff:1,index:1,refs:1 cochange=odb:83,transport:73,revision:31,index:20,refs:14
-shallow.h component=revision role=header prefix=shallow includes=odb:2,setup:1 cochange=revision:10,transport:7,odb:5,diff:3,index:2
 shell.c component=? role=program prefix=shell includes=setup:1 cochange=transport:10,setup:4,revision:2
 shortlog.h component=? role=public prefix=shortlog cochange=revision:2
 sideband.c component=transport role=lib prefix=sideband includes=transport:2,setup:1 cochange=transport:51,revision:6,diff:5,index:5,refs:4
