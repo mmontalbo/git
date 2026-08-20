@@ -5,16 +5,16 @@
 #include "organizer-protocol.h"
 #include "config.h"
 #include "gettext.h"
-#include "pathspec.h"
+#include "index/pathspec.h"
 #include "quote.h"
-#include "read-cache-ll.h"
+#include "index/read-cache-ll.h"
 #include "repository.h"
 #include "run-command.h"
 #include "strbuf.h"
 #include "string-list.h"
 #include "strvec.h"
 #include "wrapper.h"
-#include "wt-status.h"
+#include "index/wt-status.h"
 
 /* The configured command organize.<key> (labeler or organizer), or NULL. */
 static const char *organize_command(struct repository *repo, const char *key)

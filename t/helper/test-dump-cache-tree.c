@@ -4,8 +4,8 @@
 #include "odb/hash.h"
 #include "hex.h"
 #include "odb/tree.h"
-#include "cache-tree.h"
-#include "read-cache-ll.h"
+#include "index/cache-tree.h"
+#include "index/read-cache-ll.h"
 #include "repository.h"
 #include "setup.h"
 

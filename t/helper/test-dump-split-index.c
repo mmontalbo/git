@@ -2,10 +2,10 @@
 
 #include "test-tool.h"
 #include "hex.h"
-#include "read-cache-ll.h"
+#include "index/read-cache-ll.h"
 #include "repository.h"
 #include "setup.h"
-#include "split-index.h"
+#include "index/split-index.h"
 #include "ewah/ewok.h"
 
 static void show_bit(size_t pos, void *data UNUSED)

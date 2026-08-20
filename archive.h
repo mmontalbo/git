@@ -1,7 +1,7 @@
 #ifndef ARCHIVE_H
 #define ARCHIVE_H
 
-#include "pathspec.h"
+#include "index/pathspec.h"
 #include "string-list.h"
 
 struct repository;

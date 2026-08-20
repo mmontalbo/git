@@ -2,7 +2,7 @@
 #include "../abspath.h"
 #include "../chdir-notify.h"
 #include "../config.h"
-#include "../dir.h"
+#include "index/dir.h"
 #include "../environment.h"
 #include "odb/fsck.h"
 #include "../gettext.h"

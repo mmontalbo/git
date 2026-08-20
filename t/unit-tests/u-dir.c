@@ -1,5 +1,5 @@
 #include "unit-test.h"
-#include "dir.h"
+#include "index/dir.h"
 
 #define TEST_WITHIN_DEPTH(path, depth, max_depth, expect) do { \
 		int actual = within_depth(path, strlen(path), \

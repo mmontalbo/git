@@ -390,7 +390,7 @@ to `repo_config()`. Let's modify the code we wrote in the previous commit.
 Be sure to include the header to allow you to use `struct wt_status`:
 
 ----
-#include "wt-status.h"
+#include "index/wt-status.h"
 ----
 
 Then modify your `cmd_psuh` implementation to declare your `struct wt_status`,
