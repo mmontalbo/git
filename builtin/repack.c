@@ -11,7 +11,7 @@
 #include "pack/midx.h"
 #include "pack/packfile.h"
 #include "pack/prune-packed.h"
-#include "promisor-remote.h"
+#include "transport/promisor-remote.h"
 #include "pack/repack.h"
 #include "revision/shallow.h"
 

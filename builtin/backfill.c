@@ -16,7 +16,7 @@
 #include "odb/odb.h"
 #include "odb/oid-array.h"
 #include "odb/oidset.h"
-#include "promisor-remote.h"
+#include "transport/promisor-remote.h"
 #include "strmap.h"
 #include "string-list.h"
 #include "revision/revision.h"

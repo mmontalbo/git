@@ -9,7 +9,7 @@
 #include "path.h"
 #include "setup/repository.h"
 #include "refs/refs.h"
-#include "pkt-line.h"
+#include "transport/pkt-line.h"
 #include "odb/object.h"
 #include "odb/tag.h"
 #include "exec-cmd.h"
@@ -20,7 +20,7 @@
 #include "strvec.h"
 #include "pack/packfile.h"
 #include "odb/odb.h"
-#include "protocol.h"
+#include "transport/protocol.h"
 #include "date.h"
 #include "write-or-die.h"
 

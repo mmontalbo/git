@@ -13,7 +13,7 @@
 #include "odb/tree.h"
 #include "odb/tree-walk.h"
 #include "refs/refs.h"
-#include "remote.h"
+#include "transport/remote.h"
 #include "index/dir.h"
 #include "odb/odb.h"
 #include "odb/oid-array.h"

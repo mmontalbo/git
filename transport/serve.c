@@ -2,15 +2,15 @@
 #include "setup/repository.h"
 #include "setup/config.h"
 #include "odb/hash.h"
-#include "pkt-line.h"
+#include "transport/pkt-line.h"
 #include "setup/version.h"
 #include "refs/ls-refs.h"
-#include "protocol-caps.h"
-#include "serve.h"
-#include "upload-pack.h"
-#include "bundle-uri.h"
+#include "transport/protocol-caps.h"
+#include "transport/serve.h"
+#include "transport/upload-pack.h"
+#include "transport/bundle-uri.h"
 #include "trace2.h"
-#include "promisor-remote.h"
+#include "transport/promisor-remote.h"
 
 static int advertise_sid = -1;
 static int advertise_object_info = -1;
