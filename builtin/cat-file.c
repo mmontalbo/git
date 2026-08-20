@@ -25,12 +25,12 @@
 #include "odb/odb.h"
 #include "odb/streaming.h"
 #include "odb/replace-object.h"
-#include "promisor-remote.h"
+#include "transport/promisor-remote.h"
 #include "mailmap.h"
 #include "write-or-die.h"
 #include "setup/alias.h"
-#include "remote.h"
-#include "transport.h"
+#include "transport/remote.h"
+#include "transport/transport.h"
 
 /*
  * Maximum length for a remote URL. While no universal standard exists,

@@ -19,7 +19,7 @@
 #include "branch.h"
 #include "index/read-cache-ll.h"
 #include "refs/refs.h"
-#include "remote.h"
+#include "transport/remote.h"
 #include "run-command.h"
 #include "setup/hook.h"
 #include "sigchain.h"
