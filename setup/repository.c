@@ -10,13 +10,13 @@
 #include "lockfile.h"
 #include "path.h"
 #include "index/read-cache-ll.h"
-#include "remote.h"
+#include "transport/remote.h"
 #include "setup/setup.h"
 #include "odb/loose.h"
 #include "submodule-config.h"
 #include "index/sparse-index.h"
 #include "trace2.h"
-#include "promisor-remote.h"
+#include "transport/promisor-remote.h"
 #include "refs/refs.h"
 
 /*

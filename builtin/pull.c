@@ -19,7 +19,7 @@
 #include "parse-options.h"
 #include "run-command.h"
 #include "odb/oid-array.h"
-#include "remote.h"
+#include "transport/remote.h"
 #include "index/dir.h"
 #include "path.h"
 #include "index/read-cache-ll.h"

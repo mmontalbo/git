@@ -20,7 +20,7 @@
 #include "setup/repository.h"
 #include "run-command.h"
 #include "strvec.h"
-#include "remote.h"
+#include "transport/remote.h"
 #include "refs/refs.h"
 #include "submodule.h"
 #include "column.h"

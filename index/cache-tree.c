@@ -14,7 +14,7 @@
 #include "index/read-cache-ll.h"
 #include "odb/replace-object.h"
 #include "setup/repository.h"
-#include "promisor-remote.h"
+#include "transport/promisor-remote.h"
 #include "trace.h"
 #include "trace2.h"
 

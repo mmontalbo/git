@@ -767,15 +767,15 @@ add_executable(scalar ${CMAKE_SOURCE_DIR}/scalar.c)
 target_link_libraries(scalar common-main)
 
 if(CURL_FOUND)
-	add_library(http_obj OBJECT ${CMAKE_SOURCE_DIR}/http.c)
+	add_library(http_obj OBJECT ${CMAKE_SOURCE_DIR}/transport/http.c)
 
 	add_executable(git-imap-send ${CMAKE_SOURCE_DIR}/imap-send.c)
 	target_link_libraries(git-imap-send http_obj common-main ${CURL_LIBRARIES})
 
-	add_executable(git-http-fetch ${CMAKE_SOURCE_DIR}/http-walker.c ${CMAKE_SOURCE_DIR}/http-fetch.c)
+	add_executable(git-http-fetch ${CMAKE_SOURCE_DIR}/transport/http-walker.c ${CMAKE_SOURCE_DIR}/http-fetch.c)
 	target_link_libraries(git-http-fetch http_obj common-main ${CURL_LIBRARIES})
 
-	add_executable(git-remote-http ${CMAKE_SOURCE_DIR}/http-walker.c ${CMAKE_SOURCE_DIR}/remote-curl.c)
+	add_executable(git-remote-http ${CMAKE_SOURCE_DIR}/transport/http-walker.c ${CMAKE_SOURCE_DIR}/transport/remote-curl.c)
 	target_link_libraries(git-remote-http http_obj common-main ${CURL_LIBRARIES} )
 
 	if(EXPAT_FOUND)

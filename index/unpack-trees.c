@@ -27,7 +27,7 @@
 #include "trace2.h"
 #include "index/fsmonitor.h"
 #include "odb/odb.h"
-#include "promisor-remote.h"
+#include "transport/promisor-remote.h"
 #include "index/entry.h"
 #include "index/parallel-checkout.h"
 #include "setup/setup.h"

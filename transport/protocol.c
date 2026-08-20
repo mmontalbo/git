@@ -3,7 +3,7 @@
 #include "git-compat-util.h"
 #include "setup/config.h"
 #include "setup/environment.h"
-#include "protocol.h"
+#include "transport/protocol.h"
 #include "trace2.h"
 
 static enum protocol_version parse_protocol_version(const char *value)

@@ -25,7 +25,7 @@
 #include "index/preload-index.h"
 #include "index/read-cache.h"
 #include "refs/refs.h"
-#include "remote.h"
+#include "transport/remote.h"
 #include "setup/repo-settings.h"
 #include "index/resolve-undo.h"
 #include "revision/revision.h"

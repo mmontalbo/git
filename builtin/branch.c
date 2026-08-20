@@ -16,7 +16,7 @@
 #include "odb/commit.h"
 #include "gettext.h"
 #include "odb/object-name.h"
-#include "remote.h"
+#include "transport/remote.h"
 #include "parse-options.h"
 #include "branch.h"
 #include "path.h"
