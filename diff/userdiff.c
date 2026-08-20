@@ -4,7 +4,7 @@
 #include "git-compat-util.h"
 #include "setup/config.h"
 #include "diff/userdiff.h"
-#include "attr.h"
+#include "convert/attr.h"
 #include "strbuf.h"
 #include "setup/environment.h"
 

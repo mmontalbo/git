@@ -9,7 +9,7 @@
 
 #include "builtin.h"
 #include "setup/config.h"
-#include "convert.h"
+#include "convert/convert.h"
 #include "diff/diff.h"
 #include "setup/environment.h"
 #include "gettext.h"
