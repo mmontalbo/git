@@ -13,7 +13,7 @@
 #include "setup/alias.h"
 #include "odb/replace-object.h"
 #include "setup/setup.h"
-#include "attr.h"
+#include "convert/attr.h"
 #include "revision/shallow.h"
 #include "trace.h"
 #include "trace2.h"
