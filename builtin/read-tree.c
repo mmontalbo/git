@@ -20,7 +20,7 @@
 #include "index/resolve-undo.h"
 #include "setup/setup.h"
 #include "index/sparse-index.h"
-#include "submodule.h"
+#include "submodule/submodule.h"
 
 static int nr_trees;
 static int read_empty;

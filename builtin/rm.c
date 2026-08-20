@@ -22,7 +22,7 @@
 #include "string-list.h"
 #include "setup/setup.h"
 #include "index/sparse-index.h"
-#include "submodule.h"
+#include "submodule/submodule.h"
 #include "index/pathspec.h"
 
 static const char * const builtin_rm_usage[] = {
