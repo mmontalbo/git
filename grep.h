@@ -24,7 +24,7 @@ typedef int pcre2_general_context;
 #define PCRE2_MATCH_INVALID_UTF 0
 #endif
 #include "thread-utils.h"
-#include "userdiff.h"
+#include "diff/userdiff.h"
 
 struct repository;
 

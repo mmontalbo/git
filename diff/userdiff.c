@@ -3,7 +3,7 @@
 
 #include "git-compat-util.h"
 #include "config.h"
-#include "userdiff.h"
+#include "diff/userdiff.h"
 #include "attr.h"
 #include "strbuf.h"
 #include "environment.h"

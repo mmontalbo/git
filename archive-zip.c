@@ -14,9 +14,9 @@
 #include "odb/odb.h"
 #include "odb/streaming.h"
 #include "strbuf.h"
-#include "userdiff.h"
+#include "diff/userdiff.h"
 #include "write-or-die.h"
-#include "xdiff-interface.h"
+#include "diff/xdiff-interface.h"
 #include "date.h"
 
 static int zip_date;

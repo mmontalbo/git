@@ -15,7 +15,7 @@
 #include "pack/pack-revindex.h"
 #include "csum-file.h"
 #include "odb/tree-walk.h"
-#include "diff.h"
+#include "diff/diff.h"
 #include "revision.h"
 #include "list-objects.h"
 #include "list-objects-filter-options.h"

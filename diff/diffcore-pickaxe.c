@@ -6,9 +6,9 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "diff.h"
-#include "diffcore.h"
-#include "xdiff-interface.h"
+#include "diff/diff.h"
+#include "diff/diffcore.h"
+#include "diff/xdiff-interface.h"
 #include "kwset.h"
 #include "odb/oidset.h"
 #include "pretty.h"
