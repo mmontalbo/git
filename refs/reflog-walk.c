@@ -3,7 +3,7 @@
 #include "git-compat-util.h"
 #include "odb/commit.h"
 #include "refs/refs.h"
-#include "diff.h"
+#include "diff/diff.h"
 #include "repository.h"
 #include "revision.h"
 #include "string-list.h"

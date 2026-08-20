@@ -9,7 +9,7 @@
 #include "odb/hash.h"
 #include "hex.h"
 #include "utf8.h"
-#include "diff.h"
+#include "diff/diff.h"
 #include "pager.h"
 #include "revision.h"
 #include "string-list.h"

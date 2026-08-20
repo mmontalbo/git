@@ -1,7 +1,7 @@
 #ifndef RANGE_DIFF_H
 #define RANGE_DIFF_H
 
-#include "diff.h"
+#include "diff/diff.h"
 #include "strvec.h"
 
 #define RANGE_DIFF_CREATION_FACTOR_DEFAULT 60

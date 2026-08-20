@@ -20,7 +20,7 @@
 #include "parse-options.h"
 #include "path.h"
 #include "preload-index.h"
-#include "diff.h"
+#include "diff/diff.h"
 #include "read-cache.h"
 #include "revision.h"
 #include "strvec.h"

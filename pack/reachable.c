@@ -6,7 +6,7 @@
 #include "refs/refs.h"
 #include "odb/commit.h"
 #include "odb/blob.h"
-#include "diff.h"
+#include "diff/diff.h"
 #include "revision.h"
 #include "pack/reachable.h"
 #include "cache-tree.h"

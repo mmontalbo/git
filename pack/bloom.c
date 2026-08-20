@@ -2,8 +2,8 @@
 
 #include "git-compat-util.h"
 #include "pack/bloom.h"
-#include "diff.h"
-#include "diffcore.h"
+#include "diff/diff.h"
+#include "diff/diffcore.h"
 #include "hashmap.h"
 #include "pack/commit-graph.h"
 #include "odb/commit.h"
