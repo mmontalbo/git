@@ -3,7 +3,7 @@
 #include "builtin.h"
 #include "environment.h"
 #include "odb/tree-walk.h"
-#include "xdiff-interface.h"
+#include "diff/xdiff-interface.h"
 #include "help.h"
 #include "gettext.h"
 #include "hex.h"

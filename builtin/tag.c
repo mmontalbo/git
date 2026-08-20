@@ -23,7 +23,7 @@
 #include "path.h"
 #include "odb/tag.h"
 #include "parse-options.h"
-#include "diff.h"
+#include "diff/diff.h"
 #include "revision.h"
 #include "gpg-interface.h"
 #include "odb/oid-array.h"

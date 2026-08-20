@@ -27,8 +27,8 @@
 #include "odb/commit.h"
 #include "commit-reach.h"
 #include "config.h"
-#include "diff.h"
-#include "diffcore.h"
+#include "diff/diff.h"
+#include "diff/diffcore.h"
 #include "dir.h"
 #include "environment.h"
 #include "gettext.h"
@@ -51,7 +51,7 @@
 #include "trace2.h"
 #include "odb/tree.h"
 #include "unpack-trees.h"
-#include "xdiff-interface.h"
+#include "diff/xdiff-interface.h"
 
 /*
  * We technically need USE_THE_REPOSITORY_VARIABLE above for DEFAULT_ABBREV,

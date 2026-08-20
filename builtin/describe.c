@@ -14,7 +14,7 @@
 #include "parse-options.h"
 #include "read-cache-ll.h"
 #include "revision.h"
-#include "diff.h"
+#include "diff/diff.h"
 #include "hashmap.h"
 #include "setup.h"
 #include "strvec.h"
