@@ -25,7 +25,7 @@
 #include "utf8.h"
 #include "odb/odb.h"
 #include "diff/userdiff.h"
-#include "submodule.h"
+#include "submodule/submodule.h"
 #include "hashmap.h"
 #include "mem-pool.h"
 #include "merge/merge-ll.h"
