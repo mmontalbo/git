@@ -1,6 +1,6 @@
 #include "git-compat-util.h"
-#include "repack.h"
-#include "packfile.h"
+#include "pack/repack.h"
+#include "pack/packfile.h"
 #include "repository.h"
 #include "run-command.h"
 

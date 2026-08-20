@@ -11,7 +11,7 @@
 #include "alloc.h"
 #include "gpg-interface.h"
 #include "hex.h"
-#include "packfile.h"
+#include "pack/packfile.h"
 #include "repository.h"
 
 const char *tag_type = "tag";

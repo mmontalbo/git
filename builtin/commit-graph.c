@@ -6,7 +6,7 @@
 #include "gettext.h"
 #include "hex.h"
 #include "parse-options.h"
-#include "commit-graph.h"
+#include "pack/commit-graph.h"
 #include "odb/odb.h"
 #include "progress.h"
 #include "odb/replace-object.h"

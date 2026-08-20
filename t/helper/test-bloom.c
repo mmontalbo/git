@@ -1,7 +1,7 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "test-tool.h"
-#include "bloom.h"
+#include "pack/bloom.h"
 #include "hex.h"
 #include "odb/commit.h"
 #include "repository.h"

@@ -5,7 +5,7 @@
 #include "gettext.h"
 #include "odb/hash.h"
 #include "hex.h"
-#include "pack.h"
+#include "pack/pack.h"
 #include "parse-options.h"
 
 static const char *const show_index_usage[] = {

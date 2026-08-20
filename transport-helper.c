@@ -19,7 +19,7 @@
 #include "refs/refspec.h"
 #include "transport-internal.h"
 #include "protocol.h"
-#include "packfile.h"
+#include "pack/packfile.h"
 
 static int debug;
 

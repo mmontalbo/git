@@ -5,7 +5,7 @@
 #include "environment.h"
 #include "gettext.h"
 #include "parse-options.h"
-#include "midx.h"
+#include "pack/midx.h"
 #include "strbuf.h"
 #include "trace2.h"
 #include "odb/odb.h"
