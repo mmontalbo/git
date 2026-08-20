@@ -1,8 +1,8 @@
 #include "git-compat-util.h"
 #include "gettext.h"
-#include "pack-mtimes.h"
+#include "pack/pack-mtimes.h"
 #include "odb/odb.h"
-#include "packfile.h"
+#include "pack/packfile.h"
 #include "strbuf.h"
 
 static char *pack_mtimes_filename(struct packed_git *p)

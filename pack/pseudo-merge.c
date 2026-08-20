@@ -2,14 +2,14 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "pseudo-merge.h"
+#include "pack/pseudo-merge.h"
 #include "date.h"
 #include "odb/oid-array.h"
 #include "strbuf.h"
 #include "config.h"
 #include "string-list.h"
 #include "refs/refs.h"
-#include "pack-bitmap.h"
+#include "pack/pack-bitmap.h"
 #include "odb/commit.h"
 #include "alloc.h"
 #include "progress.h"
