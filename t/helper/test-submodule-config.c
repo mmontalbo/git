@@ -6,8 +6,8 @@
 #include "odb/object-name.h"
 #include "setup/repository.h"
 #include "setup/setup.h"
-#include "submodule-config.h"
-#include "submodule.h"
+#include "submodule/submodule-config.h"
+#include "submodule/submodule.h"
 
 static void die_usage(int argc UNUSED, const char **argv, const char *msg)
 {

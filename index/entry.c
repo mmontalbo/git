@@ -9,7 +9,7 @@
 #include "hex.h"
 #include "index/name-hash.h"
 #include "index/sparse-index.h"
-#include "submodule.h"
+#include "submodule/submodule.h"
 #include "index/symlinks.h"
 #include "progress.h"
 #include "index/fsmonitor.h"

@@ -22,7 +22,7 @@
 #include "strvec.h"
 #include "transport/remote.h"
 #include "refs/refs.h"
-#include "submodule.h"
+#include "submodule/submodule.h"
 #include "column.h"
 #include "index/read-cache.h"
 #include "setup/setup.h"
