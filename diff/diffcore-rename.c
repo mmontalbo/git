@@ -6,8 +6,8 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "git-compat-util.h"
-#include "diff.h"
-#include "diffcore.h"
+#include "diff/diff.h"
+#include "diff/diffcore.h"
 #include "odb/object-file.h"
 #include "hashmap.h"
 #include "mem-pool.h"

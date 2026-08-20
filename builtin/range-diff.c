@@ -4,7 +4,7 @@
 #include "gettext.h"
 #include "odb/object-name.h"
 #include "parse-options.h"
-#include "range-diff.h"
+#include "diff/range-diff.h"
 #include "config.h"
 #include "parse.h"
 #include "color.h"

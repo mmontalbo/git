@@ -11,7 +11,7 @@
 #include "repository.h"
 #include "odb/object.h"
 #include "odb/commit.h"
-#include "diff.h"
+#include "diff/diff.h"
 #include "revision.h"
 #include "list-objects.h"
 #include "run-command.h"
