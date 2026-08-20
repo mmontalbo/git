@@ -6,7 +6,7 @@
 
 #include "git-compat-util.h"
 #include "setup/config.h"
-#include "archive.h"
+#include "archive/archive.h"
 #include "gettext.h"
 #include "git-zlib.h"
 #include "hex.h"
