@@ -11,7 +11,7 @@
 
 #include "git-compat-util.h"
 #include "convert.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "environment.h"
 #include "odb/fsck.h"
 #include "gettext.h"
@@ -25,7 +25,7 @@
 #include "pack/pack.h"
 #include "pack/packfile.h"
 #include "path.h"
-#include "read-cache-ll.h"
+#include "index/read-cache-ll.h"
 #include "setup.h"
 #include "strvec.h"
 #include "tempfile.h"

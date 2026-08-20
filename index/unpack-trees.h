@@ -2,7 +2,7 @@
 #define UNPACK_TREES_H
 
 #include "convert.h"
-#include "read-cache-ll.h"
+#include "index/read-cache-ll.h"
 #include "strvec.h"
 #include "string-list.h"
 #include "odb/tree-walk.h"

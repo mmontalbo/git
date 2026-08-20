@@ -7,7 +7,7 @@
 #include "gettext.h"
 #include "hex.h"
 #include "revision/log-tree.h"
-#include "read-cache-ll.h"
+#include "index/read-cache-ll.h"
 #include "revision/revision.h"
 #include "odb/tmp-objdir.h"
 #include "odb/tree.h"

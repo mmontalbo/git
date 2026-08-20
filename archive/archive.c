@@ -21,7 +21,7 @@
 #include "attr.h"
 #include "archive/archive.h"
 #include "parse-options.h"
-#include "unpack-trees.h"
+#include "index/unpack-trees.h"
 #include "quote.h"
 
 static char const * const archive_usage[] = {

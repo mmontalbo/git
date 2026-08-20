@@ -5,7 +5,7 @@
 #include "lockfile.h"
 #include "merge/merge-ort.h"
 #include "merge/merge-ort-wrappers.h"
-#include "read-cache-ll.h"
+#include "index/read-cache-ll.h"
 #include "repository.h"
 #include "odb/tag.h"
 #include "odb/tree.h"

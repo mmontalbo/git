@@ -1,5 +1,5 @@
 #include "git-compat-util.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "pack/midx.h"
 #include "odb/odb.h"
 #include "pack/packfile.h"

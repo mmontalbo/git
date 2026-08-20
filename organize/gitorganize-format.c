@@ -2,7 +2,7 @@
 #include "gitorganize-format.h"
 #include "gettext.h"
 #include "quote.h"
-#include "read-cache-ll.h"
+#include "index/read-cache-ll.h"
 #include "strbuf.h"
 #include "string-list.h"
 #include "wrapper.h"

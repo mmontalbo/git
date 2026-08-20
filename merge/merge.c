@@ -9,10 +9,10 @@
 #include "odb/commit.h"
 #include "repository.h"
 #include "run-command.h"
-#include "resolve-undo.h"
+#include "index/resolve-undo.h"
 #include "odb/tree.h"
 #include "odb/tree-walk.h"
-#include "unpack-trees.h"
+#include "index/unpack-trees.h"
 
 static const char *merge_argument(struct commit *commit)
 {
