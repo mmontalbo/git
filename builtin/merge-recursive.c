@@ -3,7 +3,7 @@
 #include "advice.h"
 #include "gettext.h"
 #include "odb/hash.h"
-#include "merge-ort-wrappers.h"
+#include "merge/merge-ort-wrappers.h"
 #include "odb/object-name.h"
 
 static const char builtin_merge_recursive_usage[] =
