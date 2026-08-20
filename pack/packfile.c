@@ -7,7 +7,7 @@
 #include "revision/list.h"
 #include "pack/pack.h"
 #include "repository.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "pack/packfile.h"
 #include "pack/delta.h"
 #include "odb/hash-lookup.h"

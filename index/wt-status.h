@@ -3,7 +3,7 @@
 
 #include "string-list.h"
 #include "color.h"
-#include "pathspec.h"
+#include "index/pathspec.h"
 #include "remote.h"
 
 struct repository;

@@ -5,9 +5,9 @@
 #include "gettext.h"
 #include "hex.h"
 #include "odb/tree.h"
-#include "cache-tree.h"
+#include "index/cache-tree.h"
 #include "parse-options.h"
-#include "read-cache-ll.h"
+#include "index/read-cache-ll.h"
 #include "repository.h"
 #include "setup.h"
 

@@ -10,7 +10,7 @@
 #include "gettext.h"
 #include "hex.h"
 #include "odb/tree.h"
-#include "cache-tree.h"
+#include "index/cache-tree.h"
 #include "parse-options.h"
 
 static const char * const write_tree_usage[] = {

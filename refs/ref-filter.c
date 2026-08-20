@@ -28,7 +28,7 @@
 #include "utf8.h"
 #include "versioncmp.h"
 #include "trailer.h"
-#include "wt-status.h"
+#include "index/wt-status.h"
 #include "odb/commit-slab.h"
 #include "revision/commit-reach.h"
 #include "refs/worktree.h"
