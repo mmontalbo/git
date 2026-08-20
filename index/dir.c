@@ -12,7 +12,7 @@
 #include "git-compat-util.h"
 #include "abspath.h"
 #include "setup/config.h"
-#include "convert.h"
+#include "convert/convert.h"
 #include "index/dir.h"
 #include "setup/environment.h"
 #include "gettext.h"

@@ -7,7 +7,7 @@
 #include "index/cache-tree.h"
 #include "mergesort.h"
 #include "odb/commit.h"
-#include "convert.h"
+#include "convert/convert.h"
 #include "diff/diff.h"
 #include "diff/diffcore.h"
 #include "gettext.h"
