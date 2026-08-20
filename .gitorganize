@@ -201,8 +201,6 @@ lockfile.c component=? role=lib prefix=lockfile includes=setup:1 cochange=refs:1
 lockfile.h component=? role=public prefix=lockfile cochange=index:5,revision:4,diff:3,refs:3,odb:2
 log-tree.c component=revision role=lib prefix=format-patch includes=odb:8,revision:5,diff:3,setup:3,refs:2 cochange=revision:222,diff:112,odb:112,refs:31,transport:16
 log-tree.h component=revision role=header prefix=format-patch cochange=revision:64,diff:11,refs:3,odb:2,transport:2
-ls-refs.c component=refs role=lib prefix=ls-refs includes=setup:3,refs:2,odb:1,transport:1 cochange=refs:26,transport:17,pack:10,revision:5,odb:4
-ls-refs.h component=refs role=header prefix=ls-refs cochange=transport:11,refs:5,submodule:1
 mailinfo.c component=? role=lib prefix=mailinfo includes=setup:2 cochange=transport:5,index:3,notes:3,odb:3,revision:3
 mailinfo.h component=? role=public prefix=mailinfo
 mailmap.c component=? role=lib prefix=mailmap includes=setup:3,odb:2 cochange=setup:13,transport:11,refs:10,index:8,revision:5
@@ -290,8 +288,6 @@ pack-mtimes.c component=pack role=lib prefix=pack-mtimes includes=pack:2,odb:1 c
 pack-mtimes.h component=pack role=header prefix=pack-mtimes cochange=pack:4,odb:2,setup:1,transport:1
 pack-objects.c component=pack role=lib prefix=pack-objects includes=pack:3,odb:1,setup:1 cochange=pack:66,diff:17,odb:16,transport:9,index:5
 pack-objects.h component=pack role=header prefix=pack-objects includes=pack:2,odb:1 cochange=pack:44,setup:5,odb:1
-pack-refs.c component=refs role=lib prefix=pack-refs includes=refs:2,setup:2,revision:1 cochange=refs:12,transport:8,index:2,merge:2,odb:2
-pack-refs.h component=refs role=header prefix=pack-refs cochange=refs:5
 pack-revindex.c component=pack role=lib prefix=pack-revindex includes=pack:3,odb:1,setup:1 cochange=pack:94,odb:7,index:6,transport:5,setup:4
 pack-revindex.h component=pack role=header prefix=pack-revindex cochange=pack:32,odb:1
 pack-write.c component=pack role=lib prefix=pack-write includes=pack:5,setup:2,odb:1,transport:1 cochange=pack:88,odb:21,transport:21,setup:14,index:10
@@ -353,16 +349,22 @@ rebase-interactive.c component=? role=lib prefix=rebase-interactive includes=odb
 rebase-interactive.h component=? role=public prefix=rebase-interactive
 rebase.c component=? role=lib prefix=rebase cochange=index:3,pack:3,setup:2,convert:1,diff:1
 rebase.h component=? role=public prefix=pull
-ref-filter.c component=refs role=lib prefix=ref-filter includes=odb:6,setup:5,refs:3,revision:2,index:1 cochange=refs:112,revision:59,odb:41,transport:40,index:30
-ref-filter.h component=refs role=header prefix=ref-filter includes=odb:2,revision:1 cochange=refs:62,revision:7,transport:6,diff:5,index:4
-reflog-walk.c component=refs role=lib prefix=reflog-walk includes=refs:2,diff:1,odb:1,revision:1,setup:1 cochange=refs:34,revision:26,index:13,diff:9,transport:8
-reflog-walk.h component=refs role=header prefix=reflog-walk cochange=revision:23,refs:19,odb:6,archive:2,index:2
-reflog.c component=refs role=lib prefix=refs includes=odb:3,refs:2,setup:2,revision:1 cochange=refs:18,transport:13,odb:9,revision:7,diff:4
-reflog.h component=refs role=header prefix=reflog includes=refs:1 cochange=refs:8,odb:3,index:1,revision:1,transport:1
-refs.c component=refs role=lib prefix=refs includes=setup:6,odb:5,refs:2,submodule:1 cochange=refs:373,transport:133,setup:116,odb:82,revision:77
-refs.h component=refs role=header prefix=refs includes=odb:2,setup:2 cochange=refs:352,transport:55,revision:34,setup:25,odb:16
-refspec.c component=refs role=lib prefix=refspec includes=refs:2,odb:1,transport:1 cochange=refs:27,transport:26,index:2,submodule:2
-refspec.h component=refs role=header prefix=refspec cochange=transport:31,refs:29,submodule:3,index:2
+refs/ls-refs.c component=refs role=lib prefix=ls-refs includes=setup:3,refs:2,odb:1,transport:1 cochange=refs:26,transport:17,pack:10,revision:5,odb:4
+refs/ls-refs.h component=refs role=header prefix=ls-refs cochange=transport:11,refs:5,submodule:1
+refs/pack-refs.c component=refs role=lib prefix=pack-refs includes=refs:2,setup:2,revision:1 cochange=refs:12,transport:8,index:2,merge:2,odb:2
+refs/pack-refs.h component=refs role=header prefix=pack-refs cochange=refs:5
+refs/ref-filter.c component=refs role=lib prefix=ref-filter includes=odb:6,setup:5,refs:3,revision:2,index:1 cochange=refs:112,revision:59,odb:41,transport:40,index:30
+refs/ref-filter.h component=refs role=header prefix=ref-filter includes=odb:2,revision:1 cochange=refs:62,revision:7,transport:6,diff:5,index:4
+refs/reflog-walk.c component=refs role=lib prefix=reflog-walk includes=refs:2,diff:1,odb:1,revision:1,setup:1 cochange=refs:34,revision:26,index:13,diff:9,transport:8
+refs/reflog-walk.h component=refs role=header prefix=reflog-walk cochange=revision:23,refs:19,odb:6,archive:2,index:2
+refs/reflog.c component=refs role=lib prefix=refs includes=odb:3,refs:2,setup:2,revision:1 cochange=refs:18,transport:13,odb:9,revision:7,diff:4
+refs/reflog.h component=refs role=header prefix=reflog includes=refs:1 cochange=refs:8,odb:3,index:1,revision:1,transport:1
+refs/refs.c component=refs role=lib prefix=refs includes=setup:6,odb:5,refs:2,submodule:1 cochange=refs:373,transport:133,setup:116,odb:82,revision:77
+refs/refs.h component=refs role=header prefix=refs includes=odb:2,setup:2 cochange=refs:352,transport:55,revision:34,setup:25,odb:16
+refs/refspec.c component=refs role=lib prefix=refspec includes=refs:2,odb:1,transport:1 cochange=refs:27,transport:26,index:2,submodule:2
+refs/refspec.h component=refs role=header prefix=refspec cochange=transport:31,refs:29,submodule:3,index:2
+refs/worktree.c component=refs role=lib prefix=worktree includes=setup:4,index:2,refs:2 cochange=refs:73,setup:53,index:22,submodule:13,pack:11
+refs/worktree.h component=refs role=header prefix=worktree includes=refs:1 cochange=refs:61,revision:10,pack:5,setup:5,odb:4
 remote-curl.c component=transport role=lib prefix=remote-curl includes=transport:9,setup:3,odb:1 cochange=transport:226,diff:9,revision:6,setup:5,archive:4
 remote.c component=transport role=lib prefix=remote includes=odb:3,setup:3,transport:3,refs:2,revision:2 cochange=transport:272,refs:91,revision:56,index:51,odb:30
 remote.h component=transport role=header prefix=remote includes=odb:1,refs:1 cochange=transport:245,refs:24,index:12,revision:6,setup:2
@@ -480,8 +482,6 @@ walker.c component=transport role=lib prefix=refs includes=odb:6,refs:1,setup:1,
 walker.h component=transport role=header prefix=walker includes=transport:1 cochange=transport:19
 wildmatch.c component=? role=lib prefix=hex cochange=index:4,refs:3,diff:1,odb:1,revision:1
 wildmatch.h component=? role=public prefix=? cochange=index:3,refs:2,diff:1,revision:1,setup:1
-worktree.c component=refs role=lib prefix=worktree includes=setup:4,index:2,refs:2 cochange=refs:73,setup:53,index:22,submodule:13,pack:11
-worktree.h component=refs role=header prefix=worktree includes=refs:1 cochange=refs:61,revision:10,pack:5,setup:5,odb:4
 wrapper.c component=? role=lib prefix=wrapper cochange=setup:21,index:16,pack:6,transport:5,convert:4
 wrapper.h component=? role=public prefix=wrapper cochange=index:2,revision:1,setup:1
 write-or-die.c component=? role=lib prefix=write-or-die cochange=pack:6,setup:6,index:4,transport:2,convert:1

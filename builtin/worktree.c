@@ -18,14 +18,14 @@
 #include "strvec.h"
 #include "branch.h"
 #include "read-cache-ll.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "remote.h"
 #include "run-command.h"
 #include "hook.h"
 #include "sigchain.h"
 #include "submodule.h"
 #include "utf8.h"
-#include "worktree.h"
+#include "refs/worktree.h"
 #include "quote.h"
 
 #define BUILTIN_WORKTREE_ADD_USAGE \

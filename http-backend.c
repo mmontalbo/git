@@ -8,7 +8,7 @@
 #include "hex.h"
 #include "path.h"
 #include "repository.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "pkt-line.h"
 #include "odb/object.h"
 #include "odb/tag.h"

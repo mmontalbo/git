@@ -1,7 +1,7 @@
 #ifndef WORKTREE_H
 #define WORKTREE_H
 
-#include "refs.h"
+#include "refs/refs.h"
 
 struct strbuf;
 

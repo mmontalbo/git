@@ -16,7 +16,7 @@
 #include "run-command.h"
 #include "strvec.h"
 #include "dir.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "config.h"
 #include "unpack-trees.h"
 #include "lockfile.h"

@@ -1,6 +1,6 @@
 #ifndef REFLOG_H
 #define REFLOG_H
-#include "refs.h"
+#include "refs/refs.h"
 
 #define REFLOG_EXPIRE_TOTAL   (1 << 0)
 #define REFLOG_EXPIRE_UNREACH (1 << 1)
