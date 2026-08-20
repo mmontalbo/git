@@ -10,7 +10,7 @@
  */
 
 #include "git-compat-util.h"
-#include "delta.h"
+#include "pack/delta.h"
 
 void *patch_delta(const void *src_buf, size_t src_size,
 		  const void *delta_buf, size_t delta_size,

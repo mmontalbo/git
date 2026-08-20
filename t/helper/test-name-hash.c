@@ -5,7 +5,7 @@
 
 #include "test-tool.h"
 #include "git-compat-util.h"
-#include "pack-objects.h"
+#include "pack/pack-objects.h"
 #include "strbuf.h"
 
 int cmd__name_hash(int argc UNUSED, const char **argv UNUSED)

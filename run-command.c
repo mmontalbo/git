@@ -15,7 +15,7 @@
 #include "trace2.h"
 #include "quote.h"
 #include "config.h"
-#include "packfile.h"
+#include "pack/packfile.h"
 #include "compat/nonblock.h"
 
 void child_process_init(struct child_process *child)

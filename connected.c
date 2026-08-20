@@ -8,7 +8,7 @@
 #include "sigchain.h"
 #include "connected.h"
 #include "transport.h"
-#include "packfile.h"
+#include "pack/packfile.h"
 #include "promisor-remote.h"
 
 static int promised_object_cb(const struct object_id *oid UNUSED,

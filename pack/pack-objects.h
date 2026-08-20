@@ -3,8 +3,8 @@
 
 #include "odb/odb.h"
 #include "thread-utils.h"
-#include "pack.h"
-#include "packfile.h"
+#include "pack/pack.h"
+#include "pack/packfile.h"
 
 struct repository;
 

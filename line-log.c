@@ -16,7 +16,7 @@
 #include "line-log.h"
 #include "setup.h"
 #include "strvec.h"
-#include "bloom.h"
+#include "pack/bloom.h"
 #include "odb/tree-walk.h"
 
 static void range_set_grow(struct range_set *rs, size_t extra)

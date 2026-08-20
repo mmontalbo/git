@@ -14,7 +14,7 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "delta.h"
+#include "pack/delta.h"
 
 /* maximum hash entry list for the same hash bucket */
 #define HASH_LIMIT 64

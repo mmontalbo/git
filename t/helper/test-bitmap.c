@@ -4,8 +4,8 @@
 #include "git-compat-util.h"
 #include "hex.h"
 #include "odb/odb.h"
-#include "pack-bitmap.h"
-#include "pseudo-merge.h"
+#include "pack/pack-bitmap.h"
+#include "pack/pseudo-merge.h"
 #include "setup.h"
 
 static int bitmap_list_commits(void)

@@ -1,6 +1,6 @@
 #include "git-compat-util.h"
-#include "packfile.h"
-#include "packfile-list.h"
+#include "pack/packfile.h"
+#include "pack/packfile-list.h"
 
 void packfile_list_clear(struct packfile_list *list)
 {

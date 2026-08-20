@@ -22,7 +22,7 @@
 #include "revision.h"
 #include "trace2.h"
 #include "progress.h"
-#include "packfile.h"
+#include "pack/packfile.h"
 #include "path-walk.h"
 
 static const char * const builtin_backfill_usage[] = {
