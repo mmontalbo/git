@@ -1,7 +1,7 @@
 #ifndef USERDIFF_H
 #define USERDIFF_H
 
-#include "notes-cache.h"
+#include "notes/notes-cache.h"
 
 struct index_state;
 struct repository;

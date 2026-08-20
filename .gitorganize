@@ -195,14 +195,14 @@ merge/merge.h component=merge role=header prefix=merge cochange=merge:1
 merge/rerere.c component=merge role=lib prefix=rerere includes=index:4,merge:2,odb:2,setup:2,diff:1 cochange=index:54,merge:29,pack:26,odb:25,transport:25
 merge/rerere.h component=merge role=header prefix=rerere cochange=merge:16,odb:1
 mergesort.h component=? role=public prefix=mergesort cochange=odb:1
-notes-cache.c component=notes role=lib prefix=notes includes=odb:3,notes:1,refs:1,revision:1,setup:1 cochange=notes:37,odb:29,diff:10,index:10,revision:9
-notes-cache.h component=notes role=header prefix=notes-cache includes=notes:1 cochange=diff:7,notes:3
-notes-merge.c component=notes role=lib prefix=notes-merge includes=odb:4,diff:3,notes:3,index:1,merge:1 cochange=diff:54,revision:41,odb:37,notes:36,index:30
-notes-merge.h component=notes role=header prefix=notes-merge includes=notes:1 cochange=notes:18,odb:2
-notes-utils.c component=notes role=lib prefix=commit includes=setup:2,notes:1,odb:1,refs:1 cochange=notes:33,odb:15,refs:9,transport:9,revision:8
-notes-utils.h component=notes role=header prefix=notes includes=notes:1 cochange=notes:17,odb:6
-notes.c component=notes role=lib prefix=notes includes=odb:4,setup:2,notes:1,refs:1 cochange=notes:63,odb:58,revision:41,transport:36,index:24
-notes.h component=notes role=header prefix=notes cochange=notes:55,revision:20,setup:9,odb:3,refs:2
+notes/notes-cache.c component=notes role=lib prefix=notes includes=odb:3,notes:1,refs:1,revision:1,setup:1 cochange=notes:37,odb:29,diff:10,index:10,revision:9
+notes/notes-cache.h component=notes role=header prefix=notes-cache includes=notes:1 cochange=diff:7,notes:3
+notes/notes-merge.c component=notes role=lib prefix=notes-merge includes=odb:4,diff:3,notes:3,index:1,merge:1 cochange=diff:54,revision:41,odb:37,notes:36,index:30
+notes/notes-merge.h component=notes role=header prefix=notes-merge includes=notes:1 cochange=notes:18,odb:2
+notes/notes-utils.c component=notes role=lib prefix=commit includes=setup:2,notes:1,odb:1,refs:1 cochange=notes:33,odb:15,refs:9,transport:9,revision:8
+notes/notes-utils.h component=notes role=header prefix=notes includes=notes:1 cochange=notes:17,odb:6
+notes/notes.c component=notes role=lib prefix=notes includes=odb:4,setup:2,notes:1,refs:1 cochange=notes:63,odb:58,revision:41,transport:36,index:24
+notes/notes.h component=notes role=header prefix=notes cochange=notes:55,revision:20,setup:9,odb:3,refs:2
 odb/alloc.c component=odb role=lib prefix=alloc includes=odb:6,setup:1 cochange=odb:54,revision:8,diff:6,pack:6,index:3
 odb/alloc.h component=odb role=header prefix=alloc cochange=odb:16,refs:1,revision:1
 odb/blob.c component=odb role=lib prefix=object includes=odb:2 cochange=odb:131,transport:12,pack:11,revision:10,refs:5
