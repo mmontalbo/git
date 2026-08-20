@@ -5,7 +5,7 @@
 #include "odb/hash.h"
 #include "hex.h"
 #include "lockfile.h"
-#include "merge.h"
+#include "merge/merge.h"
 #include "odb/commit.h"
 #include "setup/repository.h"
 #include "run-command.h"
