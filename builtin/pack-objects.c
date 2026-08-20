@@ -36,7 +36,7 @@
 #include "odb/odb.h"
 #include "odb/streaming.h"
 #include "odb/replace-object.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "pack/midx.h"
 #include "trace2.h"
 #include "revision/shallow.h"

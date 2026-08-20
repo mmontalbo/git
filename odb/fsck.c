@@ -1,6 +1,6 @@
 #include "git-compat-util.h"
 #include "date.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "environment.h"
 #include "hex.h"
 #include "odb/odb.h"

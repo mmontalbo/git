@@ -14,7 +14,7 @@
 #include "odb/object-name.h"
 #include "parse-options.h"
 
-#include "dir.h"
+#include "index/dir.h"
 #include "odb/commit-slab.h"
 #include "date.h"
 #include "wildmatch.h"

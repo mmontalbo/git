@@ -1,7 +1,7 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "test-tool.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "environment.h"
 #include "hex.h"
 #include "revision/list-objects-filter-options.h"

@@ -3,7 +3,7 @@
 #include "test-tool.h"
 #include "config.h"
 #include "environment.h"
-#include "read-cache-ll.h"
+#include "index/read-cache-ll.h"
 #include "repository.h"
 #include "setup.h"
 

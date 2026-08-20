@@ -18,7 +18,7 @@
 #include "revision/list-objects.h"
 #include "revision/commit-reach.h"
 #include "revision/shallow.h"
-#include "statinfo.h"
+#include "index/statinfo.h"
 #include "trace.h"
 
 void set_alternate_shallow_file(struct repository *r, const char *path)

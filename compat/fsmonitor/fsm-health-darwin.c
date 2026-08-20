@@ -1,8 +1,8 @@
 #include "git-compat-util.h"
 #include "config.h"
-#include "fsmonitor-ll.h"
+#include "index/fsmonitor-ll.h"
 #include "fsm-health.h"
-#include "fsmonitor--daemon.h"
+#include "index/fsmonitor--daemon.h"
 
 int fsm_health__ctor(struct fsmonitor_daemon_state *state UNUSED)
 {

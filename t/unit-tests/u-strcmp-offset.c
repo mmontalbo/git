@@ -1,5 +1,5 @@
 #include "unit-test.h"
-#include "read-cache-ll.h"
+#include "index/read-cache-ll.h"
 
 static void check_strcmp_offset(const char *string1, const char *string2,
 				int expect_result, uintmax_t expect_offset)

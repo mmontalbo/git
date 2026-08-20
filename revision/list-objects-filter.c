@@ -1,7 +1,7 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "git-compat-util.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "gettext.h"
 #include "hex.h"
 #include "odb/commit.h"

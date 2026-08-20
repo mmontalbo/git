@@ -1,11 +1,11 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "odb/hash.h"
-#include "read-cache.h"
-#include "resolve-undo.h"
-#include "sparse-index.h"
+#include "index/read-cache.h"
+#include "index/resolve-undo.h"
+#include "index/sparse-index.h"
 #include "string-list.h"
 
 /* The only error case is to run out of memory in string-list */
