@@ -17,11 +17,11 @@
 #include "diff/xdiff-interface.h"
 #include "merge/merge-ll.h"
 #include "index/dir.h"
-#include "notes.h"
-#include "notes-merge.h"
+#include "notes/notes.h"
+#include "notes/notes-merge.h"
 #include "strbuf.h"
 #include "trace.h"
-#include "notes-utils.h"
+#include "notes/notes-utils.h"
 #include "revision/commit-reach.h"
 
 struct notes_merge_pair {
