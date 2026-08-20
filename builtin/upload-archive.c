@@ -3,7 +3,7 @@
  */
 #define USE_THE_REPOSITORY_VARIABLE
 #include "builtin.h"
-#include "archive.h"
+#include "archive/archive.h"
 #include "transport/pkt-line.h"
 #include "setup/setup.h"
 #include "transport/sideband.h"
