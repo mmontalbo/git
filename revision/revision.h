@@ -10,7 +10,7 @@
 #include "diff/diff.h"
 #include "odb/commit-slab-decl.h"
 #include "revision/decorate.h"
-#include "ident.h"
+#include "setup/ident.h"
 #include "revision/list-objects-filter-options.h"
 #include "prio-queue.h"
 #include "strvec.h"

@@ -8,9 +8,9 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "builtin.h"
-#include "config.h"
+#include "setup/config.h"
 #include "color.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "hex.h"
 #include "odb/commit.h"
@@ -31,7 +31,7 @@
 #include "pager.h"
 #include "revision/blame.h"
 #include "refs/refs.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "odb/tag.h"
 #include "write-or-die.h"
 

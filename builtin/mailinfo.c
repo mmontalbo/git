@@ -5,7 +5,7 @@
 #define USE_THE_REPOSITORY_VARIABLE
 #include "builtin.h"
 #include "abspath.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "strbuf.h"
 #include "mailinfo.h"

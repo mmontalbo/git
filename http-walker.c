@@ -2,7 +2,7 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "hex.h"
 #include "walker.h"
 #include "http.h"

@@ -3,11 +3,11 @@
 #include "test-tool.h"
 #include "hex.h"
 #include "pack/midx.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "odb/odb.h"
 #include "pack/pack-bitmap.h"
 #include "pack/packfile.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "gettext.h"
 #include "pack/pack-revindex.h"
 

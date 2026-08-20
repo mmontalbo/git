@@ -2,9 +2,9 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "builtin.h"
-#include "config.h"
+#include "setup/config.h"
 #include "pack/delta.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "hex.h"
 #include "pack/pack.h"
@@ -29,7 +29,7 @@
 #include "odb/tree-walk.h"
 #include "promisor-remote.h"
 #include "run-command.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "strvec.h"
 
 static const char index_pack_usage[] =

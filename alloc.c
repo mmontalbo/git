@@ -13,7 +13,7 @@
 #include "odb/blob.h"
 #include "odb/tree.h"
 #include "odb/commit.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "odb/tag.h"
 #include "alloc.h"
 
