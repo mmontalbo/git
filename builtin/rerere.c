@@ -8,7 +8,7 @@
 #include "strbuf.h"
 #include "string-list.h"
 #include "xdiff/xdiff.h"
-#include "xdiff-interface.h"
+#include "diff/xdiff-interface.h"
 #include "pathspec.h"
 
 static const char * const rerere_usage[] = {
