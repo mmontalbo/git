@@ -12,9 +12,9 @@
 #include "ewah/ewok.h"
 #include "lockfile.h"
 #include "color.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "gettext.h"
-#include "tag.h"
+#include "odb/tag.h"
 #include "diff.h"
 #include "diff-merges.h"
 #include "diffcore.h"
@@ -23,8 +23,8 @@
 #include "revision.h"
 #include "log-tree.h"
 #include "setup.h"
-#include "oid-array.h"
-#include "tree.h"
+#include "odb/oid-array.h"
+#include "odb/tree.h"
 
 #define DIFF_NO_INDEX_EXPLICIT 1
 #define DIFF_NO_INDEX_IMPLICIT 2

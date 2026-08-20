@@ -1,11 +1,11 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "builtin.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "environment.h"
-#include "hash.h"
+#include "odb/hash.h"
 #include "hex.h"
-#include "odb.h"
+#include "odb/odb.h"
 #include "parse-options.h"
 #include "path.h"
 #include "path-walk.h"
@@ -18,8 +18,8 @@
 #include "strbuf.h"
 #include "string-list.h"
 #include "shallow.h"
-#include "tree.h"
-#include "tree-walk.h"
+#include "odb/tree.h"
+#include "odb/tree-walk.h"
 #include "utf8.h"
 
 #define REPO_INFO_USAGE \

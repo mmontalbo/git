@@ -2,11 +2,11 @@
 #define PACKFILE_H
 
 #include "list.h"
-#include "object.h"
-#include "odb.h"
+#include "odb/object.h"
+#include "odb/odb.h"
 #include "odb/source-files.h"
 #include "odb/source-packed.h"
-#include "oidset.h"
+#include "odb/oidset.h"
 #include "packfile-list.h"
 #include "repository.h"
 

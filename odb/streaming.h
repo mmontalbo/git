@@ -4,8 +4,8 @@
 #ifndef STREAMING_H
 #define STREAMING_H 1
 
-#include "object.h"
-#include "odb.h"
+#include "odb/object.h"
+#include "odb/odb.h"
 
 struct object_database;
 struct odb_read_stream;

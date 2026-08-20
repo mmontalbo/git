@@ -1,7 +1,7 @@
 #ifndef PACK_H
 #define PACK_H
 
-#include "object.h"
+#include "odb/object.h"
 #include "csum-file.h"
 
 struct packed_git;

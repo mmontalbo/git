@@ -1,7 +1,7 @@
 #ifndef REPLAY_H
 #define REPLAY_H
 
-#include "hash.h"
+#include "odb/hash.h"
 
 struct repository;
 struct rev_info;

@@ -1,6 +1,6 @@
 #include "builtin.h"
 #include "config.h"
-#include "fsck.h"
+#include "odb/fsck.h"
 #include "pack-refs.h"
 #include "parse-options.h"
 #include "refs.h"

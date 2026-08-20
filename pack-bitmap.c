@@ -1,11 +1,11 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "gettext.h"
 #include "hex.h"
 #include "strbuf.h"
-#include "tag.h"
+#include "odb/tag.h"
 #include "diff.h"
 #include "revision.h"
 #include "progress.h"
@@ -17,7 +17,7 @@
 #include "packfile.h"
 #include "repository.h"
 #include "trace2.h"
-#include "odb.h"
+#include "odb/odb.h"
 #include "list-objects-filter-options.h"
 #include "midx.h"
 #include "config.h"

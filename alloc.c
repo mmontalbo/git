@@ -9,12 +9,12 @@
  * for the new allocation is.
  */
 #include "git-compat-util.h"
-#include "object.h"
-#include "blob.h"
-#include "tree.h"
-#include "commit.h"
+#include "odb/object.h"
+#include "odb/blob.h"
+#include "odb/tree.h"
+#include "odb/commit.h"
 #include "repository.h"
-#include "tag.h"
+#include "odb/tag.h"
 #include "alloc.h"
 
 #define BLOCKING 1024
