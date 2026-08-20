@@ -29,7 +29,7 @@
 #include "revision/revision.h"
 #include "setup/setup.h"
 #include "index/split-index.h"
-#include "submodule.h"
+#include "submodule/submodule.h"
 #include "revision/commit-reach.h"
 #include "revision/shallow.h"
 #include "odb/object-file-convert.h"

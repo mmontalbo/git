@@ -19,7 +19,7 @@
 #include "odb/odb.h"
 #include "odb/object.h"
 #include "path.h"
-#include "submodule.h"
+#include "submodule/submodule.h"
 #include "refs/worktree.h"
 #include "strvec.h"
 #include "setup/repo-settings.h"
