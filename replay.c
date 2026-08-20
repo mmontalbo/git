@@ -3,7 +3,7 @@
 #include "git-compat-util.h"
 #include "setup/environment.h"
 #include "hex.h"
-#include "merge-ort.h"
+#include "merge/merge-ort.h"
 #include "odb/object-name.h"
 #include "refs/refs.h"
 #include "replay.h"

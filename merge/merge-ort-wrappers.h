@@ -1,7 +1,7 @@
 #ifndef MERGE_ORT_WRAPPERS_H
 #define MERGE_ORT_WRAPPERS_H
 
-#include "merge-ort.h"
+#include "merge/merge-ort.h"
 
 /*
  * rename-detecting three-way merge, no recursion.
