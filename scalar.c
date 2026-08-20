@@ -8,7 +8,7 @@
 #include "abspath.h"
 #include "gettext.h"
 #include "parse-options.h"
-#include "config.h"
+#include "setup/config.h"
 #include "run-command.h"
 #include "simple-ipc.h"
 #include "index/fsmonitor-ipc.h"
@@ -17,7 +17,7 @@
 #include "index/dir.h"
 #include "pack/packfile.h"
 #include "help.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "trace2.h"
 #include "path.h"
 

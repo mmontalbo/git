@@ -2,7 +2,7 @@
 #define REPLACE_OBJECT_H
 
 #include "odb/oidmap.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "odb/odb.h"
 
 struct replace_object {

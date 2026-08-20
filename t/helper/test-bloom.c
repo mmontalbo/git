@@ -4,8 +4,8 @@
 #include "pack/bloom.h"
 #include "hex.h"
 #include "odb/commit.h"
-#include "repository.h"
-#include "setup.h"
+#include "setup/repository.h"
+#include "setup/setup.h"
 
 static struct bloom_filter_settings settings = DEFAULT_BLOOM_FILTER_SETTINGS;
 

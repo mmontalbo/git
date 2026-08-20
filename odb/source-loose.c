@@ -12,7 +12,7 @@
 #include "odb/streaming.h"
 #include "odb/oidtree.h"
 #include "path.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "strbuf.h"
 #include "tempfile.h"
 #include "write-or-die.h"

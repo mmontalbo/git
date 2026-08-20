@@ -3,7 +3,7 @@
 
 #include "hashmap.h"
 #include "string-list.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "parse.h"
 
 /**

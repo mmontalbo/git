@@ -5,8 +5,8 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "builtin.h"
-#include "config.h"
-#include "environment.h"
+#include "setup/config.h"
+#include "setup/environment.h"
 #include "exec-cmd.h"
 #include "gettext.h"
 #include "pager.h"
@@ -15,8 +15,8 @@
 #include "run-command.h"
 #include "config-list.h"
 #include "help.h"
-#include "alias.h"
-#include "setup.h"
+#include "setup/alias.h"
+#include "setup/setup.h"
 
 #ifndef DEFAULT_HELP_FORMAT
 #define DEFAULT_HELP_FORMAT "man"

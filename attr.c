@@ -10,8 +10,8 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "config.h"
-#include "environment.h"
+#include "setup/config.h"
+#include "setup/environment.h"
 #include "exec-cmd.h"
 #include "attr.h"
 #include "index/dir.h"
@@ -23,7 +23,7 @@
 #include "refs/refs.h"
 #include "revision/revision.h"
 #include "odb/odb.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "thread-utils.h"
 #include "odb/tree-walk.h"
 #include "odb/object-name.h"

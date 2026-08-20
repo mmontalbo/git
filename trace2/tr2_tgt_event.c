@@ -1,11 +1,11 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "config.h"
+#include "setup/config.h"
 #include "json-writer.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "run-command.h"
-#include "version.h"
+#include "setup/version.h"
 #include "trace2/tr2_dst.h"
 #include "trace2/tr2_tbuf.h"
 #include "trace2/tr2_sid.h"

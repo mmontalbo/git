@@ -7,7 +7,7 @@
 
 #ifndef NO_UNIX_SOCKETS
 
-#include "config.h"
+#include "setup/config.h"
 #include "tempfile.h"
 #include "credential.h"
 #include "unix-socket.h"

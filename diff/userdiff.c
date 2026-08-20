@@ -2,11 +2,11 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "config.h"
+#include "setup/config.h"
 #include "diff/userdiff.h"
 #include "attr.h"
 #include "strbuf.h"
-#include "environment.h"
+#include "setup/environment.h"
 
 static struct userdiff_driver *drivers;
 static int ndrivers;

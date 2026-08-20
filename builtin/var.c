@@ -9,10 +9,10 @@
 #include "builtin.h"
 
 #include "attr.h"
-#include "config.h"
+#include "setup/config.h"
 #include "editor.h"
-#include "environment.h"
-#include "ident.h"
+#include "setup/environment.h"
+#include "setup/ident.h"
 #include "pager.h"
 #include "refs/refs.h"
 #include "path.h"

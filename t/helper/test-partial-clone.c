@@ -2,9 +2,9 @@
 
 #include "test-tool.h"
 #include "hex.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "odb/odb.h"
-#include "setup.h"
+#include "setup/setup.h"
 
 /*
  * Prints the size of the object corresponding to the given hash in a specific

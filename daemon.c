@@ -2,14 +2,14 @@
 
 #include "git-compat-util.h"
 #include "abspath.h"
-#include "config.h"
-#include "environment.h"
+#include "setup/config.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "path.h"
 #include "pkt-line.h"
 #include "protocol.h"
 #include "run-command.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "strbuf.h"
 #include "string-list.h"
 
