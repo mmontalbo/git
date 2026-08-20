@@ -15,9 +15,9 @@
 #include "refs.h"
 #include "refs/refs-internal.h"
 #include "hook.h"
-#include "object-name.h"
-#include "odb.h"
-#include "object.h"
+#include "odb/object-name.h"
+#include "odb/odb.h"
+#include "odb/object.h"
 #include "path.h"
 #include "submodule.h"
 #include "worktree.h"
@@ -25,10 +25,10 @@
 #include "repo-settings.h"
 #include "setup.h"
 #include "date.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "wildmatch.h"
 #include "ident.h"
-#include "fsck.h"
+#include "odb/fsck.h"
 
 /*
  * List of all available backends

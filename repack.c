@@ -1,7 +1,7 @@
 #include "git-compat-util.h"
 #include "dir.h"
 #include "midx.h"
-#include "odb.h"
+#include "odb/odb.h"
 #include "packfile.h"
 #include "path.h"
 #include "repack.h"

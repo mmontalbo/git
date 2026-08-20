@@ -17,7 +17,7 @@
 #include "environment.h"
 #include "gettext.h"
 #include "name-hash.h"
-#include "object-file.h"
+#include "odb/object-file.h"
 #include "path.h"
 #include "refs.h"
 #include "repository.h"
@@ -34,7 +34,7 @@
 #include "submodule-config.h"
 #include "symlinks.h"
 #include "trace2.h"
-#include "tree.h"
+#include "odb/tree.h"
 #include "hex.h"
 
  /*

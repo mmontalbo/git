@@ -1,7 +1,7 @@
 #ifndef READ_CACHE_LL_H
 #define READ_CACHE_LL_H
 
-#include "hash.h"
+#include "odb/hash.h"
 #include "hashmap.h"
 #include "statinfo.h"
 

@@ -16,7 +16,7 @@
 #include "rebase.h"
 #include "refs.h"
 #include "refspec.h"
-#include "odb.h"
+#include "odb/odb.h"
 #include "strvec.h"
 #include "commit-reach.h"
 #include "progress.h"

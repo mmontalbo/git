@@ -1,15 +1,15 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "test-tool.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "commit-reach.h"
 #include "gettext.h"
 #include "hex.h"
-#include "object-name.h"
+#include "odb/object-name.h"
 #include "ref-filter.h"
 #include "setup.h"
 #include "string-list.h"
-#include "tag.h"
+#include "odb/tag.h"
 
 static void print_sorted_commit_ids(struct commit_list *list)
 {

@@ -3,7 +3,7 @@
 
 #include "config.h"
 #include "submodule.h"
-#include "tree-walk.h"
+#include "odb/tree-walk.h"
 
 /**
  * The submodule config cache API allows to read submodule

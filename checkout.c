@@ -1,7 +1,7 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "git-compat-util.h"
-#include "object-name.h"
+#include "odb/object-name.h"
 #include "remote.h"
 #include "refspec.h"
 #include "repository.h"

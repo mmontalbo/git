@@ -1,7 +1,7 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "git-compat-util.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "editor.h"
 #include "environment.h"
 #include "gettext.h"
@@ -9,10 +9,10 @@
 #include "rebase-interactive.h"
 #include "repository.h"
 #include "strbuf.h"
-#include "commit-slab.h"
+#include "odb/commit-slab.h"
 #include "config.h"
 #include "dir.h"
-#include "object-name.h"
+#include "odb/object-name.h"
 
 static const char edit_todo_list_advice[] =
 N_("You can fix this with 'git rebase --edit-todo' "

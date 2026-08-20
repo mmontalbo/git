@@ -6,8 +6,8 @@
 
 #include "git-compat-util.h"
 #include "diffcore.h"
-#include "hash.h"
-#include "object.h"
+#include "odb/hash.h"
+#include "odb/object.h"
 #include "promisor-remote.h"
 
 static int should_break(struct repository *r,

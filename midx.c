@@ -5,7 +5,7 @@
 #include "dir.h"
 #include "hex.h"
 #include "packfile.h"
-#include "hash-lookup.h"
+#include "odb/hash-lookup.h"
 #include "midx.h"
 #include "progress.h"
 #include "trace2.h"
