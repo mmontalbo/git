@@ -6,13 +6,13 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "diff.h"
 #include "diffcore.h"
 #include "gettext.h"
-#include "hash.h"
+#include "odb/hash.h"
 #include "hex.h"
-#include "object-name.h"
+#include "odb/object-name.h"
 #include "read-cache.h"
 #include "revision.h"
 #include "cache-tree.h"

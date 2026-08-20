@@ -1,7 +1,7 @@
 #include "git-compat-util.h"
 #include "gettext.h"
 #include "pack-revindex.h"
-#include "odb.h"
+#include "odb/odb.h"
 #include "packfile.h"
 #include "strbuf.h"
 #include "trace2.h"

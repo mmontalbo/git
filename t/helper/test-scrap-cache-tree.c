@@ -5,7 +5,7 @@
 #include "read-cache-ll.h"
 #include "repository.h"
 #include "setup.h"
-#include "tree.h"
+#include "odb/tree.h"
 #include "cache-tree.h"
 
 int cmd__scrap_cache_tree(int ac UNUSED, const char **av UNUSED)

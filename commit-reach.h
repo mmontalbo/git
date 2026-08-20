@@ -1,8 +1,8 @@
 #ifndef COMMIT_REACH_H
 #define COMMIT_REACH_H
 
-#include "commit.h"
-#include "commit-slab.h"
+#include "odb/commit.h"
+#include "odb/commit-slab.h"
 
 struct commit_list;
 struct ref_filter;

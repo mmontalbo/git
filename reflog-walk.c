@@ -1,7 +1,7 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "git-compat-util.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "refs.h"
 #include "diff.h"
 #include "repository.h"

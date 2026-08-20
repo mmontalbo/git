@@ -5,7 +5,7 @@
 #include "read-cache-ll.h"
 #include "strvec.h"
 #include "string-list.h"
-#include "tree-walk.h"
+#include "odb/tree-walk.h"
 
 #define MAX_UNPACK_TREES 8
 

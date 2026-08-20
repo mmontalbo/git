@@ -7,8 +7,8 @@
 #include "pack.h"
 #include "progress.h"
 #include "packfile.h"
-#include "object-file.h"
-#include "odb.h"
+#include "odb/object-file.h"
+#include "odb/odb.h"
 #include "odb/streaming.h"
 
 struct idx_entry {

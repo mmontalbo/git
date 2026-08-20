@@ -1,16 +1,16 @@
 #include "git-compat-util.h"
 #include "gettext.h"
-#include "hash.h"
+#include "odb/hash.h"
 #include "hex.h"
 #include "lockfile.h"
 #include "merge-ort.h"
 #include "merge-ort-wrappers.h"
 #include "read-cache-ll.h"
 #include "repository.h"
-#include "tag.h"
-#include "tree.h"
+#include "odb/tag.h"
+#include "odb/tree.h"
 
-#include "commit.h"
+#include "odb/commit.h"
 
 static int unclean(struct merge_options *opt, struct tree *head)
 {

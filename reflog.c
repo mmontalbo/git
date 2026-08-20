@@ -6,12 +6,12 @@
 #include "environment.h"
 #include "gettext.h"
 #include "parse-options.h"
-#include "odb.h"
+#include "odb/odb.h"
 #include "reflog.h"
 #include "refs.h"
 #include "revision.h"
-#include "tree.h"
-#include "tree-walk.h"
+#include "odb/tree.h"
+#include "odb/tree-walk.h"
 #include "wildmatch.h"
 
 static struct reflog_expire_entry_option *find_cfg_ent(struct reflog_expire_options *opts,

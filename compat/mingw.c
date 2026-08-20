@@ -3,7 +3,7 @@
 
 #include "git-compat-util.h"
 #include "abspath.h"
-#include "alloc.h"
+#include "odb/alloc.h"
 #include "config.h"
 #include "dir.h"
 #include "environment.h"

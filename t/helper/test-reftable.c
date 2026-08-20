@@ -1,5 +1,5 @@
 #include "git-compat-util.h"
-#include "hash.h"
+#include "odb/hash.h"
 #include "hex.h"
 #include "reftable/system.h"
 #include "reftable/reftable-constants.h"

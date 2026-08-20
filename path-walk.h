@@ -2,7 +2,7 @@
  * path-walk.h : Methods and structures for walking the object graph in batches
  * by the paths that can reach those objects.
  */
-#include "object.h" /* Required for 'enum object_type'. */
+#include "odb/object.h" /* Required for 'enum object_type'. */
 
 struct rev_info;
 struct oid_array;

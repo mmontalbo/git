@@ -1,7 +1,7 @@
 #ifndef XDIFF_INTERFACE_H
 #define XDIFF_INTERFACE_H
 
-#include "hash.h"
+#include "odb/hash.h"
 #include "xdiff/xdiff.h"
 
 struct object_database;

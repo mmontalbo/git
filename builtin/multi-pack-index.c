@@ -8,10 +8,10 @@
 #include "midx.h"
 #include "strbuf.h"
 #include "trace2.h"
-#include "odb.h"
+#include "odb/odb.h"
 #include "odb/source.h"
 #include "odb/source-files.h"
-#include "replace-object.h"
+#include "odb/replace-object.h"
 #include "repository.h"
 
 #define BUILTIN_MIDX_WRITE_USAGE \
