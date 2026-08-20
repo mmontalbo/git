@@ -5,12 +5,12 @@
 #include "gettext.h"
 #include "hex.h"
 #include "odb/object-file.h"
-#include "pkt-line.h"
-#include "fetch-pack.h"
-#include "remote.h"
-#include "connect.h"
+#include "transport/pkt-line.h"
+#include "transport/fetch-pack.h"
+#include "transport/remote.h"
+#include "transport/connect.h"
 #include "odb/oid-array.h"
-#include "protocol.h"
+#include "transport/protocol.h"
 
 static const char fetch_pack_usage[] =
 "git fetch-pack [--all] [--stdin] [--quiet | -q] [--keep | -k] [--thin] "

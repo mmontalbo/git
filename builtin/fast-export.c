@@ -28,7 +28,7 @@
 #include "utf8.h"
 #include "parse-options.h"
 #include "quote.h"
-#include "remote.h"
+#include "transport/remote.h"
 #include "odb/blob.h"
 #include "gpg-interface.h"
 

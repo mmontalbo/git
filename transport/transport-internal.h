@@ -1,7 +1,7 @@
 #ifndef TRANSPORT_INTERNAL_H
 #define TRANSPORT_INTERNAL_H
 
-#include "connect.h"
+#include "transport/connect.h"
 
 struct ref;
 struct transport;

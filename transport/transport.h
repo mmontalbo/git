@@ -2,10 +2,10 @@
 #define TRANSPORT_H
 
 #include "run-command.h"
-#include "remote.h"
+#include "transport/remote.h"
 #include "revision/list-objects-filter-options.h"
 #include "string-list.h"
-#include "connect.h"
+#include "transport/connect.h"
 
 struct git_transport_options {
 	unsigned thin : 1;

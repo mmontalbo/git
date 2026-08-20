@@ -13,7 +13,7 @@
 #include "pack/pack-objects.h"
 #include "pack/packfile.h"
 #include "path.h"
-#include "promisor-remote.h"
+#include "transport/promisor-remote.h"
 #include "pack/repack.h"
 #include "run-command.h"
 #include "strbuf.h"

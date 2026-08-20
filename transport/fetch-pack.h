@@ -2,7 +2,7 @@
 #define FETCH_PACK_H
 
 #include "string-list.h"
-#include "protocol.h"
+#include "transport/protocol.h"
 #include "revision/list-objects-filter-options.h"
 #include "odb/oidset.h"
 

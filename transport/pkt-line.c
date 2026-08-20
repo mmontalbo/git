@@ -1,10 +1,10 @@
 #include "git-compat-util.h"
 #include "copy.h"
-#include "pkt-line.h"
+#include "transport/pkt-line.h"
 #include "gettext.h"
 #include "hex.h"
 #include "run-command.h"
-#include "sideband.h"
+#include "transport/sideband.h"
 #include "trace.h"
 #include "write-or-die.h"
 

@@ -41,7 +41,7 @@
 #include "merge.h"
 #include "merge-ort-wrappers.h"
 #include "index/resolve-undo.h"
-#include "remote.h"
+#include "transport/remote.h"
 #include "fmt-merge-msg.h"
 #include "sequencer.h"
 #include "string-list.h"

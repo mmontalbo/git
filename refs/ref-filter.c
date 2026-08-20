@@ -19,7 +19,7 @@
 #include "odb/commit.h"
 #include "mailmap.h"
 #include "setup/ident.h"
-#include "remote.h"
+#include "transport/remote.h"
 #include "color.h"
 #include "odb/tag.h"
 #include "quote.h"
