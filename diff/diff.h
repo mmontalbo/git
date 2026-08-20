@@ -5,7 +5,7 @@
 #define DIFF_H
 
 #include "odb/hash.h"
-#include "pathspec.h"
+#include "index/pathspec.h"
 #include "strbuf.h"
 #include "color.h"
 

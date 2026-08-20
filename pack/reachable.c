@@ -9,7 +9,7 @@
 #include "diff/diff.h"
 #include "revision/revision.h"
 #include "pack/reachable.h"
-#include "cache-tree.h"
+#include "index/cache-tree.h"
 #include "progress.h"
 #include "revision/list-objects.h"
 #include "pack/packfile.h"

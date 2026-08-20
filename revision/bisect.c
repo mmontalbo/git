@@ -22,7 +22,7 @@
 #include "odb/object-name.h"
 #include "odb/odb.h"
 #include "path.h"
-#include "dir.h"
+#include "index/dir.h"
 
 static struct oid_array good_revs;
 static struct oid_array skipped_revs;

@@ -14,12 +14,12 @@
 #include "odb/object-name.h"
 #include "odb/tree.h"
 #include "odb/tree-walk.h"
-#include "cache-tree.h"
-#include "unpack-trees.h"
+#include "index/cache-tree.h"
+#include "index/unpack-trees.h"
 #include "parse-options.h"
-#include "resolve-undo.h"
+#include "index/resolve-undo.h"
 #include "setup.h"
-#include "sparse-index.h"
+#include "index/sparse-index.h"
 #include "submodule.h"
 
 static int nr_trees;

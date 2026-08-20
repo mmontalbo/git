@@ -1,11 +1,11 @@
 #ifndef FSMONITOR_H
 #define FSMONITOR_H
 
-#include "fsmonitor-ll.h"
-#include "dir.h"
-#include "fsmonitor-settings.h"
+#include "index/fsmonitor-ll.h"
+#include "index/dir.h"
+#include "index/fsmonitor-settings.h"
 #include "odb/object.h"
-#include "read-cache-ll.h"
+#include "index/read-cache-ll.h"
 #include "trace.h"
 
 /*

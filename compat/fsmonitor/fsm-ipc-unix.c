@@ -7,9 +7,9 @@
 #include "path.h"
 #include "repository.h"
 #include "strbuf.h"
-#include "fsmonitor-ll.h"
-#include "fsmonitor-ipc.h"
-#include "fsmonitor-path-utils.h"
+#include "index/fsmonitor-ll.h"
+#include "index/fsmonitor-ipc.h"
+#include "index/fsmonitor-path-utils.h"
 
 static GIT_PATH_FUNC(fsmonitor_ipc__get_default_path, "fsmonitor--daemon.ipc")
 

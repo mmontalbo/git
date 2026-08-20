@@ -13,13 +13,13 @@
 #include "gettext.h"
 #include "lockfile.h"
 #include "quote.h"
-#include "cache-tree.h"
+#include "index/cache-tree.h"
 #include "parse-options.h"
-#include "entry.h"
-#include "parallel-checkout.h"
-#include "read-cache-ll.h"
+#include "index/entry.h"
+#include "index/parallel-checkout.h"
+#include "index/read-cache-ll.h"
 #include "setup.h"
-#include "sparse-index.h"
+#include "index/sparse-index.h"
 
 #define CHECKOUT_ALL 4
 static int nul_term_line;
