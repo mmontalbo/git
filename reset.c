@@ -4,7 +4,7 @@
 #include "hex.h"
 #include "lockfile.h"
 #include "odb/object-name.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "reset.h"
 #include "odb/tree-walk.h"
 #include "odb/tree.h"

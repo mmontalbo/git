@@ -6,7 +6,7 @@
 #include "decorate.h"
 #include "hex.h"
 #include "prio-queue.h"
-#include "ref-filter.h"
+#include "refs/ref-filter.h"
 #include "revision.h"
 #include "odb/tag.h"
 #include "commit-reach.h"

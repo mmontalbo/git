@@ -7,7 +7,7 @@
 #include "hex.h"
 #include "pkt-line.h"
 #include "quote.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "run-command.h"
 #include "remote.h"
 #include "connect.h"

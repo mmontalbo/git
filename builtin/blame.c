@@ -30,7 +30,7 @@
 #include "odb/odb.h"
 #include "pager.h"
 #include "blame.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "setup.h"
 #include "odb/tag.h"
 #include "write-or-die.h"

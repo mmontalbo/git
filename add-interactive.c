@@ -11,7 +11,7 @@
 #include "read-cache-ll.h"
 #include "repository.h"
 #include "revision.h"
-#include "refs.h"
+#include "refs/refs.h"
 #include "string-list.h"
 #include "lockfile.h"
 #include "dir.h"
