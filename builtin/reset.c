@@ -33,7 +33,7 @@
 #include "index/cache-tree.h"
 #include "setup/setup.h"
 #include "index/sparse-index.h"
-#include "submodule.h"
+#include "submodule/submodule.h"
 #include "trace.h"
 #include "trace2.h"
 #include "index/dir.h"

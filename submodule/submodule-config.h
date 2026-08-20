@@ -2,7 +2,7 @@
 #define SUBMODULE_CONFIG_CACHE_H
 
 #include "setup/config.h"
-#include "submodule.h"
+#include "submodule/submodule.h"
 #include "odb/tree-walk.h"
 
 /**
