@@ -15,7 +15,7 @@
 #include "string-list.h"
 #include "mailmap.h"
 #include "revision/log-tree.h"
-#include "notes.h"
+#include "notes/notes.h"
 #include "color.h"
 #include "refs/reflog-walk.h"
 #include "gpg-interface.h"
