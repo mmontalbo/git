@@ -15,9 +15,9 @@
 #include "gettext.h"
 #include "revision/revision.h"
 #include "parse-options.h"
-#include "pathspec.h"
+#include "index/pathspec.h"
 #include "string-list.h"
-#include "dir.h"
+#include "index/dir.h"
 
 static int read_directory_contents(const char *path, struct string_list *list,
 				   const struct pathspec *pathspec,

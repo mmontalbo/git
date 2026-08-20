@@ -6,7 +6,7 @@
 #include "diff/diff.h"
 #include "diff/diff-merges.h"
 #include "odb/commit.h"
-#include "preload-index.h"
+#include "index/preload-index.h"
 #include "revision/revision.h"
 #include "setup.h"
 

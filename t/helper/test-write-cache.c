@@ -2,7 +2,7 @@
 
 #include "test-tool.h"
 #include "lockfile.h"
-#include "read-cache-ll.h"
+#include "index/read-cache-ll.h"
 #include "repository.h"
 #include "setup.h"
 

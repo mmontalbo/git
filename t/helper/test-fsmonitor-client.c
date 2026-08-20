@@ -7,8 +7,8 @@
 
 #include "test-tool.h"
 #include "parse-options.h"
-#include "fsmonitor-ipc.h"
-#include "read-cache-ll.h"
+#include "index/fsmonitor-ipc.h"
+#include "index/read-cache-ll.h"
 #include "repository.h"
 #include "setup.h"
 #include "thread-utils.h"

@@ -3,13 +3,13 @@
 
 #include "builtin.h"
 #include "config.h"
-#include "entry.h"
+#include "index/entry.h"
 #include "environment.h"
 #include "gettext.h"
-#include "parallel-checkout.h"
+#include "index/parallel-checkout.h"
 #include "parse-options.h"
 #include "pkt-line.h"
-#include "read-cache-ll.h"
+#include "index/read-cache-ll.h"
 
 static void packet_to_pc_item(const char *buffer, int len,
 			      struct parallel_checkout_item *pc_item)

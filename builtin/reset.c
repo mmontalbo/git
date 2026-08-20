@@ -29,14 +29,14 @@
 #include "parse-options.h"
 #include "path.h"
 #include "repository.h"
-#include "unpack-trees.h"
-#include "cache-tree.h"
+#include "index/unpack-trees.h"
+#include "index/cache-tree.h"
 #include "setup.h"
-#include "sparse-index.h"
+#include "index/sparse-index.h"
 #include "submodule.h"
 #include "trace.h"
 #include "trace2.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "add-interactive.h"
 
 #define REFRESH_INDEX_DELAY_WARNING_IN_MS (2 * 1000)

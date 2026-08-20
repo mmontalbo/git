@@ -11,19 +11,19 @@
 #include "config.h"
 #include "environment.h"
 #include "lockfile.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "gettext.h"
 #include "odb/hash.h"
 #include "odb/tree-walk.h"
 #include "odb/object-name.h"
 #include "parse-options.h"
-#include "read-cache.h"
+#include "index/read-cache.h"
 
 #include "string-list.h"
 #include "setup.h"
-#include "sparse-index.h"
+#include "index/sparse-index.h"
 #include "submodule.h"
-#include "pathspec.h"
+#include "index/pathspec.h"
 
 static const char * const builtin_rm_usage[] = {
 	N_("git rm [-f | --force] [-n] [-r] [--cached] [--ignore-unmatch]\n"

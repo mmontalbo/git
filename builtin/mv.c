@@ -13,20 +13,20 @@
 #include "config.h"
 #include "environment.h"
 #include "gettext.h"
-#include "name-hash.h"
+#include "index/name-hash.h"
 #include "odb/object-file.h"
 #include "path.h"
-#include "pathspec.h"
+#include "index/pathspec.h"
 #include "lockfile.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "string-list.h"
 #include "parse-options.h"
-#include "read-cache-ll.h"
+#include "index/read-cache-ll.h"
 
 #include "setup.h"
 #include "strvec.h"
 #include "submodule.h"
-#include "entry.h"
+#include "index/entry.h"
 
 static const char * const builtin_mv_usage[] = {
 	N_("git mv [-v] [-f] [-n] [-k] <source> <destination>"),

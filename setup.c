@@ -12,7 +12,7 @@
 #include "refs/refs.h"
 #include "repository.h"
 #include "config.h"
-#include "dir.h"
+#include "index/dir.h"
 #include "setup.h"
 #include "revision/shallow.h"
 #include "string-list.h"

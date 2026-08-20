@@ -1,8 +1,8 @@
 #include "git-compat-util.h"
 #include "config.h"
-#include "fsmonitor-ll.h"
+#include "index/fsmonitor-ll.h"
 #include "fsm-health.h"
-#include "fsmonitor--daemon.h"
+#include "index/fsmonitor--daemon.h"
 #include "gettext.h"
 #include "simple-ipc.h"
 
