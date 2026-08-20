@@ -26,7 +26,7 @@
 #include "strvec.h"
 #include "submodule.h"
 #include "add-interactive.h"
-#include "merge-ll.h"
+#include "merge/merge-ll.h"
 
 static const char * const builtin_add_usage[] = {
 	N_("git add [<options>] [--] <pathspec>..."),
