@@ -26,7 +26,7 @@
 #include "setup.h"
 #include "sparse-index.h"
 #include "log-tree.h"
-#include "diffcore.h"
+#include "diff/diffcore.h"
 #include "refs/reflog.h"
 #include "refs/reflog-walk.h"
 #include "add-interactive.h"

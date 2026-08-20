@@ -6,7 +6,7 @@
 #include "hex.h"
 #include "odb/odb.h"
 #include "odb/commit.h"
-#include "diff.h"
+#include "diff/diff.h"
 #include "revision.h"
 #include "progress.h"
 #include "pack/pack.h"

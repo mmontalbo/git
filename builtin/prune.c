@@ -2,7 +2,7 @@
 
 #include "builtin.h"
 #include "odb/commit.h"
-#include "diff.h"
+#include "diff/diff.h"
 #include "dir.h"
 #include "environment.h"
 #include "gettext.h"
