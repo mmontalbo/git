@@ -28,7 +28,7 @@
 #include "refs/worktree.h"
 #include "help.h"
 #include "advice.h"
-#include "commit-reach.h"
+#include "revision/commit-reach.h"
 
 static const char * const builtin_branch_usage[] = {
 	N_("git branch [<options>] [-r | -a] [--merged] [--no-merged] [(--forked <branch>)...]"),

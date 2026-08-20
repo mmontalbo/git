@@ -13,12 +13,12 @@
 #include "quote.h"
 #include "diff/xdiff-interface.h"
 #include "xdiff/xmacros.h"
-#include "log-tree.h"
+#include "revision/log-tree.h"
 #include "refs/refs.h"
 #include "odb/tree.h"
 #include "diff/userdiff.h"
 #include "odb/oid-array.h"
-#include "revision.h"
+#include "revision/revision.h"
 
 static int compare_paths(const struct combine_diff_path *one,
 			  const struct diff_filespec *two)

@@ -5,8 +5,8 @@
 #include "config.h"
 #include "odb/commit.h"
 #include "color.h"
-#include "graph.h"
-#include "revision.h"
+#include "revision/graph.h"
+#include "revision/revision.h"
 #include "strvec.h"
 
 /* Internal API */

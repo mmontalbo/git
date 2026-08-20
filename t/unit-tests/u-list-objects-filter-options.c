@@ -1,5 +1,5 @@
 #include "unit-test.h"
-#include "list-objects-filter-options.h"
+#include "revision/list-objects-filter-options.h"
 #include "strbuf.h"
 
 /* Helper to test gently_parse_list_objects_filter() */
