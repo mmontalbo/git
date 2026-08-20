@@ -1,7 +1,7 @@
 #ifndef ENTRY_H
 #define ENTRY_H
 
-#include "convert.h"
+#include "convert/convert.h"
 
 struct cache_entry;
 struct index_state;

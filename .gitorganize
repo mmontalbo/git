@@ -34,8 +34,6 @@ archive/archive-tar.c component=archive role=lib prefix=archive-tar includes=arc
 archive/archive-zip.c component=archive role=lib prefix=archive-zip includes=diff:2,archive:1,odb:1,setup:1 cochange=archive:57,diff:12,odb:8,index:7,transport:6
 archive/archive.c component=archive role=lib prefix=archive includes=odb:5,setup:3,convert:2,archive:1,index:1 cochange=archive:54,convert:42,odb:39,index:36,revision:31
 archive/archive.h component=archive role=header prefix=archive includes=index:1 cochange=archive:58,index:3,revision:3,convert:2,diff:1
-attr.c component=convert role=lib prefix=attr includes=odb:3,setup:3,index:2,convert:1,refs:1 cochange=index:55,convert:54,diff:41,setup:26,revision:22
-attr.h component=convert role=header prefix=attr cochange=convert:50,index:13,diff:9,archive:8,setup:3
 banned.h component=? role=public prefix=banned
 base85.c component=? role=lib prefix=base85 cochange=diff:4,pack:2,convert:1,transport:1
 base85.h component=? role=public prefix=base85 cochange=diff:1
@@ -52,8 +50,12 @@ common-exit.c component=? role=lib prefix=common-main
 common-init.c component=? role=lib prefix=common-main includes=odb:2,setup:2,convert:1 cochange=setup:1
 common-init.h component=? role=public prefix=common-main
 common-main.c component=? role=lib prefix=common-main cochange=setup:5,transport:4,convert:3,index:1
-convert.c component=convert role=lib prefix=convert includes=convert:2,index:1,merge:1,odb:1,setup:1 cochange=convert:59,diff:43,index:41,setup:30,transport:30
-convert.h component=convert role=header prefix=convert includes=odb:1 cochange=convert:29,index:18,diff:8,setup:8,archive:4
+convert/attr.c component=convert role=lib prefix=attr includes=odb:3,setup:3,index:2,convert:1,refs:1 cochange=index:55,convert:54,diff:41,setup:26,revision:22
+convert/attr.h component=convert role=header prefix=attr cochange=convert:50,index:13,diff:9,archive:8,setup:3
+convert/convert.c component=convert role=lib prefix=convert includes=convert:2,index:1,merge:1,odb:1,setup:1 cochange=convert:59,diff:43,index:41,setup:30,transport:30
+convert/convert.h component=convert role=header prefix=convert includes=odb:1 cochange=convert:29,index:18,diff:8,setup:8,archive:4
+convert/ws.c component=convert role=lib prefix=whitespace includes=convert:2 cochange=convert:24,diff:18,archive:9,index:5,setup:5
+convert/ws.h component=convert role=header prefix=whitespace cochange=diff:5,convert:2,setup:2
 copy.c component=? role=lib prefix=copy cochange=pack:6,transport:5,diff:3,odb:3,merge:2
 copy.h component=? role=public prefix=copy cochange=transport:3,merge:2,convert:1,setup:1
 credential.c component=? role=lib prefix=credential includes=setup:3 cochange=transport:13,index:4,odb:4,convert:2,merge:2
@@ -490,5 +492,3 @@ wrapper.c component=? role=lib prefix=wrapper cochange=setup:21,index:16,pack:6,
 wrapper.h component=? role=public prefix=wrapper cochange=index:2,revision:1,setup:1
 write-or-die.c component=? role=lib prefix=write-or-die cochange=pack:6,setup:6,index:4,transport:2,convert:1
 write-or-die.h component=? role=public prefix=write-or-die
-ws.c component=convert role=lib prefix=whitespace includes=convert:2 cochange=convert:24,diff:18,archive:9,index:5,setup:5
-ws.h component=convert role=header prefix=whitespace cochange=diff:5,convert:2,setup:2

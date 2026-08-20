@@ -1,7 +1,7 @@
 #ifndef PARALLEL_CHECKOUT_H
 #define PARALLEL_CHECKOUT_H
 
-#include "convert.h"
+#include "convert/convert.h"
 
 struct cache_entry;
 struct checkout;
