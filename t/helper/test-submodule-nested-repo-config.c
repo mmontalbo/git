@@ -3,7 +3,7 @@
 #include "test-tool.h"
 #include "setup/repository.h"
 #include "setup/setup.h"
-#include "submodule-config.h"
+#include "submodule/submodule-config.h"
 
 static void die_usage(const char **argv, const char *msg)
 {

@@ -19,7 +19,7 @@
 #include "index/unpack-trees.h"
 #include "refs/refs.h"
 #include "setup/repository.h"
-#include "submodule.h"
+#include "submodule/submodule.h"
 #include "index/symlinks.h"
 #include "trace.h"
 #include "index/dir.h"
