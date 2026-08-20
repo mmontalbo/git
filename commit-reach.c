@@ -1,14 +1,14 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "git-compat-util.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "commit-graph.h"
 #include "decorate.h"
 #include "hex.h"
 #include "prio-queue.h"
 #include "ref-filter.h"
 #include "revision.h"
-#include "tag.h"
+#include "odb/tag.h"
 #include "commit-reach.h"
 #include "ewah/ewok.h"
 

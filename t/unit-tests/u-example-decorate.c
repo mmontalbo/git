@@ -1,7 +1,7 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "unit-test.h"
-#include "object.h"
+#include "odb/object.h"
 #include "decorate.h"
 #include "repository.h"
 

@@ -14,9 +14,9 @@
 #include "gettext.h"
 #include "hex.h"
 #include "notes.h"
-#include "object-file.h"
-#include "object-name.h"
-#include "odb.h"
+#include "odb/object-file.h"
+#include "odb/object-name.h"
+#include "odb/odb.h"
 #include "path.h"
 
 #include "pretty.h"

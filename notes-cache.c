@@ -2,11 +2,11 @@
 
 #include "git-compat-util.h"
 #include "notes-cache.h"
-#include "object-file.h"
-#include "odb.h"
+#include "odb/object-file.h"
+#include "odb/odb.h"
 #include "pretty.h"
 #include "repository.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "refs.h"
 #include "strbuf.h"
 

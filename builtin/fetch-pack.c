@@ -4,12 +4,12 @@
 #include "builtin.h"
 #include "gettext.h"
 #include "hex.h"
-#include "object-file.h"
+#include "odb/object-file.h"
 #include "pkt-line.h"
 #include "fetch-pack.h"
 #include "remote.h"
 #include "connect.h"
-#include "oid-array.h"
+#include "odb/oid-array.h"
 #include "protocol.h"
 
 static const char fetch_pack_usage[] =

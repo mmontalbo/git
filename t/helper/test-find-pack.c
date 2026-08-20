@@ -1,8 +1,8 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "test-tool.h"
-#include "object-name.h"
-#include "odb.h"
+#include "odb/object-name.h"
+#include "odb/odb.h"
 #include "packfile.h"
 #include "parse-options.h"
 #include "setup.h"

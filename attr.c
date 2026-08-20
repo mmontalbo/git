@@ -22,11 +22,11 @@
 #include "read-cache-ll.h"
 #include "refs.h"
 #include "revision.h"
-#include "odb.h"
+#include "odb/odb.h"
 #include "setup.h"
 #include "thread-utils.h"
-#include "tree-walk.h"
-#include "object-name.h"
+#include "odb/tree-walk.h"
+#include "odb/object-name.h"
 
 char *git_attr_tree;
 

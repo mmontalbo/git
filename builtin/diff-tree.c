@@ -3,14 +3,14 @@
 #include "builtin.h"
 #include "config.h"
 #include "diff.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "gettext.h"
 #include "hex.h"
 #include "log-tree.h"
 #include "read-cache-ll.h"
 #include "revision.h"
-#include "tmp-objdir.h"
-#include "tree.h"
+#include "odb/tmp-objdir.h"
+#include "odb/tree.h"
 
 static struct rev_info log_tree_opt;
 

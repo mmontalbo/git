@@ -1,5 +1,5 @@
 #include "../git-compat-util.h"
-#include "../hash.h"
+#include "odb/hash.h"
 #include "../refs.h"
 #include "../repository.h"
 #include "refs-internal.h"

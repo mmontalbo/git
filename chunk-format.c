@@ -5,7 +5,7 @@
 #include "chunk-format.h"
 #include "csum-file.h"
 #include "gettext.h"
-#include "hash.h"
+#include "odb/hash.h"
 #include "trace2.h"
 
 /*
