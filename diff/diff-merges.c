@@ -2,7 +2,7 @@
 #include "diff/diff-merges.h"
 
 #include "gettext.h"
-#include "revision.h"
+#include "revision/revision.h"
 
 typedef void (*diff_merges_setup_func_t)(struct rev_info *);
 static void set_separate(struct rev_info *revs);

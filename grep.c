@@ -6,7 +6,7 @@
 #include "grep.h"
 #include "hex.h"
 #include "odb/odb.h"
-#include "pretty.h"
+#include "revision/pretty.h"
 #include "diff/userdiff.h"
 #include "diff/xdiff-interface.h"
 #include "diff/diff.h"

@@ -1,7 +1,7 @@
 #ifndef PACKFILE_H
 #define PACKFILE_H
 
-#include "list.h"
+#include "revision/list.h"
 #include "odb/object.h"
 #include "odb/odb.h"
 #include "odb/source-files.h"

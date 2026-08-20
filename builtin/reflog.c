@@ -5,7 +5,7 @@
 #include "gettext.h"
 #include "hex.h"
 #include "odb/odb.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "pack/reachable.h"
 #include "wildmatch.h"
 #include "refs/worktree.h"

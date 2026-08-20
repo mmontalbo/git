@@ -17,7 +17,7 @@
 #include "prio-queue.h"
 #include "quote.h"
 #include "repository.h"
-#include "revision.h"
+#include "revision/revision.h"
 
 /* Remember to update object flag allocation in object.h */
 #define PARENT1 (1u<<16) /* used instead of SEEN */

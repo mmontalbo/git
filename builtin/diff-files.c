@@ -13,7 +13,7 @@
 #include "diff/diff-merges.h"
 #include "odb/commit.h"
 #include "preload-index.h"
-#include "revision.h"
+#include "revision/revision.h"
 
 static const char diff_files_usage[] =
 "git diff-files [-q] [-0 | -1 | -2 | -3 | -c | --cc] [<common-diff-options>] [<path>...]"

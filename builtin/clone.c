@@ -43,7 +43,7 @@
 #include "pack/packfile.h"
 #include "path.h"
 #include "pkt-line.h"
-#include "list-objects-filter-options.h"
+#include "revision/list-objects-filter-options.h"
 #include "hook.h"
 #include "bundle.h"
 #include "bundle-uri.h"

@@ -7,7 +7,7 @@
 #include "hex.h"
 #include "odb/object-name.h"
 #include "parse-options.h"
-#include "commit-reach.h"
+#include "revision/commit-reach.h"
 
 static int show_merge_base(struct commit **rev, size_t rev_nr, int show_all)
 {

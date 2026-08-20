@@ -8,7 +8,7 @@
 #include "hex.h"
 #include "odb/object-name.h"
 #include "parse-options.h"
-#include "bisect.h"
+#include "revision/bisect.h"
 #include "refs/refs.h"
 #include "strvec.h"
 #include "run-command.h"
@@ -16,7 +16,7 @@
 #include "path.h"
 #include "prompt.h"
 #include "quote.h"
-#include "revision.h"
+#include "revision/revision.h"
 
 static GIT_PATH_FUNC(git_path_bisect_terms, "BISECT_TERMS")
 static GIT_PATH_FUNC(git_path_bisect_ancestors_ok, "BISECT_ANCESTORS_OK")

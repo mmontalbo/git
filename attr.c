@@ -21,7 +21,7 @@
 #include "quote.h"
 #include "read-cache-ll.h"
 #include "refs/refs.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "odb/odb.h"
 #include "setup.h"
 #include "thread-utils.h"

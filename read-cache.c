@@ -34,7 +34,7 @@
 #include "read-cache.h"
 #include "repository.h"
 #include "resolve-undo.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "strbuf.h"
 #include "trace2.h"
 #include "varint.h"
