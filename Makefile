@@ -1115,8 +1115,8 @@ LIB_OBJS += revision/blame.o
 LIB_OBJS += odb/blob.o
 LIB_OBJS += pack/bloom.o
 LIB_OBJS += branch.o
-LIB_OBJS += bundle-uri.o
-LIB_OBJS += bundle.o
+LIB_OBJS += transport/bundle-uri.o
+LIB_OBJS += transport/bundle.o
 LIB_OBJS += index/cache-tree.o
 LIB_OBJS += odb/cbtree.o
 LIB_OBJS += chdir-notify.o
@@ -1136,8 +1136,8 @@ LIB_OBJS += compat/open.o
 LIB_OBJS += compat/terminal.o
 LIB_OBJS += compiler-tricks/not-constant.o
 LIB_OBJS += setup/config.o
-LIB_OBJS += connect.o
-LIB_OBJS += connected.o
+LIB_OBJS += transport/connect.o
+LIB_OBJS += transport/connected.o
 LIB_OBJS += convert.o
 LIB_OBJS += copy.o
 LIB_OBJS += credential.o
@@ -1168,9 +1168,9 @@ LIB_OBJS += ewah/ewah_bitmap.o
 LIB_OBJS += ewah/ewah_io.o
 LIB_OBJS += ewah/ewah_rlw.o
 LIB_OBJS += exec-cmd.o
-LIB_OBJS += fetch-negotiator.o
-LIB_OBJS += fetch-object-info.o
-LIB_OBJS += fetch-pack.o
+LIB_OBJS += transport/fetch-negotiator.o
+LIB_OBJS += transport/fetch-object-info.o
+LIB_OBJS += transport/fetch-pack.o
 LIB_OBJS += fmt-merge-msg.o
 LIB_OBJS += odb/fsck.o
 LIB_OBJS += index/fsmonitor.o
@@ -1261,15 +1261,15 @@ LIB_OBJS += diff/patch-ids.o
 LIB_OBJS += path.o
 LIB_OBJS += path-walk.o
 LIB_OBJS += index/pathspec.o
-LIB_OBJS += pkt-line.o
+LIB_OBJS += transport/pkt-line.o
 LIB_OBJS += index/preload-index.o
 LIB_OBJS += revision/pretty.o
 LIB_OBJS += prio-queue.o
 LIB_OBJS += progress.o
-LIB_OBJS += promisor-remote.o
+LIB_OBJS += transport/promisor-remote.o
 LIB_OBJS += prompt.o
-LIB_OBJS += protocol.o
-LIB_OBJS += protocol-caps.o
+LIB_OBJS += transport/protocol.o
+LIB_OBJS += transport/protocol-caps.o
 LIB_OBJS += pack/prune-packed.o
 LIB_OBJS += pack/pseudo-merge.o
 LIB_OBJS += quote.o
@@ -1303,7 +1303,7 @@ LIB_OBJS += reftable/system.o
 LIB_OBJS += reftable/table.o
 LIB_OBJS += reftable/tree.o
 LIB_OBJS += reftable/writer.o
-LIB_OBJS += remote.o
+LIB_OBJS += transport/remote.o
 LIB_OBJS += pack/repack.o
 LIB_OBJS += pack/repack-cruft.o
 LIB_OBJS += pack/repack-filtered.o
@@ -1319,13 +1319,13 @@ LIB_OBJS += reset.o
 LIB_OBJS += index/resolve-undo.o
 LIB_OBJS += revision/revision.o
 LIB_OBJS += run-command.o
-LIB_OBJS += send-pack.o
+LIB_OBJS += transport/send-pack.o
 LIB_OBJS += sequencer.o
-LIB_OBJS += serve.o
+LIB_OBJS += transport/serve.o
 LIB_OBJS += pack/server-info.o
 LIB_OBJS += setup/setup.o
 LIB_OBJS += revision/shallow.o
-LIB_OBJS += sideband.o
+LIB_OBJS += transport/sideband.o
 LIB_OBJS += sigchain.o
 LIB_OBJS += index/sparse-index.o
 LIB_OBJS += index/split-index.o
@@ -1358,13 +1358,13 @@ LIB_OBJS += trace2/tr2_tgt_perf.o
 LIB_OBJS += trace2/tr2_tls.o
 LIB_OBJS += trace2/tr2_tmr.o
 LIB_OBJS += trailer.o
-LIB_OBJS += transport-helper.o
-LIB_OBJS += transport.o
+LIB_OBJS += transport/transport-helper.o
+LIB_OBJS += transport/transport.o
 LIB_OBJS += diff/tree-diff.o
 LIB_OBJS += odb/tree-walk.o
 LIB_OBJS += odb/tree.o
 LIB_OBJS += index/unpack-trees.o
-LIB_OBJS += upload-pack.o
+LIB_OBJS += transport/upload-pack.o
 LIB_OBJS += url.o
 LIB_OBJS += urlmatch.o
 LIB_OBJS += usage.o
@@ -1375,7 +1375,7 @@ LIB_OBJS += varint.o
 endif
 LIB_OBJS += setup/version.o
 LIB_OBJS += versioncmp.o
-LIB_OBJS += walker.o
+LIB_OBJS += transport/walker.o
 LIB_OBJS += wildmatch.o
 LIB_OBJS += refs/worktree.o
 LIB_OBJS += wrapper.o
@@ -1833,7 +1833,7 @@ else
         endif
         ifdef USE_CURL_FOR_IMAP_SEND
 		BASIC_CFLAGS += -DUSE_CURL_FOR_IMAP_SEND
-		IMAP_SEND_BUILDDEPS = http.o
+		IMAP_SEND_BUILDDEPS = transport/http.o
 		IMAP_SEND_LDFLAGS += $(CURL_LIBCURL)
         endif
         ifndef NO_EXPAT
@@ -2901,7 +2901,7 @@ ifdef INCLUDE_LIBGIT_RS
 endif
 
 ifndef NO_CURL
-	OBJECTS += http.o http-walker.o remote-curl.o
+	OBJECTS += transport/http.o transport/http-walker.o transport/remote-curl.o
 endif
 
 .PHONY: objects
@@ -2989,13 +2989,13 @@ gettext.sp gettext.s gettext.o: GIT-PREFIX
 gettext.sp gettext.s gettext.o: EXTRA_CPPFLAGS = \
 	-DGIT_LOCALE_PATH='"$(localedir_relative_SQ)"'
 
-http-push.sp http.sp http-walker.sp remote-curl.sp imap-send.sp: SP_EXTRA_FLAGS += \
+http-push.sp transport/http.sp transport/http-walker.sp transport/remote-curl.sp imap-send.sp: SP_EXTRA_FLAGS += \
 	-DCURL_DISABLE_TYPECHECK
 
 pack/pack-revindex.sp: SP_EXTRA_FLAGS += -Wno-memcpy-max-count
 
 ifdef NO_EXPAT
-http-walker.sp http-walker.s http-walker.o: EXTRA_CPPFLAGS = -DNO_EXPAT
+transport/http-walker.sp transport/http-walker.s transport/http-walker.o: EXTRA_CPPFLAGS = -DNO_EXPAT
 endif
 
 ifdef NO_REGEX
@@ -3017,10 +3017,10 @@ git-imap-send$X: imap-send.o $(IMAP_SEND_BUILDDEPS) GIT-LDFLAGS $(GITLIBS)
 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) -o $@ $(ALL_LDFLAGS) $(filter %.o,$^) \
 		$(IMAP_SEND_LDFLAGS) $(LIBS)
 
-git-http-fetch$X: http.o http-walker.o http-fetch.o GIT-LDFLAGS $(GITLIBS)
+git-http-fetch$X: transport/http.o transport/http-walker.o http-fetch.o GIT-LDFLAGS $(GITLIBS)
 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) -o $@ $(ALL_LDFLAGS) $(filter %.o,$^) \
 		$(CURL_LIBCURL) $(LIBS)
-git-http-push$X: http.o http-push.o GIT-LDFLAGS $(GITLIBS)
+git-http-push$X: transport/http.o http-push.o GIT-LDFLAGS $(GITLIBS)
 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) -o $@ $(ALL_LDFLAGS) $(filter %.o,$^) \
 		$(CURL_LIBCURL) $(EXPAT_LIBEXPAT) $(LIBS)
 
@@ -3030,7 +3030,7 @@ $(REMOTE_CURL_ALIASES): $(REMOTE_CURL_PRIMARY)
 	ln -s $< $@ 2>/dev/null || \
 	cp $< $@
 
-$(REMOTE_CURL_PRIMARY): remote-curl.o http.o http-walker.o GIT-LDFLAGS $(GITLIBS)
+$(REMOTE_CURL_PRIMARY): transport/remote-curl.o transport/http.o transport/http-walker.o GIT-LDFLAGS $(GITLIBS)
 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) -o $@ $(ALL_LDFLAGS) $(filter %.o,$^) \
 		$(CURL_LIBCURL) $(EXPAT_LIBEXPAT) $(LIBS)
 
@@ -3218,7 +3218,7 @@ LOCALIZED_C_CORE += builtin/clone.c
 LOCALIZED_C_CORE += builtin/index-pack.c
 LOCALIZED_C_CORE += builtin/push.c
 LOCALIZED_C_CORE += builtin/reset.c
-LOCALIZED_C_CORE += remote.c
+LOCALIZED_C_CORE += transport/remote.c
 LOCALIZED_C_CORE += index/wt-status.c
 
 LOCALIZED_C_CORE_GEN_PO = $(LOCALIZED_C_CORE:%=.build/pot/po/%.po)

@@ -24,7 +24,7 @@
 #include "utf8.h"
 
 #ifndef NO_CURL
-#include "git-curl-compat.h" /* For LIBCURL_VERSION only */
+#include "transport/git-curl-compat.h" /* For LIBCURL_VERSION only */
 #endif
 
 struct category_description {

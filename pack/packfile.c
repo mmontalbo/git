@@ -23,7 +23,7 @@
 #include "pack/midx.h"
 #include "pack/commit-graph.h"
 #include "pack/pack-revindex.h"
-#include "promisor-remote.h"
+#include "transport/promisor-remote.h"
 #include "pack/pack-mtimes.h"
 
 char *odb_pack_name(struct repository *r, struct strbuf *buf,

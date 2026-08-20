@@ -1,8 +1,8 @@
 #ifndef FETCH_OBJECT_INFO_H
 #define FETCH_OBJECT_INFO_H
 
-#include "pkt-line.h"
-#include "protocol.h"
+#include "transport/pkt-line.h"
+#include "transport/protocol.h"
 
 struct object_info_args {
 	struct string_list *object_info_options;

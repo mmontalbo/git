@@ -35,7 +35,7 @@
 #include "setup/setup.h"
 #include "strbuf.h"
 #ifdef USE_CURL_FOR_IMAP_SEND
-#include "http.h"
+#include "transport/http.h"
 #endif
 
 #if defined(USE_CURL_FOR_IMAP_SEND)

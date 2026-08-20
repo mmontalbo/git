@@ -6,10 +6,10 @@
 #include "odb/odb.h"
 #include "run-command.h"
 #include "sigchain.h"
-#include "connected.h"
-#include "transport.h"
+#include "transport/connected.h"
+#include "transport/transport.h"
 #include "pack/packfile.h"
-#include "promisor-remote.h"
+#include "transport/promisor-remote.h"
 
 static int promised_object_cb(const struct object_id *oid UNUSED,
 			      struct object_info *oi UNUSED,
