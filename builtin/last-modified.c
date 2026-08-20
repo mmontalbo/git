@@ -4,10 +4,10 @@
 #include "pack/commit-graph.h"
 #include "odb/commit-slab.h"
 #include "odb/commit.h"
-#include "config.h"
+#include "setup/config.h"
 #include "diff/diff.h"
 #include "diff/diffcore.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "ewah/ewok.h"
 #include "hashmap.h"
 #include "hex.h"
@@ -16,7 +16,7 @@
 #include "parse-options.h"
 #include "prio-queue.h"
 #include "quote.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "revision/revision.h"
 
 /* Remember to update object flag allocation in object.h */

@@ -10,8 +10,8 @@
 #include "pack/pack.h"
 #include "parse-options.h"
 #include "parse.h"
-#include "repository.h"
-#include "setup.h"
+#include "setup/repository.h"
+#include "setup/setup.h"
 #include "strbuf.h"
 #include "write-or-die.h"
 

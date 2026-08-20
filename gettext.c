@@ -6,7 +6,7 @@
 
 #include "git-compat-util.h"
 #include "abspath.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "exec-cmd.h"
 #include "gettext.h"
 #include "utf8.h"

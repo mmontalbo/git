@@ -1102,7 +1102,7 @@ LIB_OBJS += abspath.o
 LIB_OBJS += add-interactive.o
 LIB_OBJS += add-patch.o
 LIB_OBJS += advice.o
-LIB_OBJS += alias.o
+LIB_OBJS += setup/alias.o
 LIB_OBJS += alloc.o
 LIB_OBJS += apply.o
 LIB_OBJS += archive-tar.o
@@ -1135,7 +1135,7 @@ LIB_OBJS += compat/obstack.o
 LIB_OBJS += compat/open.o
 LIB_OBJS += compat/terminal.o
 LIB_OBJS += compiler-tricks/not-constant.o
-LIB_OBJS += config.o
+LIB_OBJS += setup/config.o
 LIB_OBJS += connect.o
 LIB_OBJS += connected.o
 LIB_OBJS += convert.o
@@ -1162,7 +1162,7 @@ LIB_OBJS += index/dir-iterator.o
 LIB_OBJS += index/dir.o
 LIB_OBJS += editor.o
 LIB_OBJS += index/entry.o
-LIB_OBJS += environment.o
+LIB_OBJS += setup/environment.o
 LIB_OBJS += ewah/bitmap.o
 LIB_OBJS += ewah/ewah_bitmap.o
 LIB_OBJS += ewah/ewah_io.o
@@ -1187,8 +1187,8 @@ LIB_OBJS += hashmap.o
 LIB_OBJS += help.o
 LIB_OBJS += hex.o
 LIB_OBJS += hex-ll.o
-LIB_OBJS += hook.o
-LIB_OBJS += ident.o
+LIB_OBJS += setup/hook.o
+LIB_OBJS += setup/ident.o
 LIB_OBJS += json-writer.o
 LIB_OBJS += kwset.o
 LIB_OBJS += levenshtein.o
@@ -1312,8 +1312,8 @@ LIB_OBJS += pack/repack-midx.o
 LIB_OBJS += pack/repack-promisor.o
 LIB_OBJS += odb/replace-object.o
 LIB_OBJS += replay.o
-LIB_OBJS += repo-settings.o
-LIB_OBJS += repository.o
+LIB_OBJS += setup/repo-settings.o
+LIB_OBJS += setup/repository.o
 LIB_OBJS += rerere.o
 LIB_OBJS += reset.o
 LIB_OBJS += index/resolve-undo.o
@@ -1323,7 +1323,7 @@ LIB_OBJS += send-pack.o
 LIB_OBJS += sequencer.o
 LIB_OBJS += serve.o
 LIB_OBJS += pack/server-info.o
-LIB_OBJS += setup.o
+LIB_OBJS += setup/setup.o
 LIB_OBJS += revision/shallow.o
 LIB_OBJS += sideband.o
 LIB_OBJS += sigchain.o
@@ -1373,7 +1373,7 @@ LIB_OBJS += utf8.o
 ifdef NO_RUST
 LIB_OBJS += varint.o
 endif
-LIB_OBJS += version.o
+LIB_OBJS += setup/version.o
 LIB_OBJS += versioncmp.o
 LIB_OBJS += walker.o
 LIB_OBJS += wildmatch.o
@@ -2691,7 +2691,7 @@ git$X: git.o GIT-LDFLAGS $(BUILTIN_OBJS) $(GITLIBS)
 
 help.sp help.s help.o: command-list.h
 builtin/bugreport.sp builtin/bugreport.s builtin/bugreport.o: hook-list.h
-hook.sp hook.s hook.o: hook-list.h
+setup/hook.sp setup/hook.s setup/hook.o: hook-list.h
 
 builtin/help.sp builtin/help.s builtin/help.o: config-list.h GIT-PREFIX
 builtin/help.sp builtin/help.s builtin/help.o: EXTRA_CPPFLAGS = \
@@ -2708,7 +2708,7 @@ pager.sp pager.s pager.o: EXTRA_CPPFLAGS = \
 version-def.h: version-def.h.in GIT-VERSION-GEN GIT-VERSION-FILE GIT-USER-AGENT
 	$(QUIET_GEN)$(call version_gen,"$(shell pwd)",$<,$@)
 
-version.sp version.s version.o: version-def.h
+setup/version.sp setup/version.s setup/version.o: version-def.h
 
 $(BUILT_INS): git$X
 	$(QUIET_BUILT_IN)$(RM) $@ && \
@@ -2973,12 +2973,12 @@ exec-cmd.sp exec-cmd.s exec-cmd.o: EXTRA_CPPFLAGS = \
 	'-DBINDIR="$(bindir_relative_SQ)"' \
 	'-DFALLBACK_RUNTIME_PREFIX="$(prefix_SQ)"'
 
-setup.sp setup.s setup.o: GIT-PREFIX
-setup.sp setup.s setup.o: EXTRA_CPPFLAGS = \
+setup/setup.sp setup/setup.s setup/setup.o: GIT-PREFIX
+setup/setup.sp setup/setup.s setup/setup.o: EXTRA_CPPFLAGS = \
 	-DDEFAULT_GIT_TEMPLATE_DIR='"$(template_dir_SQ)"'
 
-config.sp config.s config.o: GIT-PREFIX
-config.sp config.s config.o: EXTRA_CPPFLAGS = \
+setup/config.sp setup/config.s setup/config.o: GIT-PREFIX
+setup/config.sp setup/config.s setup/config.o: EXTRA_CPPFLAGS = \
 	-DETC_GITCONFIG='"$(ETC_GITCONFIG_SQ)"'
 
 attr.sp attr.s attr.o: GIT-PREFIX

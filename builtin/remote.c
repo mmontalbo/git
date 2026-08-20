@@ -2,10 +2,10 @@
 
 #include "builtin.h"
 #include "advice.h"
-#include "config.h"
+#include "setup/config.h"
 #include "date.h"
 #include "gettext.h"
-#include "ident.h"
+#include "setup/ident.h"
 #include "parse-options.h"
 #include "path.h"
 #include "transport.h"

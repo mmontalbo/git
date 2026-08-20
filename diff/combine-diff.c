@@ -7,7 +7,7 @@
 #include "convert.h"
 #include "diff/diff.h"
 #include "diff/diffcore.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "hex.h"
 #include "odb/object-name.h"
 #include "quote.h"

@@ -2,17 +2,17 @@
 
 #include "git-compat-util.h"
 #include "abspath.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "path.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "refs/refs.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "strbuf.h"
 #include "refs/worktree.h"
 #include "index/dir.h"
 #include "index/wt-status.h"
-#include "config.h"
+#include "setup/config.h"
 
 void free_worktree(struct worktree *worktree)
 {

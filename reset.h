@@ -2,7 +2,7 @@
 #define RESET_H
 
 #include "odb/hash.h"
-#include "repository.h"
+#include "setup/repository.h"
 
 #define GIT_REFLOG_ACTION_ENVIRONMENT "GIT_REFLOG_ACTION"
 

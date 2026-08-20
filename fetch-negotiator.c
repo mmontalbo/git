@@ -3,7 +3,7 @@
 #include "negotiator/default.h"
 #include "negotiator/skipping.h"
 #include "negotiator/noop.h"
-#include "repository.h"
+#include "setup/repository.h"
 
 void fetch_negotiator_init(struct repository *r,
 			   struct fetch_negotiator *negotiator)

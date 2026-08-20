@@ -219,7 +219,7 @@ Add a new function to `builtin/walken.c`.
 We'll also need to include the `config.h` header:
 
 ----
-#include "config.h"
+#include "setup/config.h"
 
 ...
 
