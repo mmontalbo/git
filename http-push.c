@@ -18,7 +18,7 @@
 #include "odb/tree.h"
 #include "odb/tree-walk.h"
 #include "url.h"
-#include "packfile.h"
+#include "pack/packfile.h"
 #include "odb/object-file.h"
 #include "odb/odb.h"
 #include "commit-reach.h"

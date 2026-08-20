@@ -18,7 +18,7 @@
 #include "url.h"
 #include "setup.h"
 #include "strvec.h"
-#include "packfile.h"
+#include "pack/packfile.h"
 #include "odb/odb.h"
 #include "protocol.h"
 #include "date.h"

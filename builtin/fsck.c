@@ -7,12 +7,12 @@
 #include "odb/blob.h"
 #include "odb/tag.h"
 #include "refs/refs.h"
-#include "pack.h"
+#include "pack/pack.h"
 #include "cache-tree.h"
 #include "odb/fsck.h"
 #include "parse-options.h"
 #include "progress.h"
-#include "packfile.h"
+#include "pack/packfile.h"
 #include "odb/object-file.h"
 #include "odb/object-name.h"
 #include "odb/odb.h"
@@ -24,8 +24,8 @@
 #include "run-command.h"
 #include "sparse-index.h"
 #include "refs/worktree.h"
-#include "pack-revindex.h"
-#include "pack-bitmap.h"
+#include "pack/pack-revindex.h"
+#include "pack/pack-bitmap.h"
 
 #define REACHABLE 0x0001
 #define SEEN      0x0002

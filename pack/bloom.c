@@ -1,11 +1,11 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "bloom.h"
+#include "pack/bloom.h"
 #include "diff.h"
 #include "diffcore.h"
 #include "hashmap.h"
-#include "commit-graph.h"
+#include "pack/commit-graph.h"
 #include "odb/commit.h"
 #include "odb/commit-slab.h"
 #include "odb/tree.h"
