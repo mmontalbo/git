@@ -3,7 +3,7 @@
 
 #include "git-compat-util.h"
 #include "advice.h"
-#include "config.h"
+#include "setup/config.h"
 #include "convert.h"
 #include "copy.h"
 #include "gettext.h"

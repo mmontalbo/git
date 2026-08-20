@@ -1,14 +1,14 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "builtin.h"
-#include "config.h"
+#include "setup/config.h"
 #include "diff/diff.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "odb/hash.h"
 #include "hex.h"
 #include "parse-options.h"
-#include "setup.h"
+#include "setup/setup.h"
 
 static void flush_current_id(size_t patchlen, struct object_id *id, struct object_id *result)
 {

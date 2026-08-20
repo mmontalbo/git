@@ -5,7 +5,7 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "git-compat-util.h"
-#include "config.h"
+#include "setup/config.h"
 #include "archive/archive.h"
 #include "gettext.h"
 #include "git-zlib.h"

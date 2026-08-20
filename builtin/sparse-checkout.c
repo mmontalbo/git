@@ -3,9 +3,9 @@
 
 #include "builtin.h"
 #include "abspath.h"
-#include "config.h"
+#include "setup/config.h"
 #include "index/dir.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "odb/object-file.h"
 #include "odb/object-name.h"
@@ -17,7 +17,7 @@
 #include "lockfile.h"
 #include "index/unpack-trees.h"
 #include "quote.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "index/sparse-index.h"
 #include "refs/worktree.h"
 

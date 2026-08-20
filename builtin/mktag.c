@@ -8,7 +8,7 @@
 #include "odb/object-file.h"
 #include "odb/odb.h"
 #include "odb/fsck.h"
-#include "config.h"
+#include "setup/config.h"
 
 static char const * const builtin_mktag_usage[] = {
 	"git mktag",

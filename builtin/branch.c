@@ -8,10 +8,10 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "builtin.h"
-#include "config.h"
+#include "setup/config.h"
 #include "color.h"
 #include "editor.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "refs/refs.h"
 #include "odb/commit.h"
 #include "gettext.h"

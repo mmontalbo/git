@@ -4,7 +4,7 @@
 #include "odb/odb.h"
 #include "odb/streaming.h"
 #include "index/dir.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "hex.h"
 #include "index/name-hash.h"

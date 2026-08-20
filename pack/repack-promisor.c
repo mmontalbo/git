@@ -4,7 +4,7 @@
 #include "pack/pack.h"
 #include "pack/packfile.h"
 #include "path.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "run-command.h"
 
 struct write_oid_context {

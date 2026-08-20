@@ -8,7 +8,7 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "builtin.h"
-#include "config.h"
+#include "setup/config.h"
 #include "ewah/ewok.h"
 #include "lockfile.h"
 #include "color.h"
@@ -22,7 +22,7 @@
 #include "index/read-cache-ll.h"
 #include "revision/revision.h"
 #include "revision/log-tree.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "odb/oid-array.h"
 #include "odb/tree.h"
 

@@ -1,8 +1,8 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "builtin.h"
-#include "config.h"
-#include "environment.h"
+#include "setup/config.h"
+#include "setup/environment.h"
 #include "exec-cmd.h"
 #include "gettext.h"
 #include "help.h"
@@ -10,9 +10,9 @@
 #include "pager.h"
 #include "index/read-cache-ll.h"
 #include "run-command.h"
-#include "alias.h"
+#include "setup/alias.h"
 #include "odb/replace-object.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "attr.h"
 #include "revision/shallow.h"
 #include "trace.h"

@@ -2,8 +2,8 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "config.h"
-#include "environment.h"
+#include "setup/config.h"
+#include "setup/environment.h"
 #include "refs/refs.h"
 #include "odb/object-name.h"
 #include "odb/odb.h"

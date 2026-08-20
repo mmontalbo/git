@@ -9,7 +9,7 @@
 #include "pack/pack.h"
 #include "pack/pack-objects.h"
 #include "parse-options.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "strbuf.h"
 #include "string-list.h"
 

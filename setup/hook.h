@@ -1,6 +1,6 @@
 #ifndef HOOK_H
 #define HOOK_H
-#include "config.h"
+#include "setup/config.h"
 #include "run-command.h"
 #include "string-list.h"
 #include "strmap.h"

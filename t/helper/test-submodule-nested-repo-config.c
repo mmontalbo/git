@@ -1,8 +1,8 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "test-tool.h"
-#include "repository.h"
-#include "setup.h"
+#include "setup/repository.h"
+#include "setup/setup.h"
 #include "submodule-config.h"
 
 static void die_usage(const char **argv, const char *msg)

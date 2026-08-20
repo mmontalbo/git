@@ -13,9 +13,9 @@
 #include "test-tool.h"
 #include "odb/commit.h"
 #include "diff/diff.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "revision/revision.h"
-#include "setup.h"
+#include "setup/setup.h"
 
 static void print_commit(struct commit *commit)
 {

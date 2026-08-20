@@ -1,11 +1,11 @@
 #include "git-compat-util.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "string-list.h"
 #include "mailmap.h"
 #include "odb/object-name.h"
 #include "odb/odb.h"
-#include "setup.h"
-#include "config.h"
+#include "setup/setup.h"
+#include "setup/config.h"
 
 struct mailmap_info {
 	char *name;

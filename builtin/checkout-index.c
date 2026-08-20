@@ -8,8 +8,8 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "builtin.h"
-#include "config.h"
-#include "environment.h"
+#include "setup/config.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "lockfile.h"
 #include "quote.h"
@@ -18,7 +18,7 @@
 #include "index/entry.h"
 #include "index/parallel-checkout.h"
 #include "index/read-cache-ll.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "index/sparse-index.h"
 
 #define CHECKOUT_ALL 4
