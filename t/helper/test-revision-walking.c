@@ -11,10 +11,10 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "test-tool.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "diff.h"
 #include "line-log.h"
-#include "object-name.h"
+#include "odb/object-name.h"
 #include "repository.h"
 #include "revision.h"
 #include "setup.h"

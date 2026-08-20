@@ -3,7 +3,7 @@
 #include "test-tool.h"
 #include "commit-graph.h"
 #include "repository.h"
-#include "odb.h"
+#include "odb/odb.h"
 #include "bloom.h"
 #include "setup.h"
 

@@ -9,10 +9,10 @@
 #include "environment.h"
 #include "gettext.h"
 #include "hex.h"
-#include "object-name.h"
-#include "odb.h"
+#include "odb/object-name.h"
+#include "odb/odb.h"
 
-#include "commit.h"
+#include "odb/commit.h"
 #include "parse-options.h"
 
 static const char * const commit_tree_usage[] = {

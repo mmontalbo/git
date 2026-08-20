@@ -8,10 +8,10 @@
 #include "hex.h"
 #include "quote.h"
 #include "strbuf.h"
-#include "tree.h"
+#include "odb/tree.h"
 #include "parse-options.h"
-#include "object-file.h"
-#include "odb.h"
+#include "odb/object-file.h"
+#include "odb/odb.h"
 
 static struct treeent {
 	unsigned mode;

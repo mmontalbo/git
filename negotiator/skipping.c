@@ -2,13 +2,13 @@
 
 #include "git-compat-util.h"
 #include "skipping.h"
-#include "../commit.h"
+#include "odb/commit.h"
 #include "../fetch-negotiator.h"
 #include "../hex.h"
 #include "../prio-queue.h"
 #include "../refs.h"
 #include "../repository.h"
-#include "../tag.h"
+#include "odb/tag.h"
 
 /* Remember to update object flag allocation in object.h */
 /*

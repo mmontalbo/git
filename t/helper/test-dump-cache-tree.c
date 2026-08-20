@@ -1,9 +1,9 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "test-tool.h"
-#include "hash.h"
+#include "odb/hash.h"
 #include "hex.h"
-#include "tree.h"
+#include "odb/tree.h"
 #include "cache-tree.h"
 #include "read-cache-ll.h"
 #include "repository.h"

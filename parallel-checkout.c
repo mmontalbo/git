@@ -5,7 +5,7 @@
 #include "config.h"
 #include "entry.h"
 #include "gettext.h"
-#include "hash.h"
+#include "odb/hash.h"
 #include "hex.h"
 #include "parallel-checkout.h"
 #include "pkt-line.h"

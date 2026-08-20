@@ -3,10 +3,10 @@
 
 #include "git-compat-util.h"
 #include "config.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "environment.h"
 #include "gettext.h"
-#include "hash.h"
+#include "odb/hash.h"
 #include "hex.h"
 #include "utf8.h"
 #include "diff.h"
@@ -21,7 +21,7 @@
 #include "gpg-interface.h"
 #include "trailer.h"
 #include "run-command.h"
-#include "object-name.h"
+#include "odb/object-name.h"
 
 /*
  * The limit for formatting directives, which enable the caller to append

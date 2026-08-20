@@ -14,7 +14,7 @@
 #include "fetch-pack.h"
 #include "remote.h"
 #include "trace2.h"
-#include "odb.h"
+#include "odb/odb.h"
 
 static struct {
 	enum bundle_list_heuristic heuristic;

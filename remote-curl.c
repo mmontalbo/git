@@ -17,7 +17,7 @@
 #include "string-list.h"
 #include "strvec.h"
 #include "credential.h"
-#include "oid-array.h"
+#include "odb/oid-array.h"
 #include "send-pack.h"
 #include "setup.h"
 #include "protocol.h"

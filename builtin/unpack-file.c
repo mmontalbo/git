@@ -3,9 +3,9 @@
 #include "config.h"
 #include "environment.h"
 #include "hex.h"
-#include "object-file.h"
-#include "object-name.h"
-#include "odb.h"
+#include "odb/object-file.h"
+#include "odb/object-name.h"
+#include "odb/odb.h"
 
 static char *create_temp_file(struct object_id *oid)
 {

@@ -13,7 +13,7 @@
 #include "connect.h"
 #include "url.h"
 #include "string-list.h"
-#include "oid-array.h"
+#include "odb/oid-array.h"
 #include "path.h"
 #include "transport.h"
 #include "trace2.h"

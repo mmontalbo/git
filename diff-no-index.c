@@ -9,7 +9,7 @@
 #include "git-compat-util.h"
 #include "abspath.h"
 #include "color.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "diff.h"
 #include "diffcore.h"
 #include "gettext.h"
