@@ -31,7 +31,7 @@
 #include "odb/commit.h"
 #include "diff/diffcore.h"
 #include "path.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "unpack-trees.h"
 #include "cache-tree.h"
 #include "dir.h"
@@ -48,7 +48,7 @@
 #include "odb/tag.h"
 #include "alias.h"
 #include "branch.h"
-#include "commit-reach.h"
+#include "revision/commit-reach.h"
 #include "wt-status.h"
 #include "pack/commit-graph.h"
 

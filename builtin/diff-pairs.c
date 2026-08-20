@@ -7,7 +7,7 @@
 #include "hex.h"
 #include "odb/object.h"
 #include "parse-options.h"
-#include "revision.h"
+#include "revision/revision.h"
 #include "strbuf.h"
 
 static unsigned parse_mode_or_die(const char *mode, const char **end)
