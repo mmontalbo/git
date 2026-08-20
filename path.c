@@ -11,7 +11,7 @@
 #include "index/dir.h"
 #include "refs/worktree.h"
 #include "setup/setup.h"
-#include "submodule-config.h"
+#include "submodule/submodule-config.h"
 #include "path.h"
 #include "pack/packfile.h"
 #include "odb/odb.h"

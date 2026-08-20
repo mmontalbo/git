@@ -25,7 +25,7 @@
 #include "index/read-cache.h"
 #include "setup/setup.h"
 #include "index/sparse-index.h"
-#include "submodule.h"
+#include "submodule/submodule.h"
 #include "odb/odb.h"
 #include "hex.h"
 
