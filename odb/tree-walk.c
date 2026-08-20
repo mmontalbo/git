@@ -11,7 +11,7 @@
 #include "odb/tree.h"
 #include "index/pathspec.h"
 #include "json-writer.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "index/read-cache-ll.h"
 
 static int decode_tree_entry(struct tree_desc *desc, const char *buf, unsigned long size, struct strbuf *err)

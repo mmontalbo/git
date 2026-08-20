@@ -5,7 +5,7 @@
 #include "odb/odb.h"
 #include "pack/packfile.h"
 #include "parse-options.h"
-#include "setup.h"
+#include "setup/setup.h"
 
 /*
  * Display the path(s), one per line, of the packfile(s) containing

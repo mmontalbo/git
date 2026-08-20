@@ -4,7 +4,7 @@
 #include "builtin.h"
 #include "parse-options.h"
 #include "diff/diff.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "revision/revision.h"
 #include "rerere.h"

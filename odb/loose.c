@@ -5,7 +5,7 @@
 #include "odb/odb.h"
 #include "odb/source-files.h"
 #include "hex.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "wrapper.h"
 #include "gettext.h"
 #include "odb/loose.h"

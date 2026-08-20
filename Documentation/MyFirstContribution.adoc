@@ -331,8 +331,8 @@ on the command line, including the name of our command. (If `prefix` is empty
 for you, try `cd Documentation/ && ../bin-wrappers/git psuh`). That's not so
 helpful. So what other context can we get?
 
-Add a line to `#include "config.h"`, `#include "repository.h"` and
-`#include "environment.h"`.
+Add a line to `#include "setup/config.h"`, `#include "setup/repository.h"` and
+`#include "setup/environment.h"`.
 Then, add the following bits to the function body:
 function body:
 

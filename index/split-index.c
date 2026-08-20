@@ -5,7 +5,7 @@
 #include "odb/hash.h"
 #include "mem-pool.h"
 #include "index/read-cache-ll.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "index/split-index.h"
 #include "strbuf.h"
 #include "ewah/ewok.h"

@@ -4,7 +4,7 @@
 #include "index/read-cache-ll.h"
 #include "odb/object.h"
 #include "index/pathspec.h"
-#include "environment.h"
+#include "setup/environment.h"
 
 /*
  * Determine the appropriate index mode for a file based on its stat()

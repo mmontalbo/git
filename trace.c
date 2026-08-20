@@ -25,9 +25,9 @@
 
 #include "git-compat-util.h"
 #include "abspath.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "quote.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "trace.h"
 
 struct trace_key trace_default_key = { "GIT_TRACE", 0, 0, 0 };

@@ -2,18 +2,18 @@
 
 #include "git-compat-util.h"
 #include "odb/commit.h"
-#include "config.h"
+#include "setup/config.h"
 #include "date.h"
 #include "gettext.h"
 #include "run-command.h"
 #include "strbuf.h"
 #include "index/dir.h"
-#include "ident.h"
+#include "setup/ident.h"
 #include "gpg-interface.h"
 #include "path.h"
 #include "sigchain.h"
 #include "tempfile.h"
-#include "alias.h"
+#include "setup/alias.h"
 
 static int git_gpg_config(const char *, const char *,
 			  const struct config_context *, void *);

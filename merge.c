@@ -7,7 +7,7 @@
 #include "lockfile.h"
 #include "merge.h"
 #include "odb/commit.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "run-command.h"
 #include "index/resolve-undo.h"
 #include "odb/tree.h"

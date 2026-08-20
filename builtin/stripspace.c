@@ -1,10 +1,10 @@
 #define USE_THE_REPOSITORY_VARIABLE
 #include "builtin.h"
-#include "config.h"
-#include "environment.h"
+#include "setup/config.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "parse-options.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "strbuf.h"
 #include "write-or-die.h"
 

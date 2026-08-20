@@ -1,5 +1,5 @@
 #include "builtin.h"
-#include "config.h"
+#include "setup/config.h"
 #include "odb/fsck.h"
 #include "refs/pack-refs.h"
 #include "parse-options.h"

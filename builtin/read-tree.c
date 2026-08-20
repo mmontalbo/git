@@ -5,8 +5,8 @@
  */
 #define USE_THE_REPOSITORY_VARIABLE
 #include "builtin.h"
-#include "config.h"
-#include "environment.h"
+#include "setup/config.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "hex.h"
 #include "lockfile.h"
@@ -18,7 +18,7 @@
 #include "index/unpack-trees.h"
 #include "parse-options.h"
 #include "index/resolve-undo.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "index/sparse-index.h"
 #include "submodule.h"
 

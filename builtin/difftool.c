@@ -15,16 +15,16 @@
 #include "builtin.h"
 
 #include "abspath.h"
-#include "config.h"
+#include "setup/config.h"
 #include "copy.h"
 #include "run-command.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "hex.h"
 #include "parse-options.h"
 #include "path.h"
 #include "index/read-cache-ll.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "index/sparse-index.h"
 #include "strvec.h"
 #include "strbuf.h"
@@ -33,7 +33,7 @@
 #include "odb/odb.h"
 #include "index/dir.h"
 #include "index/entry.h"
-#include "setup.h"
+#include "setup/setup.h"
 
 static const char *const builtin_difftool_usage[] = {
 	N_("git difftool [<options>] [<commit> [<commit>]] [--] [<path>...]"),

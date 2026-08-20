@@ -1,9 +1,9 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "git-compat-util.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "index/statinfo.h"
-#include "repository.h"
+#include "setup/repository.h"
 
 /*
  * Munge st_size into an unsigned int.

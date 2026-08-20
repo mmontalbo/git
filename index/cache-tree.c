@@ -13,7 +13,7 @@
 #include "odb/transaction.h"
 #include "index/read-cache-ll.h"
 #include "odb/replace-object.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "promisor-remote.h"
 #include "trace.h"
 #include "trace2.h"

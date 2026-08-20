@@ -8,13 +8,13 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "builtin.h"
-#include "config.h"
+#include "setup/config.h"
 #include "convert.h"
 #include "diff/diff.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "hex.h"
-#include "ident.h"
+#include "setup/ident.h"
 #include "revision/list-objects-filter-options.h"
 #include "parse-options.h"
 #include "diff/userdiff.h"
@@ -28,7 +28,7 @@
 #include "promisor-remote.h"
 #include "mailmap.h"
 #include "write-or-die.h"
-#include "alias.h"
+#include "setup/alias.h"
 #include "remote.h"
 #include "transport.h"
 
