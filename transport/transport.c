@@ -19,7 +19,7 @@
 #include "refs/refspec.h"
 #include "branch.h"
 #include "url.h"
-#include "submodule.h"
+#include "submodule/submodule.h"
 #include "strbuf.h"
 #include "string-list.h"
 #include "odb/oid-array.h"

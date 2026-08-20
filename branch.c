@@ -16,7 +16,7 @@
 #include "sequencer.h"
 #include "odb/commit.h"
 #include "refs/worktree.h"
-#include "submodule-config.h"
+#include "submodule/submodule-config.h"
 #include "run-command.h"
 #include "strmap.h"
 
