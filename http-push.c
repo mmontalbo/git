@@ -8,7 +8,7 @@
 #include "odb/tag.h"
 #include "odb/blob.h"
 #include "http.h"
-#include "diff.h"
+#include "diff/diff.h"
 #include "revision.h"
 #include "remote.h"
 #include "list-objects.h"

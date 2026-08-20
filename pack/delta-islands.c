@@ -9,7 +9,7 @@
 #include "odb/tree.h"
 #include "pack/pack.h"
 #include "odb/tree-walk.h"
-#include "diff.h"
+#include "diff/diff.h"
 #include "progress.h"
 #include "refs/refs.h"
 #include "khash.h"

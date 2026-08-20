@@ -2,7 +2,7 @@
 
 #include "test-tool.h"
 #include "setup.h"
-#include "userdiff.h"
+#include "diff/userdiff.h"
 #include "config.h"
 
 static int driver_cb(struct userdiff_driver *driver,

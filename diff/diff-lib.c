@@ -7,8 +7,8 @@
 
 #include "git-compat-util.h"
 #include "odb/commit.h"
-#include "diff.h"
-#include "diffcore.h"
+#include "diff/diff.h"
+#include "diff/diffcore.h"
 #include "gettext.h"
 #include "odb/hash.h"
 #include "hex.h"

@@ -5,8 +5,8 @@
 
 #include "git-compat-util.h"
 #include "gettext.h"
-#include "diff.h"
-#include "diffcore.h"
+#include "diff/diff.h"
+#include "diff/diffcore.h"
 
 void diffcore_rotate(struct diff_options *opt)
 {

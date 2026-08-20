@@ -3,7 +3,7 @@
 #include "git-compat-util.h"
 #include "builtin.h"
 #include "parse-options.h"
-#include "diff.h"
+#include "diff/diff.h"
 #include "environment.h"
 #include "gettext.h"
 #include "revision.h"
