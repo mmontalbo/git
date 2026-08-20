@@ -18,7 +18,7 @@
 #include "sub-process.h"
 #include "trace.h"
 #include "utf8.h"
-#include "merge-ll.h"
+#include "merge/merge-ll.h"
 
 /*
  * convert.c - convert a file when checking it out and checking it in.

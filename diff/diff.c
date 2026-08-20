@@ -28,7 +28,7 @@
 #include "submodule.h"
 #include "hashmap.h"
 #include "mem-pool.h"
-#include "merge-ll.h"
+#include "merge/merge-ll.h"
 #include "string-list.h"
 #include "strvec.h"
 #include "odb/tmp-objdir.h"

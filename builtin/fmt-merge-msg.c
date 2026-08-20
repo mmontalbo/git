@@ -1,6 +1,6 @@
 #include "builtin.h"
 #include "config.h"
-#include "fmt-merge-msg.h"
+#include "merge/fmt-merge-msg.h"
 #include "gettext.h"
 #include "parse-options.h"
 
