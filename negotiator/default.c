@@ -3,7 +3,7 @@
 #include "git-compat-util.h"
 #include "default.h"
 #include "odb/commit.h"
-#include "../fetch-negotiator.h"
+#include "transport/fetch-negotiator.h"
 #include "../prio-queue.h"
 #include "refs/refs.h"
 #include "setup/repository.h"

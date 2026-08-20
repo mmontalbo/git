@@ -38,7 +38,7 @@
 #include "pager.h"
 #include "parse-options.h"
 #include "help.h"
-#include "promisor-remote.h"
+#include "transport/promisor-remote.h"
 #include "index/dir.h"
 #include "odb/object-file.h"
 #include "odb/object-name.h"

@@ -37,7 +37,7 @@
  */
 
 #include "test-tool.h"
-#include "pkt-line.h"
+#include "transport/pkt-line.h"
 #include "string-list.h"
 #include "strmap.h"
 #include "parse-options.h"

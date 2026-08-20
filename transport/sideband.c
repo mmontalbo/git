@@ -6,9 +6,9 @@
 #include "setup/config.h"
 #include "editor.h"
 #include "gettext.h"
-#include "sideband.h"
+#include "transport/sideband.h"
 #include "help.h"
-#include "pkt-line.h"
+#include "transport/pkt-line.h"
 #include "write-or-die.h"
 #include "urlmatch.h"
 

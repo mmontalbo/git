@@ -8,7 +8,7 @@
 #include "strvec.h"
 #include "refs/refs.h"
 #include "refs/refspec.h"
-#include "remote.h"
+#include "transport/remote.h"
 #include "strbuf.h"
 
 /*
