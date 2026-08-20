@@ -37,7 +37,7 @@ enum ipc_active_state {
 };
 
 #ifdef SUPPORTS_SIMPLE_IPC
-#include "pkt-line.h"
+#include "transport/pkt-line.h"
 
 /*
  * Simple IPC Client Side API.

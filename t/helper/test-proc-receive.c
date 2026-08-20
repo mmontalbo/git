@@ -1,8 +1,8 @@
 #include "test-tool.h"
-#include "connect.h"
+#include "transport/connect.h"
 #include "hex.h"
 #include "parse-options.h"
-#include "pkt-line.h"
+#include "transport/pkt-line.h"
 #include "sigchain.h"
 #include "string-list.h"
 

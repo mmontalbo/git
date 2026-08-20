@@ -3,7 +3,7 @@
 #include "git-compat-util.h"
 #include "gettext.h"
 #include "hex.h"
-#include "walker.h"
+#include "transport/walker.h"
 #include "setup/repository.h"
 #include "odb/odb.h"
 #include "odb/commit.h"

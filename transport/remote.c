@@ -7,7 +7,7 @@
 #include "setup/environment.h"
 #include "gettext.h"
 #include "hex.h"
-#include "remote.h"
+#include "transport/remote.h"
 #include "url.h"
 #include "urlmatch.h"
 #include "refs/refs.h"
@@ -24,9 +24,9 @@
 #include "strvec.h"
 #include "revision/commit-reach.h"
 #include "advice.h"
-#include "connect.h"
+#include "transport/connect.h"
 #include "parse-options.h"
-#include "transport.h"
+#include "transport/transport.h"
 
 enum map_direction { FROM_SRC, FROM_DST };
 

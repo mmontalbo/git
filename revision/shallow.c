@@ -8,7 +8,7 @@
 #include "odb/odb.h"
 #include "odb/commit.h"
 #include "odb/tag.h"
-#include "pkt-line.h"
+#include "transport/pkt-line.h"
 #include "refs/refs.h"
 #include "odb/oid-array.h"
 #include "path.h"

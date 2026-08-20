@@ -2,7 +2,7 @@
 
 #include "git-compat-util.h"
 #include "odb/object-name.h"
-#include "remote.h"
+#include "transport/remote.h"
 #include "refs/refspec.h"
 #include "setup/repository.h"
 #include "index/checkout.h"
