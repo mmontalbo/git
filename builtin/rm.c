@@ -13,9 +13,9 @@
 #include "lockfile.h"
 #include "dir.h"
 #include "gettext.h"
-#include "hash.h"
-#include "tree-walk.h"
-#include "object-name.h"
+#include "odb/hash.h"
+#include "odb/tree-walk.h"
+#include "odb/object-name.h"
 #include "parse-options.h"
 #include "read-cache.h"
 

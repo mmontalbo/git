@@ -1,7 +1,7 @@
 #ifndef DIR_H
 #define DIR_H
 
-#include "hash.h"
+#include "odb/hash.h"
 #include "hashmap.h"
 #include "pathspec.h"
 #include "statinfo.h"

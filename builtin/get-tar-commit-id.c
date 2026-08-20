@@ -2,7 +2,7 @@
  * Copyright (c) 2005, 2006 Rene Scharfe
  */
 #include "builtin.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "tar.h"
 
 static const char builtin_get_tar_commit_id_usage[] =

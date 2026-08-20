@@ -5,7 +5,7 @@
 #include "refs.h"
 #include "setup.h"
 #include "worktree.h"
-#include "odb.h"
+#include "odb/odb.h"
 #include "path.h"
 #include "repository.h"
 #include "strbuf.h"

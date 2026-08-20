@@ -1,8 +1,8 @@
 #ifndef ODB_SOURCE_H
 #define ODB_SOURCE_H
 
-#include "object.h"
-#include "odb.h"
+#include "odb/object.h"
+#include "odb/odb.h"
 #include "odb/transaction.h"
 
 enum odb_source_type {

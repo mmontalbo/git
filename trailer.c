@@ -6,7 +6,7 @@
 #include "gettext.h"
 #include "string-list.h"
 #include "run-command.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "strvec.h"
 #include "trailer.h"
 #include "list.h"

@@ -4,13 +4,13 @@
 #include "environment.h"
 #include "hex.h"
 #include "merge-ort.h"
-#include "object-name.h"
+#include "odb/object-name.h"
 #include "refs.h"
 #include "replay.h"
 #include "revision.h"
 #include "sequencer.h"
 #include "strmap.h"
-#include "tree.h"
+#include "odb/tree.h"
 
 /*
  * We technically need USE_THE_REPOSITORY_VARIABLE for DEFAULT_ABBREV, but

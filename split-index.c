@@ -2,7 +2,7 @@
 
 #include "git-compat-util.h"
 #include "gettext.h"
-#include "hash.h"
+#include "odb/hash.h"
 #include "mem-pool.h"
 #include "read-cache-ll.h"
 #include "repository.h"

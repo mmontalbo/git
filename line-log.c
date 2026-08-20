@@ -4,10 +4,10 @@
 #include "diffcore.h"
 #include "line-range.h"
 #include "hex.h"
-#include "tag.h"
-#include "tree.h"
+#include "odb/tag.h"
+#include "odb/tree.h"
 #include "diff.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "decorate.h"
 #include "repository.h"
 #include "revision.h"
@@ -17,7 +17,7 @@
 #include "setup.h"
 #include "strvec.h"
 #include "bloom.h"
-#include "tree-walk.h"
+#include "odb/tree-walk.h"
 
 static void range_set_grow(struct range_set *rs, size_t extra)
 {

@@ -7,7 +7,7 @@
 #include "builtin.h"
 #include "config.h"
 #include "hex.h"
-#include "object-name.h"
+#include "odb/object-name.h"
 #include "parse-options.h"
 #include "refs.h"
 #include "replay.h"

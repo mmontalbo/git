@@ -3,8 +3,8 @@
 #include "hex.h"
 #include "pkt-line.h"
 #include "connect.h"
-#include "oid-array.h"
-#include "odb.h"
+#include "odb/oid-array.h"
+#include "odb/odb.h"
 #include "fetch-object-info.h"
 #include "string-list.h"
 
