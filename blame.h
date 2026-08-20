@@ -2,7 +2,7 @@
 #define BLAME_H
 
 #include "odb/oidset.h"
-#include "xdiff-interface.h"
+#include "diff/xdiff-interface.h"
 #include "prio-queue.h"
 
 #define PICKAXE_BLAME_MOVE		01

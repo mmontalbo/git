@@ -1,7 +1,7 @@
 #ifndef LINE_LOG_H
 #define LINE_LOG_H
 
-#include "diffcore.h" /* struct range, struct range_set */
+#include "diff/diffcore.h" /* struct range, struct range_set */
 
 struct rev_info;
 struct commit;

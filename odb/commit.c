@@ -11,7 +11,7 @@
 #include "odb/object-name.h"
 #include "odb/odb.h"
 #include "utf8.h"
-#include "diff.h"
+#include "diff/diff.h"
 #include "revision.h"
 #include "notes.h"
 #include "odb/alloc.h"

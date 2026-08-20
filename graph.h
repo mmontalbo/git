@@ -1,6 +1,6 @@
 #ifndef GRAPH_H
 #define GRAPH_H
-#include "diff.h"
+#include "diff/diff.h"
 
 /**
  * The graph API is used to draw a text-based representation of the commit

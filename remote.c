@@ -16,7 +16,7 @@
 #include "odb/odb.h"
 #include "path.h"
 #include "odb/commit.h"
-#include "diff.h"
+#include "diff/diff.h"
 #include "revision.h"
 #include "dir.h"
 #include "setup.h"

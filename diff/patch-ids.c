@@ -1,9 +1,9 @@
 #include "git-compat-util.h"
-#include "diff.h"
+#include "diff/diff.h"
 #include "odb/commit.h"
 #include "odb/hash.h"
 #include "hex.h"
-#include "patch-ids.h"
+#include "diff/patch-ids.h"
 
 static int patch_id_defined(struct commit *commit)
 {

@@ -1,5 +1,5 @@
 #include "git-compat-util.h"
-#include "diff-merges.h"
+#include "diff/diff-merges.h"
 
 #include "gettext.h"
 #include "revision.h"
