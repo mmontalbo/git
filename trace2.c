@@ -1,8 +1,8 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "config.h"
-#include "repository.h"
+#include "setup/config.h"
+#include "setup/repository.h"
 #include "run-command.h"
 #include "sigchain.h"
 #include "thread-utils.h"

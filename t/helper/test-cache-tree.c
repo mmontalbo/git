@@ -8,8 +8,8 @@
 #include "index/cache-tree.h"
 #include "parse-options.h"
 #include "index/read-cache-ll.h"
-#include "repository.h"
-#include "setup.h"
+#include "setup/repository.h"
+#include "setup/setup.h"
 
 static char const * const test_cache_tree_usage[] = {
 	N_("test-tool cache-tree <options> (control|prime|update)"),

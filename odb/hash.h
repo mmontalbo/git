@@ -269,7 +269,7 @@ enum get_oid_result {
 };
 
 #ifdef USE_THE_REPOSITORY_VARIABLE
-# include "repository.h"
+# include "setup/repository.h"
 # define the_hash_algo the_repository->hash_algo
 #endif
 

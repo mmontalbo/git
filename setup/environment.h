@@ -1,7 +1,7 @@
 #ifndef ENVIRONMENT_H
 #define ENVIRONMENT_H
 
-#include "repo-settings.h"
+#include "setup/repo-settings.h"
 #include "branch.h"
 
 /* Double-check local_repo_env below if you add to this list. */

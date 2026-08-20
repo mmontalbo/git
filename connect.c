@@ -1,8 +1,8 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "git-compat-util.h"
-#include "config.h"
-#include "environment.h"
+#include "setup/config.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "hex.h"
 #include "pkt-line.h"
@@ -18,9 +18,9 @@
 #include "transport.h"
 #include "trace2.h"
 #include "strbuf.h"
-#include "version.h"
+#include "setup/version.h"
 #include "protocol.h"
-#include "alias.h"
+#include "setup/alias.h"
 #include "bundle-uri.h"
 #include "promisor-remote.h"
 

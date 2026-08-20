@@ -2,7 +2,7 @@
 
 #include "builtin.h"
 #include "odb/commit.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "odb/hash.h"
 #include "hex.h"
 #include "odb/odb.h"
@@ -14,7 +14,7 @@
 #include "refs/ref-filter.h"
 #include "refs/refs.h"
 #include "revision/revision.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "strbuf.h"
 #include "string-list.h"
 #include "revision/shallow.h"

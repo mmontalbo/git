@@ -16,7 +16,7 @@
 #include "odb/oid-array.h"
 #include "path.h"
 #include "prio-queue.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "revision/revision.h"
 #include "string-list.h"
 #include "strmap.h"

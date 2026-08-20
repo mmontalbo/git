@@ -3,7 +3,7 @@
 #include "abspath.h"
 #include "chdir-notify.h"
 #include "index/dir.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "odb/object-file.h"
 #include "path.h"
 #include "string-list.h"
@@ -12,7 +12,7 @@
 #include "quote.h"
 #include "odb/odb.h"
 #include "odb/source.h"
-#include "repository.h"
+#include "setup/repository.h"
 
 struct tmp_objdir {
 	struct repository *repo;

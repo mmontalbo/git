@@ -1,16 +1,16 @@
 #define USE_THE_REPOSITORY_VARIABLE
 
 #include "git-compat-util.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "odb/hash.h"
 #include "hex.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "refs/refs.h"
 #include "strvec.h"
 #include "refs/ls-refs.h"
 #include "pkt-line.h"
-#include "config.h"
+#include "setup/config.h"
 #include "string-list.h"
 
 static enum {

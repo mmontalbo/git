@@ -8,9 +8,9 @@
  */
 #define USE_THE_REPOSITORY_VARIABLE
 #include "builtin.h"
-#include "config.h"
+#include "setup/config.h"
 #include "editor.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "hex.h"
 #include "notes.h"

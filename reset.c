@@ -9,7 +9,7 @@
 #include "odb/tree-walk.h"
 #include "odb/tree.h"
 #include "index/unpack-trees.h"
-#include "hook.h"
+#include "setup/hook.h"
 
 static int update_refs(struct repository *repo,
 		       const struct reset_working_tree_options *opts,

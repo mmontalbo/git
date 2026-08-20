@@ -4,10 +4,10 @@
 #include "git-compat-util.h"
 #include "advice.h"
 #include "strvec.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "parse.h"
 #include "index/dir.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "hex.h"
 #include "index/name-hash.h"
@@ -30,7 +30,7 @@
 #include "promisor-remote.h"
 #include "index/entry.h"
 #include "index/parallel-checkout.h"
-#include "setup.h"
+#include "setup/setup.h"
 
 /*
  * Error messages expected by scripts out of plumbing commands such as

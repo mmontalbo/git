@@ -1,7 +1,7 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "hex.h"
 #include "odb/odb.h"
@@ -21,7 +21,7 @@
 #include "odb/tree-walk.h"
 #include "pack/pseudo-merge.h"
 #include "odb/oid-array.h"
-#include "config.h"
+#include "setup/config.h"
 #include "odb/alloc.h"
 #include "refs/refs.h"
 #include "strmap.h"

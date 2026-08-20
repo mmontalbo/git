@@ -4,7 +4,7 @@
 #include "gettext.h"
 #include "strbuf.h"
 #include "hex.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "odb/hash.h"
 #include "odb/object.h"
 #include "odb/loose.h"

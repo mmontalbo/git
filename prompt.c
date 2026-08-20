@@ -2,8 +2,8 @@
 
 #include "git-compat-util.h"
 #include "parse.h"
-#include "environment.h"
-#include "repository.h"
+#include "setup/environment.h"
+#include "setup/repository.h"
 #include "run-command.h"
 #include "strbuf.h"
 #include "prompt.h"

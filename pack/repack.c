@@ -5,7 +5,7 @@
 #include "pack/packfile.h"
 #include "path.h"
 #include "pack/repack.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "run-command.h"
 #include "tempfile.h"
 
