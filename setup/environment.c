@@ -27,7 +27,7 @@
 #include "setup/repository.h"
 #include "setup/config.h"
 #include "refs/refs.h"
-#include "fmt-merge-msg.h"
+#include "merge/fmt-merge-msg.h"
 #include "odb/commit.h"
 #include "strvec.h"
 #include "pager.h"
