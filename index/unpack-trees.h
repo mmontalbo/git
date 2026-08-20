@@ -1,7 +1,7 @@
 #ifndef UNPACK_TREES_H
 #define UNPACK_TREES_H
 
-#include "convert.h"
+#include "convert/convert.h"
 #include "index/read-cache-ll.h"
 #include "strvec.h"
 #include "string-list.h"

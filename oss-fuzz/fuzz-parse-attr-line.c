@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include "attr.h"
+#include "convert/attr.h"
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size);
 

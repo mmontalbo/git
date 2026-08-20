@@ -3,7 +3,7 @@
  */
 
 #include "git-compat-util.h"
-#include "convert.h"
+#include "convert/convert.h"
 #include "setup/environment.h"
 #include "setup/repository.h"
 #include "odb/odb.h"
