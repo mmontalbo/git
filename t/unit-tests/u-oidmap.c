@@ -1,7 +1,7 @@
 #include "unit-test.h"
 #include "lib-oid.h"
-#include "oidmap.h"
-#include "hash.h"
+#include "odb/oidmap.h"
+#include "odb/hash.h"
 #include "hex.h"
 
 /*

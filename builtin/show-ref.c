@@ -5,9 +5,9 @@
 #include "gettext.h"
 #include "hex.h"
 #include "refs/refs-internal.h"
-#include "object-name.h"
-#include "odb.h"
-#include "object.h"
+#include "odb/object-name.h"
+#include "odb/odb.h"
+#include "odb/object.h"
 #include "string-list.h"
 #include "parse-options.h"
 

@@ -6,11 +6,11 @@
 #include "pkt-line.h"
 #include "parse-options.h"
 #include "protocol.h"
-#include "replace-object.h"
+#include "odb/replace-object.h"
 #include "upload-pack.h"
 #include "serve.h"
 #include "setup.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "environment.h"
 
 static const char * const upload_pack_usage[] = {

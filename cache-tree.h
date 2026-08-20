@@ -1,8 +1,8 @@
 #ifndef CACHE_TREE_H
 #define CACHE_TREE_H
 
-#include "tree.h"
-#include "tree-walk.h"
+#include "odb/tree.h"
+#include "odb/tree-walk.h"
 
 struct cache_tree;
 struct cache_tree_sub {

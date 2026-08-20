@@ -5,9 +5,9 @@
 #include "config.h"
 #include "environment.h"
 #include "gettext.h"
-#include "hash.h"
+#include "odb/hash.h"
 #include "hex.h"
-#include "object-name.h"
+#include "odb/object-name.h"
 #include "parse-options.h"
 #include "refs.h"
 #include "lockfile.h"
@@ -30,8 +30,8 @@
 #include "reflog.h"
 #include "reflog-walk.h"
 #include "add-interactive.h"
-#include "oid-array.h"
-#include "commit.h"
+#include "odb/oid-array.h"
+#include "odb/commit.h"
 
 #define INCLUDE_ALL_FILES 2
 

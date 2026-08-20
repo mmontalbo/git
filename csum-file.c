@@ -11,7 +11,7 @@
 #include "git-compat-util.h"
 #include "csum-file.h"
 #include "git-zlib.h"
-#include "hash.h"
+#include "odb/hash.h"
 #include "progress.h"
 
 static void verify_buffer_or_die(struct hashfile *f,

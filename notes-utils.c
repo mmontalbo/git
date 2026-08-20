@@ -2,7 +2,7 @@
 
 #include "git-compat-util.h"
 #include "config.h"
-#include "commit.h"
+#include "odb/commit.h"
 #include "environment.h"
 #include "gettext.h"
 #include "refs.h"
