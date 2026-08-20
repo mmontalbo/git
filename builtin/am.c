@@ -33,7 +33,7 @@
 #include "revision/revision.h"
 #include "merge/merge-ort-wrappers.h"
 #include "revision/log-tree.h"
-#include "notes-utils.h"
+#include "notes/notes-utils.h"
 #include "merge/rerere.h"
 #include "mailinfo.h"
 #include "apply.h"

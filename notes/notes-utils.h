@@ -1,7 +1,7 @@
 #ifndef NOTES_UTILS_H
 #define NOTES_UTILS_H
 
-#include "notes.h"
+#include "notes/notes.h"
 
 struct commit_list;
 struct object_id;
