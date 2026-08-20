@@ -3,9 +3,9 @@
 
 #include "builtin.h"
 #include "abspath.h"
-#include "config.h"
+#include "setup/config.h"
 #include "index/dir.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "parse-options.h"
 #include "index/fsmonitor-ll.h"

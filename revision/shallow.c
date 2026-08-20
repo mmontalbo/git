@@ -2,7 +2,7 @@
 
 #include "git-compat-util.h"
 #include "hex.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "tempfile.h"
 #include "lockfile.h"
 #include "odb/odb.h"

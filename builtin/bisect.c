@@ -3,7 +3,7 @@
 
 #include "builtin.h"
 #include "copy.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "hex.h"
 #include "odb/object-name.h"

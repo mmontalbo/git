@@ -3,7 +3,7 @@
 #include "unit-test.h"
 #include "odb/object.h"
 #include "revision/decorate.h"
-#include "repository.h"
+#include "setup/repository.h"
 
 struct test_vars {
 	struct object *one, *two, *three;

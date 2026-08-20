@@ -6,13 +6,13 @@
  */
 #define USE_THE_REPOSITORY_VARIABLE
 #include "builtin.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "parse-options.h"
 #include "string-list.h"
 #include "tempfile.h"
 #include "trailer.h"
-#include "config.h"
+#include "setup/config.h"
 
 static const char * const git_interpret_trailers_usage[] = {
 	N_("git interpret-trailers [--in-place] [--trim-empty]\n"

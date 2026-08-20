@@ -2,7 +2,7 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "diff/range-diff.h"
 #include "odb/object-name.h"
@@ -16,7 +16,7 @@
 #include "odb/commit.h"
 #include "pager.h"
 #include "revision/pretty.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "diff/userdiff.h"
 #include "apply.h"
 #include "revision/revision.h"

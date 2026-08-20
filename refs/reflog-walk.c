@@ -4,7 +4,7 @@
 #include "odb/commit.h"
 #include "refs/refs.h"
 #include "diff/diff.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "revision/revision.h"
 #include "string-list.h"
 #include "refs/reflog-walk.h"

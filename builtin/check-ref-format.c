@@ -6,7 +6,7 @@
 
 #include "builtin.h"
 #include "refs/refs.h"
-#include "setup.h"
+#include "setup/setup.h"
 #include "strbuf.h"
 
 static const char builtin_check_ref_format_usage[] =

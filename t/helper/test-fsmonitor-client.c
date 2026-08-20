@@ -9,8 +9,8 @@
 #include "parse-options.h"
 #include "index/fsmonitor-ipc.h"
 #include "index/read-cache-ll.h"
-#include "repository.h"
-#include "setup.h"
+#include "setup/repository.h"
+#include "setup/setup.h"
 #include "thread-utils.h"
 #include "trace2.h"
 

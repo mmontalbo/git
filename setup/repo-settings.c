@@ -1,10 +1,10 @@
 #include "git-compat-util.h"
-#include "config.h"
-#include "repo-settings.h"
-#include "repository.h"
+#include "setup/config.h"
+#include "setup/repo-settings.h"
+#include "setup/repository.h"
 #include "pack/midx.h"
 #include "pack/pack-objects.h"
-#include "setup.h"
+#include "setup/setup.h"
 
 static void repo_cfg_bool(struct repository *r, const char *key, int *dest,
 			  int def)

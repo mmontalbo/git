@@ -2,7 +2,7 @@
 
 #include "test-tool.h"
 #include "run-command.h"
-#include "setup.h"
+#include "setup/setup.h"
 
 int cmd__subprocess(int argc, const char **argv)
 {

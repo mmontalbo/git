@@ -6,8 +6,8 @@
 
 #include "builtin.h"
 #include "advice.h"
-#include "config.h"
-#include "environment.h"
+#include "setup/config.h"
+#include "setup/environment.h"
 #include "lockfile.h"
 #include "editor.h"
 #include "index/dir.h"

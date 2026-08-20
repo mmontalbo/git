@@ -15,12 +15,12 @@
 #include "pack/pack-revindex.h"
 #include "pack/pack-objects.h"
 #include "pack/packfile.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "trace2.h"
 #include "odb/odb.h"
 #include "revision/list-objects-filter-options.h"
 #include "pack/midx.h"
-#include "config.h"
+#include "setup/config.h"
 #include "pack/pseudo-merge.h"
 
 /*

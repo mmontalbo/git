@@ -6,7 +6,7 @@
 #include "merge/merge-ort.h"
 #include "merge/merge-ort-wrappers.h"
 #include "index/read-cache-ll.h"
-#include "repository.h"
+#include "setup/repository.h"
 #include "odb/tag.h"
 #include "odb/tree.h"
 

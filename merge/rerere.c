@@ -3,9 +3,9 @@
 
 #include "git-compat-util.h"
 #include "abspath.h"
-#include "config.h"
+#include "setup/config.h"
 #include "copy.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "hex.h"
 #include "lockfile.h"

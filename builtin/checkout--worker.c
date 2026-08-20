@@ -2,9 +2,9 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "builtin.h"
-#include "config.h"
+#include "setup/config.h"
 #include "index/entry.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "index/parallel-checkout.h"
 #include "parse-options.h"

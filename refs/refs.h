@@ -3,8 +3,8 @@
 
 #include "odb/object-name.h"
 #include "odb/commit.h"
-#include "repository.h"
-#include "repo-settings.h"
+#include "setup/repository.h"
+#include "setup/repo-settings.h"
 
 struct fsck_options;
 struct object_id;

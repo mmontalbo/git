@@ -4,8 +4,8 @@
 #include "index/dir.h"
 #include "hex.h"
 #include "index/read-cache-ll.h"
-#include "repository.h"
-#include "setup.h"
+#include "setup/repository.h"
+#include "setup/setup.h"
 
 static int compare_untracked(const void *a_, const void *b_)
 {

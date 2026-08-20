@@ -2,10 +2,10 @@
 #define DISABLE_SIGN_COMPARE_WARNINGS
 
 #include "git-compat-util.h"
-#include "repository.h"
-#include "config.h"
+#include "setup/repository.h"
+#include "setup/config.h"
 #include "date.h"
-#include "environment.h"
+#include "setup/environment.h"
 #include "gettext.h"
 #include "hex.h"
 #include "lockfile.h"
@@ -20,7 +20,7 @@
 #include "run-command.h"
 #include "connect.h"
 #include "trace2.h"
-#include "version.h"
+#include "setup/version.h"
 #include "odb/oid-array.h"
 #include "odb/oidset.h"
 #include "pack/packfile.h"
