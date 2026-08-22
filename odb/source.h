@@ -25,6 +25,12 @@ enum odb_source_type {
 	ODB_SOURCE_INMEMORY,
 };
 
+/*
+ * Convert between the enum and its name. Returns the equivalent of "unknown"
+ * for unknown types.
+ */
+const char *odb_source_type_to_name(enum odb_source_type type);
+
 struct object_id;
 struct odb_read_stream;
 struct strvec;
@@ -82,6 +88,18 @@ struct odb_source {
 	 * to be reopened in that case.
 	 */
 	void (*close)(struct odb_source *source);
+
+	/*
+	 * This callback is expected to create on-disk data structures that are
+	 * required for this source to operate.
+	 *
+	 * The callback is expected to return 0 on success, a negative error
+	 * code otherwise.
+	 *
+	 * This callback may be NULL in case the source does not need any
+	 * on-disk setup.
+	 */
+	int (*create_on_disk)(struct odb_source *source);
 
 	/*
 	 * This callback is expected to prepare the source so that it becomes
@@ -263,6 +281,21 @@ struct odb_source {
 	 */
 	int (*write_alternate)(struct odb_source *source,
 			       const char *alternate);
+
+	/*
+	 * This callback is expected to optimize the object database source.
+	 * Returns 0 on success, a negative error code otherwise.
+	 */
+	int (*optimize)(struct odb_source *source,
+			const struct odb_optimize_options *opts);
+
+	/*
+	 * This callback is expected to check whether optimization of the
+	 * object database source is required given the provided options.
+	 * Returns true if optimization should be performed, false otherwise.
+	 */
+	bool (*optimize_required)(struct odb_source *source,
+				  const struct odb_optimize_options *opts);
 };
 
 /*
@@ -310,6 +343,17 @@ void odb_source_release(struct odb_source *source);
 static inline void odb_source_close(struct odb_source *source)
 {
 	source->close(source);
+}
+
+/*
+ * Create on-disk data structures that are required for this source to operate
+ * correctly. Returns 0 on success, a negative error code otherwise.
+ */
+static inline int odb_source_create_on_disk(struct odb_source *source)
+{
+	if (!source->create_on_disk)
+		return 0;
+	return source->create_on_disk(source);
 }
 
 /*
@@ -482,6 +526,27 @@ static inline int odb_source_begin_transaction(struct odb_source *source,
 					       enum odb_transaction_flags flags)
 {
 	return source->begin_transaction(source, out, flags);
+}
+
+/*
+ * Optimize the object database source. Returns 0 on success, a negative error
+ * code otherwise.
+ */
+static inline int odb_source_optimize(struct odb_source *source,
+				      const struct odb_optimize_options *opts)
+{
+	return source->optimize(source, opts);
+}
+
+/*
+ * Check whether optimization of the object database source is required given
+ * the provided options. Returns true if optimization should be performed,
+ * false otherwise.
+ */
+static inline bool odb_source_optimize_required(struct odb_source *source,
+						const struct odb_optimize_options *opts)
+{
+	return source->optimize_required(source, opts);
 }
 
 #endif

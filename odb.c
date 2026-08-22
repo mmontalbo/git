@@ -1034,27 +1034,42 @@ int odb_write_object_stream(struct object_database *odb,
 	return odb_source_write_object_stream(odb->sources, stream, len, oid);
 }
 
-struct object_database *odb_new(struct repository *repo,
-				const char *primary_source,
-				const char *secondary_sources)
+int odb_optimize(struct object_database *odb,
+		 const struct odb_optimize_options *opts)
 {
-	struct object_database *o = xmalloc(sizeof(*o));
-	char *to_free = NULL;
+	return odb_source_optimize(odb->sources, opts);
+}
 
-	memset(o, 0, sizeof(*o));
+bool odb_optimize_required(struct object_database *odb,
+			   const struct odb_optimize_options *opts)
+{
+	return odb_source_optimize_required(odb->sources, opts);
+}
+
+struct object_database *odb_new(struct repository *repo,
+				enum odb_new_flags flags)
+{
+	char *primary_source = NULL, *secondary_sources = NULL;
+	struct object_database *o;
+
+	CALLOC_ARRAY(o, 1);
 	o->repo = repo;
 	pthread_mutex_init(&o->replace_mutex, NULL);
 	string_list_init_dup(&o->submodule_source_paths);
 
+	if (flags & ODB_NEW_HONOR_ENV) {
+		primary_source = xstrdup_or_null(getenv(DB_ENVIRONMENT));
+		secondary_sources = xstrdup_or_null(getenv(ALTERNATE_DB_ENVIRONMENT));
+	}
 	if (!primary_source)
-		primary_source = to_free = xstrfmt("%s/objects", repo->commondir);
+		primary_source = xstrfmt("%s/objects", repo->commondir);
+
 	o->sources = odb_source_new(o, primary_source, true);
 	o->sources_tail = &o->sources->next;
-	o->alternate_db = xstrdup_or_null(secondary_sources);
+	o->alternate_db = secondary_sources;
 	o->inmemory_objects = &odb_source_inmemory_new(o)->base;
 
-	free(to_free);
-
+	free(primary_source);
 	return o;
 }
 
