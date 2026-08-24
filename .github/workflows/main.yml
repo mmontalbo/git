@@ -2,10 +2,9 @@ name: CI
 
 on: [push, pull_request]
 
-# PATCHED top-level block (git/git PR #2369).
+# BASELINE top-level block (pre-patch).
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ${{ github.sha }}
 
 jobs:
   ci-config:
