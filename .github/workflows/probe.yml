@@ -1,11 +1,9 @@
-name: CI-probe
+name: CI-probe-old
 on: [push, pull_request]
 
-# Mirror of the patch under review (git/git PR #2369): group PR runs by PR
-# number with cancel-in-progress, keep push runs grouped by commit SHA.
+# BEFORE state (pre-patch): group everything by github.sha, no cancel.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ${{ github.sha }}
 
 jobs:
   probe:
@@ -18,6 +16,6 @@ jobs:
           echo "ref=${{ github.ref }}"
           echo "sha=${{ github.sha }}"
           echo "pr_number=${{ github.event.pull_request.number }}"
-          echo "group=${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}"
+          echo "group=${{ github.sha }}"
       - name: dwell
         run: sleep 180
