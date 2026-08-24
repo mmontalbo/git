@@ -1,0 +1,23 @@
+name: CI-probe
+on: [push, pull_request]
+
+# Mirror of the patch under review (git/git PR #2369): group PR runs by PR
+# number with cancel-in-progress, keep push runs grouped by commit SHA.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: identify
+        run: |
+          echo "event=${{ github.event_name }}"
+          echo "ref=${{ github.ref }}"
+          echo "sha=${{ github.sha }}"
+          echo "pr_number=${{ github.event.pull_request.number }}"
+          echo "group=${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}"
+      - name: dwell
+        run: sleep 180
