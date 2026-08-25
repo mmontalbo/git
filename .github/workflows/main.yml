@@ -54,7 +54,8 @@ jobs:
         run: |
           echo "REPORT event=${{ github.event_name }} ref=${{ github.ref }}"
           echo "REPORT skip_concurrent=${{ steps.check-ref.outputs.skip_concurrent }}"
-      # SLEEP_MARKER
+      - name: dwell (make ci-config slow so downstream gating is observable)
+        run: sleep 60
 
   alpha:
     needs: ci-config
