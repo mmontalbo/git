@@ -1,0 +1,83 @@
+name: CI
+
+on: [push, pull_request]
+
+# PATCHED top-level block (git/git PR #2369).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  ci-config:
+    name: config
+    if: vars.CI_BRANCHES == '' || contains(vars.CI_BRANCHES, github.ref_name)
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.check-ref.outputs.enabled }}${{ steps.skip-if-redundant.outputs.enabled }}
+      skip_concurrent: ${{ steps.check-ref.outputs.skip_concurrent }}
+    steps:
+      - name: try to clone ci-config branch
+        run: |
+          git -c protocol.version=2 clone \
+            --no-tags \
+            --single-branch \
+            -b ci-config \
+            --depth 1 \
+            --no-checkout \
+            --filter=blob:none \
+            https://github.com/${{ github.repository }} \
+            config-repo &&
+          cd config-repo &&
+          git checkout HEAD -- ci/config || : ignore
+      - id: check-ref
+        name: check whether CI is enabled for ref
+        run: |
+          enabled=yes
+          if test -x config-repo/ci/config/allow-ref
+          then
+            echo "::warning::ci/config/allow-ref is deprecated; use CI_BRANCHES instead"
+            if ! config-repo/ci/config/allow-ref '${{ github.ref }}'
+            then
+              enabled=no
+            fi
+          fi
+
+          skip_concurrent=yes
+          if test -x config-repo/ci/config/skip-concurrent &&
+             ! config-repo/ci/config/skip-concurrent '${{ github.ref }}'
+          then
+            skip_concurrent=no
+          fi
+          echo "enabled=$enabled" >>$GITHUB_OUTPUT
+          echo "skip_concurrent=$skip_concurrent" >>$GITHUB_OUTPUT
+      - name: report config
+        run: |
+          echo "REPORT event=${{ github.event_name }} ref=${{ github.ref }}"
+          echo "REPORT skip_concurrent=${{ steps.check-ref.outputs.skip_concurrent }}"
+      # SLEEP_MARKER
+
+  alpha:
+    needs: ci-config
+    if: needs.ci-config.outputs.enabled == 'yes'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: alpha-${{ github.ref }}
+      cancel-in-progress: ${{ needs.ci-config.outputs.skip_concurrent == 'yes' }}
+    steps:
+      - run: |
+          echo "alpha skip_concurrent=${{ needs.ci-config.outputs.skip_concurrent }}"
+          sleep 600
+
+  beta:
+    needs: ci-config
+    if: needs.ci-config.outputs.enabled == 'yes'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: beta-${{ github.ref }}
+      cancel-in-progress: ${{ needs.ci-config.outputs.skip_concurrent == 'yes' }}
+    steps:
+      - run: |
+          echo "beta skip_concurrent=${{ needs.ci-config.outputs.skip_concurrent }}"
+          sleep 600
